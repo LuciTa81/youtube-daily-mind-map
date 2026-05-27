@@ -4,6 +4,8 @@ import { useRef, useState } from "react";
 import { parseTakeoutFile, type ParsedWatchHistory } from "@/lib/import/parseTakeout";
 import type { WatchItem } from "@/types/watch";
 
+const GOOGLE_TAKEOUT_YOUTUBE_URL = "https://takeout.google.com/settings/takeout/custom/youtube";
+
 type WatchHistoryImportPanelProps = {
   activeSourceName: string;
   itemCount: number;
@@ -85,6 +87,18 @@ export function WatchHistoryImportPanel({
           샘플 보기
         </button>
       </div>
+      <a
+        href={GOOGLE_TAKEOUT_YOUTUBE_URL}
+        target="_blank"
+        rel="noreferrer"
+        className="flex items-center justify-center rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+      >
+        Google Takeout에서 가져오기
+      </a>
+      <p className="text-xs leading-relaxed text-slate-500">
+        YouTube 및 YouTube Music에서 기록만 선택한 뒤, 압축을 풀어 watch-history.json 또는
+        watch-history.html을 선택하세요.
+      </p>
       {errorMessage ? (
         <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs leading-relaxed text-rose-700">
           {errorMessage}
