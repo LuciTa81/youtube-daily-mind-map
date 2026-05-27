@@ -1,0 +1,47 @@
+"use client";
+
+import type { DaySummary } from "@/lib/analytics/summarizeDay";
+import { formatDateLabel } from "@/lib/date/dateKeys";
+import type { MindMapViewMode } from "@/types/mindmap";
+import { getViewModeLabel } from "@/components/filters/ViewModeTabs";
+
+type TopSummaryCardsProps = {
+  dateKey: string;
+  summary: DaySummary;
+  viewMode: MindMapViewMode;
+};
+
+export function TopSummaryCards({ dateKey, summary, viewMode }: TopSummaryCardsProps) {
+  const cards = [
+    { label: "선택 날짜", value: formatDateLabel(dateKey) },
+    { label: "총 기록 수", value: `${summary.totalCount}개 기록` },
+    {
+      label: "Top 카테고리",
+      value: summary.topCategory
+        ? `${summary.topCategory.name} · ${summary.topCategory.count}개`
+        : "없음"
+    },
+    {
+      label: "Top 채널",
+      value: summary.topChannel ? `${summary.topChannel.name} · ${summary.topChannel.count}개` : "없음"
+    },
+    {
+      label: "집중 시간대",
+      value: summary.topTimeBlock
+        ? `${summary.topTimeBlock.name} · ${summary.topTimeBlock.count}개`
+        : "없음"
+    },
+    { label: "보기 모드", value: getViewModeLabel(viewMode) }
+  ];
+
+  return (
+    <div className="grid grid-cols-2 gap-3 xl:grid-cols-3 2xl:grid-cols-6">
+      {cards.map((card) => (
+        <div key={card.label} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="text-xs font-semibold text-slate-500">{card.label}</div>
+          <div className="mt-2 text-sm font-semibold leading-snug text-slate-900">{card.value}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
