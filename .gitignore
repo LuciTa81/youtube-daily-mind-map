@@ -4,3 +4,4 @@ out
 coverage
 .env*
 *.log
+mindmap-screenshot.png

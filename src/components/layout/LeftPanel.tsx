@@ -4,11 +4,17 @@ import { DateList } from "@/components/date/DateList";
 import { DateSettingsPanel } from "@/components/date/DateSettingsPanel";
 import { FilterPanel } from "@/components/filters/FilterPanel";
 import { ViewModeTabs } from "@/components/filters/ViewModeTabs";
+import { WatchHistoryImportPanel } from "@/components/import/WatchHistoryImportPanel";
+import type { ParsedWatchHistory } from "@/lib/import/parseTakeout";
 import type { MindMapViewMode } from "@/types/mindmap";
-import type { DateSettings } from "@/types/watch";
+import type { DateSettings, WatchItem } from "@/types/watch";
 
 type LeftPanelProps = {
   dates: Array<{ dateKey: string; count: number; label: string }>;
+  activeSourceName: string;
+  totalItemCount: number;
+  onItemsImported: (items: WatchItem[], sourceName: string, result: ParsedWatchHistory) => void;
+  onUseSample: () => void;
   selectedDateKey: string;
   onDateSelect: (dateKey: string) => void;
   dateSettings: DateSettings;
@@ -37,6 +43,10 @@ type LeftPanelProps = {
 
 export function LeftPanel({
   dates,
+  activeSourceName,
+  totalItemCount,
+  onItemsImported,
+  onUseSample,
   selectedDateKey,
   onDateSelect,
   dateSettings,
@@ -71,6 +81,12 @@ export function LeftPanel({
         </p>
       </div>
       <div className="space-y-6">
+        <WatchHistoryImportPanel
+          activeSourceName={activeSourceName}
+          itemCount={totalItemCount}
+          onImported={onItemsImported}
+          onUseSample={onUseSample}
+        />
         <DateList dates={dates} selectedDateKey={selectedDateKey} onSelect={onDateSelect} />
         <DateSettingsPanel settings={dateSettings} onChange={onDateSettingsChange} />
         <ViewModeTabs value={viewMode} onChange={onViewModeChange} />

@@ -8,8 +8,9 @@ import { getAvailableDates, getDateRangeForDateKey, filterItemsByDateKey } from 
 import { summarizeDay } from "@/lib/analytics/summarizeDay";
 import { buildMindMap } from "@/lib/mindmap/buildMindMap";
 import { sampleWatchItems } from "@/lib/sample/sampleWatchItems";
+import type { ParsedWatchHistory } from "@/lib/import/parseTakeout";
 import type { MindMapBuildOptions, MindMapNode, MindMapViewMode } from "@/types/mindmap";
-import type { ClassifiedWatchItem, DateSettings } from "@/types/watch";
+import type { ClassifiedWatchItem, DateSettings, WatchItem } from "@/types/watch";
 import { DetailPanel } from "./DetailPanel";
 import { LeftPanel } from "./LeftPanel";
 import { TopSummaryCards } from "./TopSummaryCards";
@@ -200,6 +201,9 @@ function collectCollapsibleBranchIds(node: MindMapNode): string[] {
 }
 
 export function AppShell() {
+  const [watchItems, setWatchItems] = useState<WatchItem[]>(sampleWatchItems);
+  const [activeSourceName, setActiveSourceName] = useState("샘플 데이터");
+  const [importNote, setImportNote] = useState("");
   const [dateSettings, setDateSettings] = useState<DateSettings>({
     timezone: "Asia/Seoul",
     boundaryMode: "calendar-day",
@@ -226,8 +230,8 @@ export function AppShell() {
   }, []);
 
   const availableDates = useMemo(
-    () => getAvailableDates(sampleWatchItems, dateSettings),
-    [dateSettings]
+    () => getAvailableDates(watchItems, dateSettings),
+    [dateSettings, watchItems]
   );
 
   useEffect(() => {
@@ -243,9 +247,9 @@ export function AppShell() {
   const rawDateItems = useMemo(
     () =>
       selectedDateKey
-        ? filterItemsByDateKey(sampleWatchItems, selectedDateKey, dateSettings)
+        ? filterItemsByDateKey(watchItems, selectedDateKey, dateSettings)
         : [],
-    [selectedDateKey, dateSettings]
+    [selectedDateKey, dateSettings, watchItems]
   );
   const classifiedItems = useMemo(() => classifyItems(rawDateItems), [rawDateItems]);
   const categories = useMemo(
@@ -352,6 +356,39 @@ export function AppShell() {
     setCollapsedBranchIds(new Set());
   }, []);
 
+  const handleItemsImported = useCallback(
+    (items: WatchItem[], sourceName: string, result: ParsedWatchHistory) => {
+      setWatchItems(items);
+      setActiveSourceName(sourceName);
+      setImportNote(
+        `${result.source === "takeout-json" ? "JSON" : "HTML"}에서 ${items.length}개 기록을 불러왔습니다${
+          result.skippedCount > 0 ? ` · ${result.skippedCount}개 항목은 건너뜀` : ""
+        }`
+      );
+      setSelectedDateKey("");
+      setSearchQuery("");
+      setCategoryFilter("");
+      setChannelQuery("");
+      setLowConfidenceOnly(false);
+      setExpandedGroupIds(new Set());
+      setCollapsedBranchIds(new Set());
+    },
+    []
+  );
+
+  const handleUseSample = useCallback(() => {
+    setWatchItems(sampleWatchItems);
+    setActiveSourceName("샘플 데이터");
+    setImportNote("샘플 데이터로 돌아왔습니다.");
+    setSelectedDateKey("");
+    setSearchQuery("");
+    setCategoryFilter("");
+    setChannelQuery("");
+    setLowConfidenceOnly(false);
+    setExpandedGroupIds(new Set());
+    setCollapsedBranchIds(new Set());
+  }, []);
+
   const handleNodeSelect = useCallback((node: MindMapNode) => {
     setSelectedNodeId(node.id);
     if (node.type === "collapsed-group") {
@@ -405,6 +442,10 @@ export function AppShell() {
     <div className="flex h-screen min-h-0 bg-slate-100 text-slate-900">
       <LeftPanel
         dates={availableDates}
+        activeSourceName={activeSourceName}
+        totalItemCount={watchItems.length}
+        onItemsImported={handleItemsImported}
+        onUseSample={handleUseSample}
         selectedDateKey={selectedDateKey}
         onDateSelect={handleDateSelect}
         dateSettings={dateSettings}
@@ -440,7 +481,7 @@ export function AppShell() {
             </div>
           </div>
           <div className="text-right text-xs text-slate-500">
-            검색은 일치 노드를 강조하고 숨겨진 그룹을 자동으로 펼칩니다.
+            {importNote || "검색은 일치 노드를 강조하고 숨겨진 그룹을 자동으로 펼칩니다."}
           </div>
         </div>
         <div className="min-h-0 flex-1">
