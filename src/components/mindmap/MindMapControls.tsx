@@ -16,7 +16,8 @@ export function MindMapControls({
   const { fitView, zoomIn, zoomOut } = useReactFlow();
 
   return (
-    <Panel position="top-right" className="flex items-center gap-2 rounded-lg border border-slate-200 bg-white/95 p-2 shadow-soft">
+    <Panel position="top-right" className="max-w-[calc(100vw-2rem)] rounded-lg border border-slate-200 bg-white/95 p-2 shadow-soft">
+      <div className="flex flex-wrap items-center justify-end gap-2">
       <span className="px-2 text-xs font-medium text-slate-500">{visibleNodeCount}개 노드</span>
       <button
         type="button"
@@ -55,6 +56,7 @@ export function MindMapControls({
       >
         전체 접기
       </button>
+      </div>
     </Panel>
   );
 }

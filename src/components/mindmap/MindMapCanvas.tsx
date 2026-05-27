@@ -92,7 +92,7 @@ function MindMapCanvasInner({
         <MiniMap
           pannable
           zoomable
-          className="!rounded-lg !border !border-slate-200 !bg-white"
+          className="!hidden !rounded-lg !border !border-slate-200 !bg-white md:!block"
           nodeColor={(node) => {
             const data = node.data as MindMapFlowNode["data"];
             if (data.mindMapNode.type === "root") {

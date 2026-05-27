@@ -5,3 +5,4 @@ coverage
 .env*
 *.log
 mindmap-screenshot.png
+fold-layout-screenshot.png

@@ -28,7 +28,7 @@ function getNodeSize(node: MindMapNode): { width: number; height: number } {
   }
 
   if (node.type === "video") {
-    return { width: 260, height: 88 };
+    return { width: 330, height: 112 };
   }
 
   if (node.type === "collapsed-group") {

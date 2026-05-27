@@ -1,6 +1,7 @@
 import { formatInTimeZone } from "date-fns-tz";
 import { summarizeDay } from "@/lib/analytics/summarizeDay";
 import { getTimeBlockForItem } from "@/lib/date/timeBlocks";
+import { getVideoMetadata } from "@/lib/youtube/videoMetadata";
 import type { MindMapBuildOptions, MindMapNode } from "@/types/mindmap";
 import type { ClassifiedWatchItem } from "@/types/watch";
 
@@ -68,6 +69,7 @@ function createVideoNode(
     options.dateSettings.timezone,
     "HH:mm"
   );
+  const videoMetadata = getVideoMetadata(item);
 
   return {
     id: makeId(parentId, "video", `${index}`, item.id),
@@ -76,6 +78,7 @@ function createVideoNode(
     meta: {
       item,
       watchedTime,
+      ...videoMetadata,
       searchableText: `${item.title} ${item.channelName ?? ""} ${item.category} ${
         item.subcategory ?? ""
       }`

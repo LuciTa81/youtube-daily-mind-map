@@ -35,11 +35,11 @@ export function TopSummaryCards({ dateKey, summary, viewMode }: TopSummaryCardsP
   ];
 
   return (
-    <div className="grid grid-cols-2 gap-3 xl:grid-cols-3 2xl:grid-cols-6">
+    <div className="grid grid-cols-2 gap-2 md:grid-cols-3 lg:grid-cols-6 min-[1400px]:grid-cols-3 2xl:grid-cols-6">
       {cards.map((card) => (
-        <div key={card.label} className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+        <div key={card.label} className="min-w-0 rounded-lg border border-slate-200 bg-white p-3 shadow-sm md:p-4">
           <div className="text-xs font-semibold text-slate-500">{card.label}</div>
-          <div className="mt-2 text-sm font-semibold leading-snug text-slate-900">{card.value}</div>
+          <div className="mt-2 break-keep text-sm font-semibold leading-snug text-slate-900">{card.value}</div>
         </div>
       ))}
     </div>

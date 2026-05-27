@@ -3,17 +3,21 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { formatInTimeZone } from "date-fns-tz";
 import { MindMapCanvas } from "@/components/mindmap/MindMapCanvas";
+import { WatchTimeline } from "@/components/timeline/WatchTimeline";
 import { classifyItems } from "@/lib/classify/classify";
 import { getAvailableDates, getDateRangeForDateKey, filterItemsByDateKey } from "@/lib/date/dateKeys";
 import { summarizeDay } from "@/lib/analytics/summarizeDay";
 import { buildMindMap } from "@/lib/mindmap/buildMindMap";
 import { sampleWatchItems } from "@/lib/sample/sampleWatchItems";
+import { getVideoMetadata } from "@/lib/youtube/videoMetadata";
 import type { ParsedWatchHistory } from "@/lib/import/parseTakeout";
 import type { MindMapBuildOptions, MindMapNode, MindMapViewMode } from "@/types/mindmap";
 import type { ClassifiedWatchItem, DateSettings, WatchItem } from "@/types/watch";
 import { DetailPanel } from "./DetailPanel";
 import { LeftPanel } from "./LeftPanel";
 import { TopSummaryCards } from "./TopSummaryCards";
+
+type CanvasMode = "mindmap" | "timeline";
 
 function normalizeSearch(value: string): string {
   return value.trim().toLocaleLowerCase("ko-KR");
@@ -54,6 +58,21 @@ function createExpandedVideoNode(
     meta: {
       item,
       watchedTime: formatInTimeZone(new Date(item.watchedAt), settings.timezone, "HH:mm"),
+      ...getVideoMetadata(item),
+      searchableText: `${item.title} ${item.channelName ?? ""} ${item.category} ${item.subcategory ?? ""}`
+    }
+  };
+}
+
+function createTimelineVideoNode(item: ClassifiedWatchItem, settings: DateSettings): MindMapNode {
+  return {
+    id: `timeline-video__${item.id}`,
+    label: item.title,
+    type: "video",
+    meta: {
+      item,
+      watchedTime: formatInTimeZone(new Date(item.watchedAt), settings.timezone, "HH:mm"),
+      ...getVideoMetadata(item),
       searchableText: `${item.title} ${item.channelName ?? ""} ${item.category} ${item.subcategory ?? ""}`
     }
   };
@@ -211,6 +230,7 @@ export function AppShell() {
   });
   const [selectedDateKey, setSelectedDateKey] = useState("");
   const [viewMode, setViewMode] = useState<MindMapViewMode>("topic");
+  const [canvasMode, setCanvasMode] = useState<CanvasMode>("mindmap");
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [channelQuery, setChannelQuery] = useState("");
@@ -221,6 +241,7 @@ export function AppShell() {
   const [expandedGroupIds, setExpandedGroupIds] = useState<Set<string>>(() => new Set());
   const [collapsedBranchIds, setCollapsedBranchIds] = useState<Set<string>>(() => new Set());
   const [selectedNodeId, setSelectedNodeId] = useState<string>();
+  const [selectedTimelineNode, setSelectedTimelineNode] = useState<MindMapNode>();
 
   useEffect(() => {
     const browserTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -303,6 +324,7 @@ export function AppShell() {
 
   useEffect(() => {
     setSelectedNodeId(baseRoot.id);
+    setSelectedTimelineNode(undefined);
     setExpandedGroupIds(new Set());
     setCollapsedBranchIds(new Set());
   }, [
@@ -324,8 +346,8 @@ export function AppShell() {
   }, [baseRoot, collapsedBranchIds, dateSettings, expandedGroupIds, searchQuery, selectedNodeId]);
 
   const selectedNode = useMemo(
-    () => findNode(displayRoot, selectedNodeId) ?? displayRoot,
-    [displayRoot, selectedNodeId]
+    () => selectedTimelineNode ?? findNode(displayRoot, selectedNodeId) ?? displayRoot,
+    [displayRoot, selectedNodeId, selectedTimelineNode]
   );
   const dateRange = useMemo(
     () => (selectedDateKey ? getDateRangeForDateKey(selectedDateKey, dateSettings) : undefined),
@@ -340,9 +362,20 @@ export function AppShell() {
 
   const handleViewModeChange = useCallback((mode: MindMapViewMode) => {
     setViewMode(mode);
+    setCanvasMode("mindmap");
+    setSelectedTimelineNode(undefined);
     setExpandedGroupIds(new Set());
     setCollapsedBranchIds(new Set());
   }, []);
+
+  const handleCanvasModeChange = useCallback(
+    (mode: CanvasMode) => {
+      setCanvasMode(mode);
+      setSelectedTimelineNode(undefined);
+      setSelectedNodeId(baseRoot.id);
+    },
+    [baseRoot.id]
+  );
 
   const handleGroupVideosByChange = useCallback((value: "channel" | "subcategory") => {
     setGroupVideosBy(value);
@@ -352,6 +385,7 @@ export function AppShell() {
 
   const handleDateSelect = useCallback((dateKey: string) => {
     setSelectedDateKey(dateKey);
+    setSelectedTimelineNode(undefined);
     setExpandedGroupIds(new Set());
     setCollapsedBranchIds(new Set());
   }, []);
@@ -370,6 +404,7 @@ export function AppShell() {
       setCategoryFilter("");
       setChannelQuery("");
       setLowConfidenceOnly(false);
+      setSelectedTimelineNode(undefined);
       setExpandedGroupIds(new Set());
       setCollapsedBranchIds(new Set());
     },
@@ -385,11 +420,13 @@ export function AppShell() {
     setCategoryFilter("");
     setChannelQuery("");
     setLowConfidenceOnly(false);
+    setSelectedTimelineNode(undefined);
     setExpandedGroupIds(new Set());
     setCollapsedBranchIds(new Set());
   }, []);
 
   const handleNodeSelect = useCallback((node: MindMapNode) => {
+    setSelectedTimelineNode(undefined);
     setSelectedNodeId(node.id);
     if (node.type === "collapsed-group") {
       setExpandedGroupIds((current) => {
@@ -403,6 +440,14 @@ export function AppShell() {
       });
     }
   }, []);
+
+  const handleTimelineItemSelect = useCallback(
+    (item: ClassifiedWatchItem) => {
+      setSelectedTimelineNode(createTimelineVideoNode(item, dateSettings));
+      setSelectedNodeId(undefined);
+    },
+    [dateSettings]
+  );
 
   const handleToggleBranch = useCallback((nodeId: string) => {
     setCollapsedBranchIds((current) => {
@@ -439,7 +484,7 @@ export function AppShell() {
   }, [baseRoot]);
 
   return (
-    <div className="flex h-screen min-h-0 bg-slate-100 text-slate-900">
+    <div className="flex min-h-screen flex-col bg-slate-100 text-slate-900 min-[1400px]:h-screen min-[1400px]:min-h-0 min-[1400px]:flex-row min-[1400px]:overflow-hidden">
       <LeftPanel
         dates={availableDates}
         activeSourceName={activeSourceName}
@@ -471,29 +516,72 @@ export function AppShell() {
         onExpandAll={handleExpandAll}
         onCollapseAll={handleCollapseAll}
       />
-      <main className="flex min-w-0 flex-1 flex-col gap-4 p-5">
+      <main className="order-1 flex min-w-0 flex-1 flex-col gap-3 p-3 md:gap-4 md:p-4 min-[1400px]:order-2 min-[1400px]:p-5">
         <TopSummaryCards dateKey={selectedDateKey || "선택 없음"} summary={summary} viewMode={viewMode} />
-        <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-3">
-          <div>
-            <div className="text-sm font-semibold text-slate-900">마인드맵</div>
-            <div className="mt-1 text-xs text-slate-500">
+        <div className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-white px-4 py-3 md:flex-row md:items-center md:justify-between">
+          <div className="min-w-0">
+            <div className="text-sm font-semibold text-slate-900">
+              {canvasMode === "mindmap" ? "마인드맵" : "하루 타임라인"}
+            </div>
+            <div className="mt-1 text-xs leading-relaxed text-slate-500">
               {dateRange?.label ?? "날짜 범위를 계산하는 중"} · {dateSettings.boundaryMode === "calendar-day" ? "자정 기준" : "생활일 기준"}
             </div>
           </div>
-          <div className="text-right text-xs text-slate-500">
-            {importNote || "검색은 일치 노드를 강조하고 숨겨진 그룹을 자동으로 펼칩니다."}
+          <div className="flex flex-col gap-2 md:items-end">
+            <div className="grid grid-cols-2 gap-1 rounded-lg border border-slate-200 bg-slate-100 p-1">
+              <button
+                type="button"
+                className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${
+                  canvasMode === "mindmap"
+                    ? "bg-white text-slate-900 shadow-sm"
+                    : "text-slate-500 hover:text-slate-800"
+                }`}
+                onClick={() => handleCanvasModeChange("mindmap")}
+              >
+                마인드맵
+              </button>
+              <button
+                type="button"
+                className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${
+                  canvasMode === "timeline"
+                    ? "bg-white text-slate-900 shadow-sm"
+                    : "text-slate-500 hover:text-slate-800"
+                }`}
+                onClick={() => handleCanvasModeChange("timeline")}
+              >
+                타임라인
+              </button>
+            </div>
+            <div className="text-xs leading-relaxed text-slate-500 md:text-right">
+              {importNote ||
+                (canvasMode === "mindmap"
+                  ? "검색은 일치 노드를 강조하고 숨겨진 그룹을 자동으로 펼칩니다."
+                  : "시청 기록을 시간순으로 배치합니다. 카드를 누르면 상세 정보를 볼 수 있습니다.")}
+            </div>
           </div>
         </div>
-        <div className="min-h-0 flex-1">
-          <MindMapCanvas
-            root={displayRoot}
-            selectedNodeId={selectedNode?.id}
-            onNodeSelect={handleNodeSelect}
-            onToggleBranch={handleToggleBranch}
-            onToggleCollapsedGroup={handleToggleCollapsedGroup}
-            onExpandAll={handleExpandAll}
-            onCollapseAll={handleCollapseAll}
-          />
+        <div className="h-[66svh] min-h-[460px] md:h-[68svh] min-[1400px]:min-h-0 min-[1400px]:flex-1">
+          {canvasMode === "mindmap" ? (
+            <MindMapCanvas
+              root={displayRoot}
+              selectedNodeId={selectedTimelineNode ? undefined : selectedNode?.id}
+              onNodeSelect={handleNodeSelect}
+              onToggleBranch={handleToggleBranch}
+              onToggleCollapsedGroup={handleToggleCollapsedGroup}
+              onExpandAll={handleExpandAll}
+              onCollapseAll={handleCollapseAll}
+            />
+          ) : (
+            <WatchTimeline
+              items={filteredItems}
+              dateKey={selectedDateKey || "선택 없음"}
+              dateSettings={dateSettings}
+              selectedItemId={
+                (selectedTimelineNode?.meta?.item as ClassifiedWatchItem | undefined)?.id
+              }
+              onItemSelect={handleTimelineItemSelect}
+            />
+          )}
         </div>
       </main>
       <DetailPanel node={selectedNode} dateSettings={dateSettings} />

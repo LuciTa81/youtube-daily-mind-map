@@ -3,6 +3,7 @@
 import { formatInTimeZone } from "date-fns-tz";
 import type { DaySummary } from "@/lib/analytics/summarizeDay";
 import type { TimeBlock } from "@/lib/date/timeBlocks";
+import { getVideoMetadata } from "@/lib/youtube/videoMetadata";
 import type { MindMapNode } from "@/types/mindmap";
 import type { ClassifiedWatchItem, DateSettings } from "@/types/watch";
 
@@ -48,15 +49,39 @@ function VideoList({ items, timezone }: { items: ClassifiedWatchItem[]; timezone
 
   return (
     <div className="space-y-2">
-      {sortedItems.map((item) => (
-        <div key={item.id} className="rounded-lg border border-slate-200 bg-white p-3">
-          <div className="text-xs font-semibold text-slate-500">{formatWatchedAt(item, timezone)}</div>
-          <div className="mt-1 text-sm font-semibold leading-snug text-slate-900">{item.title}</div>
-          <div className="mt-1 text-xs text-slate-500">
-            {item.channelName ?? "채널 없음"} · {item.category}
+      {sortedItems.map((item) => {
+        const videoMetadata = getVideoMetadata(item);
+
+        return (
+        <div key={item.id} className="flex gap-3 rounded-lg border border-slate-200 bg-white p-3">
+          {videoMetadata.thumbnailUrl ? (
+            <img
+              src={videoMetadata.thumbnailUrl}
+              alt=""
+              className="h-16 w-24 shrink-0 rounded-md object-cover"
+              loading="lazy"
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            <div className="flex h-16 w-24 shrink-0 items-center justify-center rounded-md bg-slate-100 text-[11px] font-semibold text-slate-400">
+              썸네일 없음
+            </div>
+          )}
+          <div className="min-w-0">
+            <div className="text-xs font-semibold text-slate-500">
+              {formatWatchedAt(item, timezone)}
+            </div>
+            <div className="mt-1 text-sm font-semibold leading-snug text-slate-900">{item.title}</div>
+            <div className="mt-1 text-xs leading-relaxed text-slate-500">
+              {videoMetadata.oneLineSummary}
+            </div>
+            <div className="mt-1 text-xs text-slate-500">
+              {item.channelName ?? "채널 없음"} · {item.category}
+            </div>
           </div>
         </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -234,10 +259,23 @@ export function NodeDetailRenderer({ node, dateSettings }: NodeDetailRendererPro
   }
 
   if (node.type === "video" && item) {
+    const videoMetadata = getVideoMetadata(item);
     return (
       <div className="space-y-5">
         <div>
+          {videoMetadata.thumbnailUrl ? (
+            <img
+              src={videoMetadata.thumbnailUrl}
+              alt=""
+              className="mb-4 aspect-video w-full rounded-lg border border-slate-200 object-cover"
+              loading="lazy"
+              referrerPolicy="no-referrer"
+            />
+          ) : null}
           <h3 className="text-lg font-semibold leading-snug text-slate-900">{item.title}</h3>
+          <p className="mt-2 rounded-lg bg-slate-100 p-3 text-sm leading-relaxed text-slate-700">
+            {videoMetadata.oneLineSummary}
+          </p>
           <div className="mt-3 rounded-lg border border-slate-200 bg-white px-4">
             <MetricRow label="채널" value={item.channelName ?? "채널 없음"} />
             <MetricRow label="시청 시각" value={formatWatchedAt(item, dateSettings.timezone)} />

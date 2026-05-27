@@ -53,6 +53,9 @@ function getSubtitle(data: MindMapReactFlowNodeData): string {
 
 export function MindMapNode({ data, selected }: NodeProps<MindMapFlowNode>) {
   const node = data.mindMapNode;
+  const thumbnailUrl = typeof node.meta?.thumbnailUrl === "string" ? node.meta.thumbnailUrl : undefined;
+  const oneLineSummary =
+    typeof node.meta?.oneLineSummary === "string" ? node.meta.oneLineSummary : undefined;
   const canCollapseBranch =
     node.type === "category" ||
     node.type === "subcategory" ||
@@ -73,7 +76,17 @@ export function MindMapNode({ data, selected }: NodeProps<MindMapFlowNode>) {
     >
       <Handle type="target" position={Position.Left} className="!h-2 !w-2 !border-0 !bg-slate-400" />
       <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
+        <div className={`min-w-0 ${node.type === "video" ? "flex gap-3" : ""}`}>
+          {node.type === "video" && thumbnailUrl ? (
+            <img
+              src={thumbnailUrl}
+              alt=""
+              className="mt-1 h-14 w-20 shrink-0 rounded-md object-cover"
+              loading="lazy"
+              referrerPolicy="no-referrer"
+            />
+          ) : null}
+          <div className="min-w-0">
           <div className="text-[11px] font-semibold uppercase text-current opacity-60">
             {typeLabel[node.type]}
           </div>
@@ -85,6 +98,12 @@ export function MindMapNode({ data, selected }: NodeProps<MindMapFlowNode>) {
             {node.label}
           </div>
           <div className="mt-2 text-xs leading-relaxed opacity-75">{getSubtitle(data)}</div>
+          {node.type === "video" && oneLineSummary ? (
+            <div className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-slate-500">
+              {oneLineSummary}
+            </div>
+          ) : null}
+          </div>
         </div>
         {canCollapseBranch ? (
           <button
