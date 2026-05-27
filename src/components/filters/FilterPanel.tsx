@@ -88,7 +88,7 @@ export function FilterPanel({
           checked={lowConfidenceOnly}
           onChange={(event) => onLowConfidenceOnlyChange(event.target.checked)}
         />
-        confidence 0.5 이하만 보기
+        분류가 애매한 항목만 보기
       </label>
       <div className="space-y-3 border-t border-slate-200 pt-4">
         <h2 className="text-sm font-semibold text-slate-900">표시 설정</h2>

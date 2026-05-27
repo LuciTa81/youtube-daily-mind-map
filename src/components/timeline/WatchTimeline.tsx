@@ -72,9 +72,6 @@ function TimelineCard({
           <div className="mt-1 line-clamp-2 text-sm font-semibold leading-snug text-slate-900">
             {item.title}
           </div>
-          <div className="mt-1 line-clamp-2 text-xs leading-relaxed text-slate-500">
-            {metadata.oneLineSummary}
-          </div>
           <div className="mt-2 text-xs text-slate-500">
             {item.channelName ?? "채널 없음"} · {item.category}
           </div>

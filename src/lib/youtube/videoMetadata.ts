@@ -1,9 +1,8 @@
-import type { ClassifiedWatchItem, WatchItem } from "@/types/watch";
+import type { WatchItem } from "@/types/watch";
 
 export type VideoMetadata = {
   videoId?: string;
   thumbnailUrl?: string;
-  oneLineSummary: string;
 };
 
 function safeUrl(value: string): URL | undefined {
@@ -49,32 +48,9 @@ export function getYouTubeThumbnailUrl(url?: string): string | undefined {
   return videoId ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` : undefined;
 }
 
-export function buildVideoOneLineSummary(item: ClassifiedWatchItem): string {
-  const categoryText = item.subcategory
-    ? `${item.category} > ${item.subcategory}`
-    : item.category;
-  const channelText = item.channelName ? `${item.channelName}의 ` : "";
-
-  if (item.category === "기타") {
-    return `${channelText}제목 기준으로 아직 명확히 분류되지 않은 시청 기록입니다.`;
-  }
-
-  return `${channelText}제목 기준 ${categoryText} 관련 영상으로 분류됐습니다.`;
-}
-
-export function getVideoMetadata(item: ClassifiedWatchItem | WatchItem): VideoMetadata {
-  const classifiedItem =
-    "category" in item
-      ? item
-      : {
-          ...item,
-          category: "기타",
-          confidence: 0.2
-        };
-
+export function getVideoMetadata(item: WatchItem): VideoMetadata {
   return {
     videoId: extractYouTubeVideoId(item.url),
-    thumbnailUrl: getYouTubeThumbnailUrl(item.url),
-    oneLineSummary: buildVideoOneLineSummary(classifiedItem)
+    thumbnailUrl: getYouTubeThumbnailUrl(item.url)
   };
 }

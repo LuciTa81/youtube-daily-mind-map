@@ -72,9 +72,6 @@ function VideoList({ items, timezone }: { items: ClassifiedWatchItem[]; timezone
               {formatWatchedAt(item, timezone)}
             </div>
             <div className="mt-1 text-sm font-semibold leading-snug text-slate-900">{item.title}</div>
-            <div className="mt-1 text-xs leading-relaxed text-slate-500">
-              {videoMetadata.oneLineSummary}
-            </div>
             <div className="mt-1 text-xs text-slate-500">
               {item.channelName ?? "채널 없음"} · {item.category}
             </div>
@@ -105,7 +102,7 @@ function RootDetail({ node }: { node: MindMapNode }) {
   return (
     <div className="space-y-5">
       <div>
-        <h3 className="text-lg font-semibold text-slate-900">선택 날짜 요약</h3>
+        <h3 className="text-lg font-semibold text-slate-900">선택 범위 요약</h3>
         <div className="mt-3 rounded-lg border border-slate-200 bg-white px-4">
           <MetricRow label="총 기록 수" value={`${summary.totalCount}개`} />
           <MetricRow
@@ -273,15 +270,10 @@ export function NodeDetailRenderer({ node, dateSettings }: NodeDetailRendererPro
             />
           ) : null}
           <h3 className="text-lg font-semibold leading-snug text-slate-900">{item.title}</h3>
-          <p className="mt-2 rounded-lg bg-slate-100 p-3 text-sm leading-relaxed text-slate-700">
-            {videoMetadata.oneLineSummary}
-          </p>
           <div className="mt-3 rounded-lg border border-slate-200 bg-white px-4">
             <MetricRow label="채널" value={item.channelName ?? "채널 없음"} />
             <MetricRow label="시청 시각" value={formatWatchedAt(item, dateSettings.timezone)} />
             <MetricRow label="카테고리" value={item.category} />
-            <MetricRow label="confidence" value={item.confidence.toFixed(2)} />
-            <MetricRow label="분류 이유" value={item.reason ?? "없음"} />
           </div>
           {item.url ? (
             <a

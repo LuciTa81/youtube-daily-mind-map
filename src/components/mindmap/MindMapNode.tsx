@@ -54,8 +54,6 @@ function getSubtitle(data: MindMapReactFlowNodeData): string {
 export function MindMapNode({ data, selected }: NodeProps<MindMapFlowNode>) {
   const node = data.mindMapNode;
   const thumbnailUrl = typeof node.meta?.thumbnailUrl === "string" ? node.meta.thumbnailUrl : undefined;
-  const oneLineSummary =
-    typeof node.meta?.oneLineSummary === "string" ? node.meta.oneLineSummary : undefined;
   const canCollapseBranch =
     node.type === "category" ||
     node.type === "subcategory" ||
@@ -98,11 +96,6 @@ export function MindMapNode({ data, selected }: NodeProps<MindMapFlowNode>) {
             {node.label}
           </div>
           <div className="mt-2 text-xs leading-relaxed opacity-75">{getSubtitle(data)}</div>
-          {node.type === "video" && oneLineSummary ? (
-            <div className="mt-1 line-clamp-2 text-[11px] leading-relaxed text-slate-500">
-              {oneLineSummary}
-            </div>
-          ) : null}
           </div>
         </div>
         {canCollapseBranch ? (

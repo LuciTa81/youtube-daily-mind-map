@@ -1,24 +1,24 @@
 "use client";
 
 import { DateList } from "@/components/date/DateList";
-import { DateSettingsPanel } from "@/components/date/DateSettingsPanel";
 import { FilterPanel } from "@/components/filters/FilterPanel";
 import { ViewModeTabs } from "@/components/filters/ViewModeTabs";
 import { WatchHistoryImportPanel } from "@/components/import/WatchHistoryImportPanel";
+import type { QuickDateOption } from "@/lib/date/dateKeys";
 import type { ParsedWatchHistory } from "@/lib/import/parseTakeout";
 import type { MindMapViewMode } from "@/types/mindmap";
-import type { DateSettings, WatchItem } from "@/types/watch";
+import type { DateRangeMode, WatchItem } from "@/types/watch";
 
 type LeftPanelProps = {
-  dates: Array<{ dateKey: string; count: number; label: string }>;
+  dates: QuickDateOption[];
   activeSourceName: string;
   totalItemCount: number;
   onItemsImported: (items: WatchItem[], sourceName: string, result: ParsedWatchHistory) => void;
   onUseSample: () => void;
   selectedDateKey: string;
   onDateSelect: (dateKey: string) => void;
-  dateSettings: DateSettings;
-  onDateSettingsChange: (settings: DateSettings) => void;
+  rangeMode: DateRangeMode;
+  onRangeModeChange: (mode: DateRangeMode) => void;
   viewMode: MindMapViewMode;
   onViewModeChange: (value: MindMapViewMode) => void;
   searchQuery: string;
@@ -49,8 +49,8 @@ export function LeftPanel({
   onUseSample,
   selectedDateKey,
   onDateSelect,
-  dateSettings,
-  onDateSettingsChange,
+  rangeMode,
+  onRangeModeChange,
   viewMode,
   onViewModeChange,
   searchQuery,
@@ -87,8 +87,13 @@ export function LeftPanel({
           onImported={onItemsImported}
           onUseSample={onUseSample}
         />
-        <DateList dates={dates} selectedDateKey={selectedDateKey} onSelect={onDateSelect} />
-        <DateSettingsPanel settings={dateSettings} onChange={onDateSettingsChange} />
+        <DateList
+          dates={dates}
+          selectedDateKey={selectedDateKey}
+          rangeMode={rangeMode}
+          onSelect={onDateSelect}
+          onRangeModeChange={onRangeModeChange}
+        />
         <ViewModeTabs value={viewMode} onChange={onViewModeChange} />
         <FilterPanel
           searchQuery={searchQuery}

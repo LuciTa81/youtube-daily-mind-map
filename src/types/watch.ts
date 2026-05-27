@@ -18,6 +18,8 @@ export type ClassifiedWatchItem = WatchItem & {
 
 export type DateBoundaryMode = "calendar-day" | "lifestyle-day";
 
+export type DateRangeMode = "day" | "week";
+
 export type DateSettings = {
   timezone: string;
   boundaryMode: DateBoundaryMode;

@@ -2,9 +2,22 @@ import { addDays, addSeconds, format, isValid, parse, subDays } from "date-fns";
 import { ko } from "date-fns/locale";
 import { formatInTimeZone, fromZonedTime, toZonedTime } from "date-fns-tz";
 import type { DateRange } from "@/types/mindmap";
-import type { DateSettings, WatchItem } from "@/types/watch";
+import type { DateRangeMode, DateSettings, WatchItem } from "@/types/watch";
 
 const FALLBACK_TIMEZONE = "Asia/Seoul";
+const QUICK_DATE_OFFSETS = [
+  { id: "today", label: "오늘", offsetDays: 0 },
+  { id: "yesterday", label: "하루 전", offsetDays: 1 },
+  { id: "two-days-ago", label: "이틀 전", offsetDays: 2 }
+] as const;
+
+export type QuickDateOption = {
+  id: (typeof QUICK_DATE_OFFSETS)[number]["id"];
+  label: string;
+  dateKey: string;
+  count: number;
+  description: string;
+};
 
 function getSafeTimezone(timezone: string): string {
   try {
@@ -41,6 +54,16 @@ export function getDateKeyForItem(item: WatchItem, settings: DateSettings): stri
   const adjustedDate = hour < boundaryHour ? subDays(zonedDate, 1) : zonedDate;
 
   return format(adjustedDate, "yyyy-MM-dd");
+}
+
+export function getRelativeDateKey(
+  offsetDays: number,
+  settings: DateSettings,
+  now = new Date()
+): string {
+  const timezone = getSafeTimezone(settings.timezone);
+  const zonedNow = toZonedTime(now, timezone);
+  return format(subDays(zonedNow, Math.max(0, Math.floor(offsetDays))), "yyyy-MM-dd");
 }
 
 export function formatDateLabel(dateKey: string, count?: number): string {
@@ -86,6 +109,16 @@ export function filterItemsByDateKey(
   return items.filter((item) => getDateKeyForItem(item, settings) === dateKey);
 }
 
+export function filterItemsByDateRange(items: WatchItem[], range: DateRange): WatchItem[] {
+  const startTime = range.start.getTime();
+  const endTime = range.end.getTime();
+
+  return items.filter((item) => {
+    const watchedTime = new Date(item.watchedAt).getTime();
+    return Number.isFinite(watchedTime) && watchedTime >= startTime && watchedTime <= endTime;
+  });
+}
+
 function buildLocalDateTime(dateKey: string, hour: number, minute: number, second: number): Date {
   const localDate = parse(dateKey, "yyyy-MM-dd", new Date());
   localDate.setHours(hour, minute, second, 0);
@@ -116,4 +149,79 @@ export function getDateRangeForDateKey(dateKey: string, settings: DateSettings):
     startLabel,
     endLabel
   };
+}
+
+function getCalendarDayRangeForSelection(
+  dateKey: string,
+  settings: DateSettings,
+  now: Date
+): DateRange {
+  const timezone = getSafeTimezone(settings.timezone);
+  const startLocal = buildLocalDateTime(dateKey, 0, 0, 0);
+  const fullEndLocal = buildLocalDateTime(dateKey, 23, 59, 59);
+  const start = fromZonedTime(startLocal, timezone);
+  const fullEnd = fromZonedTime(fullEndLocal, timezone);
+  const todayKey = getRelativeDateKey(0, settings, now);
+  const isTodayRange =
+    dateKey === todayKey && now.getTime() >= start.getTime() && now.getTime() <= fullEnd.getTime();
+  const end = isTodayRange ? now : fullEnd;
+  const startLabel = formatInTimeZone(start, timezone, "yyyy-MM-dd HH:mm");
+  const endLabel = formatInTimeZone(end, timezone, "yyyy-MM-dd HH:mm");
+
+  return {
+    start,
+    end,
+    label: `${startLabel} ~ ${endLabel}`,
+    startLabel,
+    endLabel
+  };
+}
+
+export function getDateRangeForSelection(
+  dateKey: string,
+  settings: DateSettings,
+  rangeMode: DateRangeMode,
+  now = new Date()
+): DateRange {
+  if (rangeMode === "day") {
+    return getCalendarDayRangeForSelection(dateKey, settings, now);
+  }
+
+  const timezone = getSafeTimezone(settings.timezone);
+  const parsed = parse(dateKey, "yyyy-MM-dd", new Date());
+  const startDateKey = isValid(parsed) ? format(subDays(parsed, 6), "yyyy-MM-dd") : dateKey;
+  const startLocal = buildLocalDateTime(startDateKey, 0, 0, 0);
+  const start = fromZonedTime(startLocal, timezone);
+  const end = getCalendarDayRangeForSelection(dateKey, settings, now).end;
+  const startLabel = formatInTimeZone(start, timezone, "yyyy-MM-dd HH:mm");
+  const endLabel = formatInTimeZone(end, timezone, "yyyy-MM-dd HH:mm");
+
+  return {
+    start,
+    end,
+    label: `${startLabel} ~ ${endLabel}`,
+    startLabel,
+    endLabel
+  };
+}
+
+export function getQuickDateOptions(
+  items: WatchItem[],
+  settings: DateSettings,
+  now = new Date()
+): QuickDateOption[] {
+  return QUICK_DATE_OFFSETS.map((option) => {
+    const dateKey = getRelativeDateKey(option.offsetDays, settings, now);
+    const range = getDateRangeForSelection(dateKey, settings, "day", now);
+    const count = filterItemsByDateRange(items, range).length;
+    const description = option.id === "today" ? "00:00부터 현재까지" : "00:00부터 23:59까지";
+
+    return {
+      id: option.id,
+      label: option.label,
+      dateKey,
+      count,
+      description
+    };
+  });
 }

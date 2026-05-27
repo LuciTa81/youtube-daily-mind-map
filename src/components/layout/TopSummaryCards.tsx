@@ -7,13 +7,21 @@ import { getViewModeLabel } from "@/components/filters/ViewModeTabs";
 
 type TopSummaryCardsProps = {
   dateKey: string;
+  dateLabel?: string;
   summary: DaySummary;
   viewMode: MindMapViewMode;
+  displayModeLabel?: string;
 };
 
-export function TopSummaryCards({ dateKey, summary, viewMode }: TopSummaryCardsProps) {
+export function TopSummaryCards({
+  dateKey,
+  dateLabel,
+  summary,
+  viewMode,
+  displayModeLabel
+}: TopSummaryCardsProps) {
   const cards = [
-    { label: "선택 날짜", value: formatDateLabel(dateKey) },
+    { label: "선택 범위", value: dateLabel ?? formatDateLabel(dateKey) },
     { label: "총 기록 수", value: `${summary.totalCount}개 기록` },
     {
       label: "Top 카테고리",
@@ -31,7 +39,7 @@ export function TopSummaryCards({ dateKey, summary, viewMode }: TopSummaryCardsP
         ? `${summary.topTimeBlock.name} · ${summary.topTimeBlock.count}개`
         : "없음"
     },
-    { label: "보기 모드", value: getViewModeLabel(viewMode) }
+    { label: "보기 모드", value: displayModeLabel ?? getViewModeLabel(viewMode) }
   ];
 
   return (

@@ -5,14 +5,19 @@ import { formatInTimeZone } from "date-fns-tz";
 import { MindMapCanvas } from "@/components/mindmap/MindMapCanvas";
 import { WatchTimeline } from "@/components/timeline/WatchTimeline";
 import { classifyItems } from "@/lib/classify/classify";
-import { getAvailableDates, getDateRangeForDateKey, filterItemsByDateKey } from "@/lib/date/dateKeys";
+import {
+  filterItemsByDateRange,
+  getDateRangeForSelection,
+  getQuickDateOptions,
+  getRelativeDateKey
+} from "@/lib/date/dateKeys";
 import { summarizeDay } from "@/lib/analytics/summarizeDay";
 import { buildMindMap } from "@/lib/mindmap/buildMindMap";
 import { sampleWatchItems } from "@/lib/sample/sampleWatchItems";
 import { getVideoMetadata } from "@/lib/youtube/videoMetadata";
 import type { ParsedWatchHistory } from "@/lib/import/parseTakeout";
 import type { MindMapBuildOptions, MindMapNode, MindMapViewMode } from "@/types/mindmap";
-import type { ClassifiedWatchItem, DateSettings, WatchItem } from "@/types/watch";
+import type { ClassifiedWatchItem, DateRangeMode, DateSettings, WatchItem } from "@/types/watch";
 import { DetailPanel } from "./DetailPanel";
 import { LeftPanel } from "./LeftPanel";
 import { TopSummaryCards } from "./TopSummaryCards";
@@ -219,6 +224,22 @@ function collectCollapsibleBranchIds(node: MindMapNode): string[] {
   return ids;
 }
 
+function getRangeDisplayLabel(
+  dateKey: string,
+  rangeMode: DateRangeMode,
+  dateRange?: { startLabel: string; endLabel: string }
+): string {
+  if (!dateRange) {
+    return dateKey || "선택 없음";
+  }
+
+  if (rangeMode === "week") {
+    return `${dateRange.startLabel.slice(0, 10)} ~ ${dateRange.endLabel.slice(0, 10)}`;
+  }
+
+  return dateKey;
+}
+
 export function AppShell() {
   const [watchItems, setWatchItems] = useState<WatchItem[]>(sampleWatchItems);
   const [activeSourceName, setActiveSourceName] = useState("샘플 데이터");
@@ -229,6 +250,7 @@ export function AppShell() {
     lifestyleBoundaryHour: 4
   });
   const [selectedDateKey, setSelectedDateKey] = useState("");
+  const [rangeMode, setRangeMode] = useState<DateRangeMode>("day");
   const [viewMode, setViewMode] = useState<MindMapViewMode>("topic");
   const [canvasMode, setCanvasMode] = useState<CanvasMode>("mindmap");
   const [searchQuery, setSearchQuery] = useState("");
@@ -250,27 +272,28 @@ export function AppShell() {
     }
   }, []);
 
-  const availableDates = useMemo(
-    () => getAvailableDates(watchItems, dateSettings),
+  const quickDateOptions = useMemo(
+    () => getQuickDateOptions(watchItems, dateSettings),
     [dateSettings, watchItems]
   );
 
   useEffect(() => {
-    if (availableDates.length === 0) {
-      return;
+    if (!selectedDateKey || !quickDateOptions.some((date) => date.dateKey === selectedDateKey)) {
+      setSelectedDateKey(quickDateOptions[0]?.dateKey ?? getRelativeDateKey(0, dateSettings));
     }
+  }, [dateSettings, quickDateOptions, selectedDateKey]);
 
-    if (!selectedDateKey || !availableDates.some((date) => date.dateKey === selectedDateKey)) {
-      setSelectedDateKey(availableDates[0].dateKey);
-    }
-  }, [availableDates, selectedDateKey]);
-
-  const rawDateItems = useMemo(
+  const dateRange = useMemo(
     () =>
       selectedDateKey
-        ? filterItemsByDateKey(watchItems, selectedDateKey, dateSettings)
-        : [],
-    [selectedDateKey, dateSettings, watchItems]
+        ? getDateRangeForSelection(selectedDateKey, dateSettings, rangeMode)
+        : undefined,
+    [dateSettings, rangeMode, selectedDateKey]
+  );
+
+  const rawDateItems = useMemo(
+    () => (dateRange ? filterItemsByDateRange(watchItems, dateRange) : []),
+    [dateRange, watchItems]
   );
   const classifiedItems = useMemo(() => classifyItems(rawDateItems), [rawDateItems]);
   const categories = useMemo(
@@ -307,15 +330,19 @@ export function AppShell() {
     () => summarizeDay(filteredItems, dateSettings),
     [filteredItems, dateSettings]
   );
+  const selectedRangeLabel = useMemo(
+    () => getRangeDisplayLabel(selectedDateKey, rangeMode, dateRange),
+    [dateRange, rangeMode, selectedDateKey]
+  );
   const buildOptions = useMemo<MindMapBuildOptions>(
     () => ({
       viewMode,
-      dateKey: selectedDateKey || "선택 없음",
+      dateKey: selectedRangeLabel,
       dateSettings,
       maxVisibleVideosPerGroup: expandVideosByDefault ? 999 : maxVisibleVideosPerGroup,
       groupVideosBy
     }),
-    [dateSettings, expandVideosByDefault, groupVideosBy, maxVisibleVideosPerGroup, selectedDateKey, viewMode]
+    [dateSettings, expandVideosByDefault, groupVideosBy, maxVisibleVideosPerGroup, selectedRangeLabel, viewMode]
   );
   const baseRoot = useMemo(
     () => buildMindMap(filteredItems, buildOptions),
@@ -330,13 +357,12 @@ export function AppShell() {
   }, [
     baseRoot.id,
     selectedDateKey,
+    rangeMode,
     viewMode,
     groupVideosBy,
     maxVisibleVideosPerGroup,
     expandVideosByDefault,
-    dateSettings.timezone,
-    dateSettings.boundaryMode,
-    dateSettings.lifestyleBoundaryHour
+    dateSettings.timezone
   ]);
 
   const displayRoot = useMemo(() => {
@@ -349,13 +375,9 @@ export function AppShell() {
     () => selectedTimelineNode ?? findNode(displayRoot, selectedNodeId) ?? displayRoot,
     [displayRoot, selectedNodeId, selectedTimelineNode]
   );
-  const dateRange = useMemo(
-    () => (selectedDateKey ? getDateRangeForDateKey(selectedDateKey, dateSettings) : undefined),
-    [dateSettings, selectedDateKey]
-  );
-
-  const handleDateSettingsChange = useCallback((settings: DateSettings) => {
-    setDateSettings(settings);
+  const handleRangeModeChange = useCallback((mode: DateRangeMode) => {
+    setRangeMode(mode);
+    setSelectedTimelineNode(undefined);
     setExpandedGroupIds(new Set());
     setCollapsedBranchIds(new Set());
   }, []);
@@ -400,6 +422,7 @@ export function AppShell() {
         }`
       );
       setSelectedDateKey("");
+      setRangeMode("day");
       setSearchQuery("");
       setCategoryFilter("");
       setChannelQuery("");
@@ -416,6 +439,7 @@ export function AppShell() {
     setActiveSourceName("샘플 데이터");
     setImportNote("샘플 데이터로 돌아왔습니다.");
     setSelectedDateKey("");
+    setRangeMode("day");
     setSearchQuery("");
     setCategoryFilter("");
     setChannelQuery("");
@@ -486,15 +510,15 @@ export function AppShell() {
   return (
     <div className="flex min-h-screen flex-col bg-slate-100 text-slate-900 min-[1400px]:h-screen min-[1400px]:min-h-0 min-[1400px]:flex-row min-[1400px]:overflow-hidden">
       <LeftPanel
-        dates={availableDates}
+        dates={quickDateOptions}
         activeSourceName={activeSourceName}
         totalItemCount={watchItems.length}
         onItemsImported={handleItemsImported}
         onUseSample={handleUseSample}
         selectedDateKey={selectedDateKey}
         onDateSelect={handleDateSelect}
-        dateSettings={dateSettings}
-        onDateSettingsChange={handleDateSettingsChange}
+        rangeMode={rangeMode}
+        onRangeModeChange={handleRangeModeChange}
         viewMode={viewMode}
         onViewModeChange={handleViewModeChange}
         searchQuery={searchQuery}
@@ -517,14 +541,21 @@ export function AppShell() {
         onCollapseAll={handleCollapseAll}
       />
       <main className="order-1 flex min-w-0 flex-1 flex-col gap-3 p-3 md:gap-4 md:p-4 min-[1400px]:order-2 min-[1400px]:p-5">
-        <TopSummaryCards dateKey={selectedDateKey || "선택 없음"} summary={summary} viewMode={viewMode} />
+        <TopSummaryCards
+          dateKey={selectedDateKey || "선택 없음"}
+          dateLabel={selectedRangeLabel}
+          summary={summary}
+          viewMode={viewMode}
+          displayModeLabel={canvasMode === "timeline" ? "타임라인" : undefined}
+        />
         <div className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-white px-4 py-3 md:flex-row md:items-center md:justify-between">
           <div className="min-w-0">
             <div className="text-sm font-semibold text-slate-900">
-              {canvasMode === "mindmap" ? "마인드맵" : "하루 타임라인"}
+              {canvasMode === "mindmap" ? "마인드맵" : "시청 타임라인"}
             </div>
             <div className="mt-1 text-xs leading-relaxed text-slate-500">
-              {dateRange?.label ?? "날짜 범위를 계산하는 중"} · {dateSettings.boundaryMode === "calendar-day" ? "자정 기준" : "생활일 기준"}
+              {dateRange?.label ?? "날짜 범위를 계산하는 중"} ·{" "}
+              {rangeMode === "week" ? "선택일 기준 최근 7일" : "자정 기준 하루"}
             </div>
           </div>
           <div className="flex flex-col gap-2 md:items-end">
@@ -574,7 +605,7 @@ export function AppShell() {
           ) : (
             <WatchTimeline
               items={filteredItems}
-              dateKey={selectedDateKey || "선택 없음"}
+              dateKey={selectedRangeLabel}
               dateSettings={dateSettings}
               selectedItemId={
                 (selectedTimelineNode?.meta?.item as ClassifiedWatchItem | undefined)?.id

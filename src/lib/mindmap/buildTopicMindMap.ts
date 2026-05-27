@@ -124,7 +124,7 @@ function buildSummaryNode(items: ClassifiedWatchItem[], options: MindMapBuildOpt
 
   return {
     id: makeId("summary", options.dateKey, "topic"),
-    label: "오늘의 요약",
+    label: "범위 요약",
     type: "summary",
     count: items.length,
     meta: {
