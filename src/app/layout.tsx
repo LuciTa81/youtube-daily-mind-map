@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { AndroidNativeShell } from "@/components/native/AndroidNativeShell";
 import { PwaRegistration } from "@/components/pwa/PwaRegistration";
 import "@xyflow/react/dist/style.css";
 import "./globals.css";
@@ -41,6 +42,7 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body>
+        <AndroidNativeShell />
         <PwaRegistration />
         {children}
       </body>

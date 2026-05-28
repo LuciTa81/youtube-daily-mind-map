@@ -48,6 +48,15 @@ GitHub Actions에서 `Build Android APK` 워크플로를 실행하면 디버그 
 
 로컬에서 빌드하려면 Java JDK와 Android SDK가 필요하다.
 
+이 PC에서는 Android Studio 내장 JDK와 Android SDK를 사용한다.
+
+```powershell
+$env:JAVA_HOME='C:\Program Files\Android\Android Studio\jbr'
+$env:ANDROID_HOME='C:\Users\IML4\AppData\Local\Android\Sdk'
+$env:ANDROID_SDK_ROOT=$env:ANDROID_HOME
+$env:Path="$env:JAVA_HOME\bin;$env:ANDROID_HOME\platform-tools;$env:Path"
+```
+
 ```bash
 npm run android:debug
 ```
