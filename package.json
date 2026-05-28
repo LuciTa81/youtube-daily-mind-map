@@ -5,11 +5,16 @@
   "scripts": {
     "dev": "next dev",
     "build": "next build",
+    "android:sync": "npm run build && cap sync android",
+    "android:debug": "npm run android:sync && cd android && gradlew assembleDebug",
     "lint": "next lint",
     "test": "vitest run",
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@capacitor/android": "^8.3.4",
+    "@capacitor/cli": "^8.3.4",
+    "@capacitor/core": "^8.3.4",
     "@xyflow/react": "^12.4.4",
     "dagre": "^0.8.5",
     "date-fns": "^4.1.0",

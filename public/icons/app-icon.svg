@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="YouTube Daily Mind Map">
+  <rect width="512" height="512" rx="108" fill="#0f172a"/>
+  <circle cx="150" cy="176" r="48" fill="#ef4444"/>
+  <circle cx="352" cy="176" r="42" fill="#22c55e"/>
+  <circle cx="256" cy="332" r="58" fill="#38bdf8"/>
+  <path d="M190 190 L312 188 M174 214 L226 294 M334 212 L286 292" stroke="#e2e8f0" stroke-width="20" stroke-linecap="round"/>
+  <path d="M236 300 L236 364 L300 332 Z" fill="#ffffff"/>
+  <circle cx="150" cy="176" r="18" fill="#ffffff"/>
+  <circle cx="352" cy="176" r="16" fill="#ffffff"/>
+</svg>

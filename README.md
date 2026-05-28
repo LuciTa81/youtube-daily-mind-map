@@ -12,6 +12,7 @@
 - 키워드 기반 자동 분류
 - React Flow 기반 인터랙티브 시각화
 - YouTube Takeout watch-history.json/html 수동 불러오기
+- PWA 기반 홈 화면 설치 지원
 
 ## 주의사항
 
@@ -28,6 +29,34 @@
 3. 앱 좌측의 `시청 기록 불러오기`에서 파일을 선택한다.
 4. 오늘, 하루 전, 이틀 전 중 원하는 기준 날짜를 고른다.
 5. 필요하면 `최근 7일치`로 전환해 선택한 날짜까지의 일주일 기록을 함께 본다.
+
+## 폰에 설치하기
+
+- Android/Chrome: 배포된 사이트를 연 뒤 앱 안의 `앱 설치` 버튼이나 브라우저 메뉴의 `앱 설치`를 사용한다.
+- iPhone/iPad/Safari: 공유 버튼을 누른 뒤 `홈 화면에 추가`를 선택한다.
+
+## Android APK 빌드
+
+GitHub Actions에서 `Build Android APK` 워크플로를 실행하면 디버그 APK가 artifact로 생성된다.
+
+1. GitHub에 변경사항을 push한다.
+2. GitHub 저장소의 `Actions` 탭으로 이동한다.
+3. `Build Android APK` 실행 결과를 연다.
+4. `Artifacts`에서 `youtube-daily-mind-map-debug-apk`를 다운로드한다.
+
+다운로드한 APK는 Android에서 테스트 설치할 수 있다. 설치 시 `알 수 없는 앱 설치` 허용이 필요할 수 있다.
+
+로컬에서 빌드하려면 Java JDK와 Android SDK가 필요하다.
+
+```bash
+npm run android:debug
+```
+
+생성 위치:
+
+```text
+android/app/build/outputs/apk/debug/app-debug.apk
+```
 
 ## 개발 실행
 

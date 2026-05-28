@@ -4,6 +4,7 @@ import { DateList } from "@/components/date/DateList";
 import { FilterPanel } from "@/components/filters/FilterPanel";
 import { ViewModeTabs } from "@/components/filters/ViewModeTabs";
 import { WatchHistoryImportPanel } from "@/components/import/WatchHistoryImportPanel";
+import { PwaInstallPrompt } from "@/components/pwa/PwaInstallPrompt";
 import type { QuickDateOption } from "@/lib/date/dateKeys";
 import type { ParsedWatchHistory } from "@/lib/import/parseTakeout";
 import type { MindMapViewMode } from "@/types/mindmap";
@@ -87,6 +88,7 @@ export function LeftPanel({
           onImported={onItemsImported}
           onUseSample={onUseSample}
         />
+        <PwaInstallPrompt />
         <DateList
           dates={dates}
           selectedDateKey={selectedDateKey}

@@ -6,3 +6,7 @@ coverage
 *.log
 mindmap-screenshot.png
 fold-layout-screenshot.png
+android/.gradle
+android/build
+android/app/build
+android/app/src/main/assets/public
