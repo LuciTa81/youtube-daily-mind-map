@@ -299,6 +299,19 @@ function resetWorkspaceState(
   setCollapsedBranchIds(new Set());
 }
 
+function getLatestWatchedAt(items: WatchItem[]): Date | undefined {
+  let latestTime = Number.NEGATIVE_INFINITY;
+
+  for (const item of items) {
+    const watchedTime = new Date(item.watchedAt).getTime();
+    if (Number.isFinite(watchedTime) && watchedTime > latestTime) {
+      latestTime = watchedTime;
+    }
+  }
+
+  return Number.isFinite(latestTime) ? new Date(latestTime) : undefined;
+}
+
 export function AppShell() {
   const [savedWatchItems, setSavedWatchItems] = useState<WatchItem[]>([]);
   const [dataViewMode, setDataViewMode] = useState<DataViewMode>("sample");
@@ -371,9 +384,13 @@ export function AppShell() {
     };
   }, []);
 
+  const quickDateAnchor = useMemo(
+    () => (dataViewMode === "sample" ? getLatestWatchedAt(watchItems) ?? new Date() : new Date()),
+    [dataViewMode, watchItems]
+  );
   const quickDateOptions = useMemo(
-    () => getQuickDateOptions(watchItems, dateSettings),
-    [dateSettings, watchItems]
+    () => getQuickDateOptions(watchItems, dateSettings, quickDateAnchor),
+    [dateSettings, quickDateAnchor, watchItems]
   );
 
   useEffect(() => {
