@@ -12,6 +12,7 @@
 - 키워드 기반 자동 분류
 - React Flow 기반 인터랙티브 시각화
 - YouTube Takeout ZIP/json/html 불러오기
+- 가져온 기록의 로컬 누적 저장과 중복 제거
 - PWA 기반 홈 화면 설치 지원
 
 ## 주의사항
@@ -19,17 +20,19 @@
 - YouTube 기록만으로 실제 시청 시간을 정확히 알 수 없으므로 "사용시간"이 아니라 "시청 기록 수"를 기준으로 분석한다.
 - 기본 화면은 샘플 데이터 기반 프로토타입이다.
 - Takeout 파일은 브라우저에서만 읽고 서버로 업로드하지 않는다.
+- 가져온 기록은 IndexedDB를 사용해 현재 기기에 저장한다.
 - Google 계정 직접 연동은 Data Portability API 검증 이후 붙인다.
 - 분류는 키워드 기반이라 완벽하지 않다.
 
 ## 내 시청 기록 보기
 
-1. 앱의 `Google Takeout 열기` 버튼으로 Takeout을 연다.
-2. YouTube 및 YouTube Music의 기록만 선택해 내보낸다.
+1. 앱의 `YouTube Takeout 만들기` 버튼으로 Takeout을 연다.
+2. Google 화면에서 YouTube 및 YouTube Music 기록 내보내기를 생성한다.
 3. 다운로드한 `.zip` 파일을 앱의 `ZIP/파일 선택`에서 고른다.
 4. 앱이 ZIP 안의 `watch-history.json` 또는 `watch-history.html`을 찾아 시청 기록을 불러온다.
-5. 오늘, 하루 전, 이틀 전 중 원하는 기준 날짜를 고른다.
-6. 필요하면 `최근 7일치`로 전환해 선택한 날짜까지의 일주일 기록을 함께 본다.
+5. 이미 저장된 기록과 비교해 새 기록만 추가하고 중복은 건너뛴다.
+6. 오늘, 하루 전, 이틀 전 중 원하는 기준 날짜를 고른다.
+7. 필요하면 `최근 7일치`로 전환해 선택한 날짜까지의 일주일 기록을 함께 본다.
 
 압축을 미리 풀었다면 `watch-history.json`, `watch-history.html`, `watch-history.htm` 파일을 직접 선택해도 된다.
 

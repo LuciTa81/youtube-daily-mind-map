@@ -14,8 +14,13 @@ type LeftPanelProps = {
   dates: QuickDateOption[];
   activeSourceName: string;
   totalItemCount: number;
-  onItemsImported: (items: WatchItem[], sourceName: string, result: ParsedWatchHistory) => void;
+  savedItemCount: number;
+  isUsingSample: boolean;
+  isStorageReady: boolean;
+  onItemsImported: (items: WatchItem[], sourceName: string, result: ParsedWatchHistory) => void | Promise<void>;
   onUseSample: () => void;
+  onUseSaved: () => void;
+  onClearSaved: () => void | Promise<void>;
   selectedDateKey: string;
   onDateSelect: (dateKey: string) => void;
   rangeMode: DateRangeMode;
@@ -46,8 +51,13 @@ export function LeftPanel({
   dates,
   activeSourceName,
   totalItemCount,
+  savedItemCount,
+  isUsingSample,
+  isStorageReady,
   onItemsImported,
   onUseSample,
+  onUseSaved,
+  onClearSaved,
   selectedDateKey,
   onDateSelect,
   rangeMode,
@@ -85,8 +95,13 @@ export function LeftPanel({
         <WatchHistoryImportPanel
           activeSourceName={activeSourceName}
           itemCount={totalItemCount}
+          savedItemCount={savedItemCount}
+          isUsingSample={isUsingSample}
+          isStorageReady={isStorageReady}
           onImported={onItemsImported}
           onUseSample={onUseSample}
+          onUseSaved={onUseSaved}
+          onClearSaved={onClearSaved}
         />
         <PwaInstallPrompt />
         <DateList

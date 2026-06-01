@@ -15,6 +15,8 @@ import { summarizeDay } from "@/lib/analytics/summarizeDay";
 import { buildMindMap } from "@/lib/mindmap/buildMindMap";
 import { sampleWatchItems } from "@/lib/sample/sampleWatchItems";
 import { getVideoMetadata } from "@/lib/youtube/videoMetadata";
+import { mergeWatchItems, type WatchHistoryMergeResult } from "@/lib/history/mergeWatchItems";
+import { indexedDbWatchHistoryRepository } from "@/lib/storage/watchHistoryRepository";
 import type { ParsedWatchHistory } from "@/lib/import/parseTakeout";
 import type { MindMapBuildOptions, MindMapNode, MindMapViewMode } from "@/types/mindmap";
 import type { ClassifiedWatchItem, DateRangeMode, DateSettings, WatchItem } from "@/types/watch";
@@ -23,6 +25,7 @@ import { LeftPanel } from "./LeftPanel";
 import { TopSummaryCards } from "./TopSummaryCards";
 
 type CanvasMode = "mindmap" | "timeline";
+type DataViewMode = "sample" | "saved";
 
 function normalizeSearch(value: string): string {
   return value.trim().toLocaleLowerCase("ko-KR");
@@ -249,10 +252,52 @@ function getImportSourceLabel(result: ParsedWatchHistory): string {
   return result.source === "takeout-json" ? "JSON" : "HTML";
 }
 
+function getImportResultNote(
+  sourceName: string,
+  result: ParsedWatchHistory,
+  mergeResult: WatchHistoryMergeResult,
+  persisted: boolean
+): string {
+  const sourceLabel = getImportSourceLabel(result);
+  const skippedText = result.skippedCount > 0 ? ` · 읽지 못한 항목 ${result.skippedCount}개` : "";
+  const cleanedText =
+    mergeResult.cleanedExistingDuplicateCount > 0
+      ? ` · 기존 중복 ${mergeResult.cleanedExistingDuplicateCount}개 정리`
+      : "";
+  const fileText = result.matchedFileName ? ` · ${result.matchedFileName}` : ` · ${sourceName}`;
+  const storageText = persisted ? "" : " · 저장소 오류로 이번 화면에만 반영";
+
+  return `${sourceLabel}: 새 기록 ${mergeResult.addedCount}개 추가 · 중복 ${mergeResult.duplicateCount}개 건너뜀 · 저장된 기록 ${mergeResult.items.length}개${skippedText}${cleanedText}${fileText}${storageText}`;
+}
+
+function resetWorkspaceState(
+  setSelectedDateKey: (value: string) => void,
+  setRangeMode: (value: DateRangeMode) => void,
+  setSearchQuery: (value: string) => void,
+  setCategoryFilter: (value: string) => void,
+  setChannelQuery: (value: string) => void,
+  setLowConfidenceOnly: (value: boolean) => void,
+  setSelectedTimelineNode: (value: MindMapNode | undefined) => void,
+  setExpandedGroupIds: (value: Set<string>) => void,
+  setCollapsedBranchIds: (value: Set<string>) => void
+) {
+  setSelectedDateKey("");
+  setRangeMode("day");
+  setSearchQuery("");
+  setCategoryFilter("");
+  setChannelQuery("");
+  setLowConfidenceOnly(false);
+  setSelectedTimelineNode(undefined);
+  setExpandedGroupIds(new Set());
+  setCollapsedBranchIds(new Set());
+}
+
 export function AppShell() {
-  const [watchItems, setWatchItems] = useState<WatchItem[]>(sampleWatchItems);
+  const [savedWatchItems, setSavedWatchItems] = useState<WatchItem[]>([]);
+  const [dataViewMode, setDataViewMode] = useState<DataViewMode>("sample");
   const [activeSourceName, setActiveSourceName] = useState("샘플 데이터");
   const [importNote, setImportNote] = useState("");
+  const [isStorageReady, setIsStorageReady] = useState(false);
   const [dateSettings, setDateSettings] = useState<DateSettings>({
     timezone: "Asia/Seoul",
     boundaryMode: "calendar-day",
@@ -273,12 +318,47 @@ export function AppShell() {
   const [collapsedBranchIds, setCollapsedBranchIds] = useState<Set<string>>(() => new Set());
   const [selectedNodeId, setSelectedNodeId] = useState<string>();
   const [selectedTimelineNode, setSelectedTimelineNode] = useState<MindMapNode>();
+  const watchItems = dataViewMode === "saved" ? savedWatchItems : sampleWatchItems;
 
   useEffect(() => {
     const browserTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     if (browserTimezone) {
       setDateSettings((current) => ({ ...current, timezone: browserTimezone }));
     }
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadSavedHistory() {
+      try {
+        const storedItems = await indexedDbWatchHistoryRepository.load();
+        if (cancelled) {
+          return;
+        }
+
+        setSavedWatchItems(storedItems);
+        if (storedItems.length > 0) {
+          setDataViewMode("saved");
+          setActiveSourceName("내 기록 저장소");
+          setImportNote(`저장된 내 기록 ${storedItems.length}개를 불러왔습니다.`);
+        }
+      } catch {
+        if (!cancelled) {
+          setImportNote("브라우저 로컬 저장소를 사용할 수 없어 이번 세션에서만 기록을 볼 수 있습니다.");
+        }
+      } finally {
+        if (!cancelled) {
+          setIsStorageReady(true);
+        }
+      }
+    }
+
+    void loadSavedHistory();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const quickDateOptions = useMemo(
@@ -422,40 +502,95 @@ export function AppShell() {
   }, []);
 
   const handleItemsImported = useCallback(
-    (items: WatchItem[], sourceName: string, result: ParsedWatchHistory) => {
-      setWatchItems(items);
-      setActiveSourceName(sourceName);
-      setImportNote(
-        `${getImportSourceLabel(result)}에서 ${items.length}개 기록을 불러왔습니다${
-          result.skippedCount > 0 ? ` · ${result.skippedCount}개 항목은 건너뜀` : ""
-        }${result.matchedFileName ? ` · ${result.matchedFileName}` : ""}`
+    async (items: WatchItem[], sourceName: string, result: ParsedWatchHistory) => {
+      const mergeResult = mergeWatchItems(savedWatchItems, items);
+      let persisted = true;
+
+      try {
+        await indexedDbWatchHistoryRepository.save(mergeResult.items);
+      } catch {
+        persisted = false;
+      }
+
+      setSavedWatchItems(mergeResult.items);
+      setDataViewMode("saved");
+      setActiveSourceName("내 기록 저장소");
+      setImportNote(getImportResultNote(sourceName, result, mergeResult, persisted));
+      resetWorkspaceState(
+        setSelectedDateKey,
+        setRangeMode,
+        setSearchQuery,
+        setCategoryFilter,
+        setChannelQuery,
+        setLowConfidenceOnly,
+        setSelectedTimelineNode,
+        setExpandedGroupIds,
+        setCollapsedBranchIds
       );
-      setSelectedDateKey("");
-      setRangeMode("day");
-      setSearchQuery("");
-      setCategoryFilter("");
-      setChannelQuery("");
-      setLowConfidenceOnly(false);
-      setSelectedTimelineNode(undefined);
-      setExpandedGroupIds(new Set());
-      setCollapsedBranchIds(new Set());
     },
-    []
+    [savedWatchItems]
   );
 
   const handleUseSample = useCallback(() => {
-    setWatchItems(sampleWatchItems);
+    setDataViewMode("sample");
     setActiveSourceName("샘플 데이터");
     setImportNote("샘플 데이터로 돌아왔습니다.");
-    setSelectedDateKey("");
-    setRangeMode("day");
-    setSearchQuery("");
-    setCategoryFilter("");
-    setChannelQuery("");
-    setLowConfidenceOnly(false);
-    setSelectedTimelineNode(undefined);
-    setExpandedGroupIds(new Set());
-    setCollapsedBranchIds(new Set());
+    resetWorkspaceState(
+      setSelectedDateKey,
+      setRangeMode,
+      setSearchQuery,
+      setCategoryFilter,
+      setChannelQuery,
+      setLowConfidenceOnly,
+      setSelectedTimelineNode,
+      setExpandedGroupIds,
+      setCollapsedBranchIds
+    );
+  }, []);
+
+  const handleUseSaved = useCallback(() => {
+    if (savedWatchItems.length === 0) {
+      return;
+    }
+
+    setDataViewMode("saved");
+    setActiveSourceName("내 기록 저장소");
+    setImportNote(`저장된 내 기록 ${savedWatchItems.length}개를 보고 있습니다.`);
+    resetWorkspaceState(
+      setSelectedDateKey,
+      setRangeMode,
+      setSearchQuery,
+      setCategoryFilter,
+      setChannelQuery,
+      setLowConfidenceOnly,
+      setSelectedTimelineNode,
+      setExpandedGroupIds,
+      setCollapsedBranchIds
+    );
+  }, [savedWatchItems.length]);
+
+  const handleClearSaved = useCallback(async () => {
+    const confirmed = window.confirm("저장된 내 시청 기록을 모두 삭제할까요? 샘플 데이터는 그대로 남습니다.");
+    if (!confirmed) {
+      return;
+    }
+
+    await indexedDbWatchHistoryRepository.clear();
+    setSavedWatchItems([]);
+    setDataViewMode("sample");
+    setActiveSourceName("샘플 데이터");
+    setImportNote("저장된 내 기록을 삭제하고 샘플 데이터로 전환했습니다.");
+    resetWorkspaceState(
+      setSelectedDateKey,
+      setRangeMode,
+      setSearchQuery,
+      setCategoryFilter,
+      setChannelQuery,
+      setLowConfidenceOnly,
+      setSelectedTimelineNode,
+      setExpandedGroupIds,
+      setCollapsedBranchIds
+    );
   }, []);
 
   const handleNodeSelect = useCallback((node: MindMapNode) => {
@@ -522,8 +657,13 @@ export function AppShell() {
         dates={quickDateOptions}
         activeSourceName={activeSourceName}
         totalItemCount={watchItems.length}
+        savedItemCount={savedWatchItems.length}
+        isUsingSample={dataViewMode === "sample"}
+        isStorageReady={isStorageReady}
         onItemsImported={handleItemsImported}
         onUseSample={handleUseSample}
+        onUseSaved={handleUseSaved}
+        onClearSaved={handleClearSaved}
         selectedDateKey={selectedDateKey}
         onDateSelect={handleDateSelect}
         rangeMode={rangeMode}
