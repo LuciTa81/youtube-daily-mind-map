@@ -31,6 +31,7 @@ import { TopSummaryCards } from "./TopSummaryCards";
 
 type CanvasMode = "review" | "weekly" | "mindmap" | "timeline";
 type DataViewMode = "sample" | "saved";
+type MobilePanel = "none" | "controls" | "detail";
 
 function normalizeSearch(value: string): string {
   return value.trim().toLocaleLowerCase("ko-KR");
@@ -312,6 +313,7 @@ export function AppShell() {
   const [rangeMode, setRangeMode] = useState<DateRangeMode>("day");
   const [viewMode, setViewMode] = useState<MindMapViewMode>("topic");
   const [canvasMode, setCanvasMode] = useState<CanvasMode>("review");
+  const [mobilePanel, setMobilePanel] = useState<MobilePanel>("none");
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [channelQuery, setChannelQuery] = useState("");
@@ -713,6 +715,8 @@ export function AppShell() {
         }
         return next;
       });
+    } else {
+      setMobilePanel("detail");
     }
   }, []);
 
@@ -720,6 +724,7 @@ export function AppShell() {
     (item: ClassifiedWatchItem) => {
       setSelectedTimelineNode(createTimelineVideoNode(item, dateSettings));
       setSelectedNodeId(undefined);
+      setMobilePanel("detail");
     },
     [dateSettings]
   );
@@ -758,45 +763,100 @@ export function AppShell() {
     setCollapsedBranchIds(new Set(collectCollapsibleBranchIds(baseRoot)));
   }, [baseRoot]);
 
+  const closeMobilePanel = useCallback(() => {
+    setMobilePanel("none");
+  }, []);
+
+  const handleMobileDateSelect = useCallback(
+    (dateKey: string) => {
+      handleDateSelect(dateKey);
+      closeMobilePanel();
+    },
+    [closeMobilePanel, handleDateSelect]
+  );
+
+  const handleMobileRangeModeChange = useCallback(
+    (mode: DateRangeMode) => {
+      handleRangeModeChange(mode);
+      closeMobilePanel();
+    },
+    [closeMobilePanel, handleRangeModeChange]
+  );
+
+  const handleMobileViewModeChange = useCallback(
+    (mode: MindMapViewMode) => {
+      handleViewModeChange(mode);
+      closeMobilePanel();
+    },
+    [closeMobilePanel, handleViewModeChange]
+  );
+
+  const handleMobileCanvasModeChange = useCallback(
+    (mode: CanvasMode) => {
+      handleCanvasModeChange(mode);
+      closeMobilePanel();
+    },
+    [closeMobilePanel, handleCanvasModeChange]
+  );
+
+  const handleMobileItemsImported = useCallback(
+    async (items: WatchItem[], sourceName: string, result: ParsedWatchHistory) => {
+      await handleItemsImported(items, sourceName, result);
+      closeMobilePanel();
+    },
+    [closeMobilePanel, handleItemsImported]
+  );
+
+  const leftPanelProps = {
+    dates: quickDateOptions,
+    activeSourceName,
+    totalItemCount: watchItems.length,
+    savedItemCount: savedWatchItems.length,
+    isUsingSample: dataViewMode === "sample",
+    isStorageReady,
+    onItemsImported: handleItemsImported,
+    onUseSample: handleUseSample,
+    onUseSaved: handleUseSaved,
+    onClearSaved: handleClearSaved,
+    selectedDateKey,
+    onDateSelect: handleDateSelect,
+    rangeMode,
+    onRangeModeChange: handleRangeModeChange,
+    viewMode,
+    onViewModeChange: handleViewModeChange,
+    searchQuery,
+    onSearchQueryChange: setSearchQuery,
+    searchResultCount,
+    categories,
+    categoryFilter,
+    onCategoryFilterChange: setCategoryFilter,
+    channelQuery,
+    onChannelQueryChange: setChannelQuery,
+    lowConfidenceOnly,
+    onLowConfidenceOnlyChange: setLowConfidenceOnly,
+    maxVisibleVideosPerGroup,
+    onMaxVisibleVideosPerGroupChange: setMaxVisibleVideosPerGroup,
+    groupVideosBy,
+    onGroupVideosByChange: handleGroupVideosByChange,
+    expandVideosByDefault,
+    onExpandVideosByDefaultChange: setExpandVideosByDefault,
+    onExpandAll: handleExpandAll,
+    onCollapseAll: handleCollapseAll
+  };
+
+  const getMobileNavButtonClass = (isActive: boolean) =>
+    `flex min-h-12 flex-col items-center justify-center rounded-lg px-1 text-[11px] font-semibold transition ${
+      isActive
+        ? "bg-slate-950 text-white shadow-sm"
+        : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+    }`;
+
+  const mobilePanelTitle = mobilePanel === "controls" ? "가져오기와 필터" : "상세 정보";
+
   return (
-    <div className="flex min-h-screen flex-col bg-slate-100 text-slate-900 min-[1400px]:h-screen min-[1400px]:min-h-0 min-[1400px]:flex-row min-[1400px]:overflow-hidden">
-      <LeftPanel
-        dates={quickDateOptions}
-        activeSourceName={activeSourceName}
-        totalItemCount={watchItems.length}
-        savedItemCount={savedWatchItems.length}
-        isUsingSample={dataViewMode === "sample"}
-        isStorageReady={isStorageReady}
-        onItemsImported={handleItemsImported}
-        onUseSample={handleUseSample}
-        onUseSaved={handleUseSaved}
-        onClearSaved={handleClearSaved}
-        selectedDateKey={selectedDateKey}
-        onDateSelect={handleDateSelect}
-        rangeMode={rangeMode}
-        onRangeModeChange={handleRangeModeChange}
-        viewMode={viewMode}
-        onViewModeChange={handleViewModeChange}
-        searchQuery={searchQuery}
-        onSearchQueryChange={setSearchQuery}
-        searchResultCount={searchResultCount}
-        categories={categories}
-        categoryFilter={categoryFilter}
-        onCategoryFilterChange={setCategoryFilter}
-        channelQuery={channelQuery}
-        onChannelQueryChange={setChannelQuery}
-        lowConfidenceOnly={lowConfidenceOnly}
-        onLowConfidenceOnlyChange={setLowConfidenceOnly}
-        maxVisibleVideosPerGroup={maxVisibleVideosPerGroup}
-        onMaxVisibleVideosPerGroupChange={setMaxVisibleVideosPerGroup}
-        groupVideosBy={groupVideosBy}
-        onGroupVideosByChange={handleGroupVideosByChange}
-        expandVideosByDefault={expandVideosByDefault}
-        onExpandVideosByDefaultChange={setExpandVideosByDefault}
-        onExpandAll={handleExpandAll}
-        onCollapseAll={handleCollapseAll}
-      />
-      <main className="order-1 flex min-w-0 flex-1 flex-col gap-3 p-3 md:gap-4 md:p-4 min-[1400px]:order-2 min-[1400px]:p-5">
+    <div className="flex min-h-screen flex-col bg-slate-100 text-slate-900 2xl:h-screen 2xl:min-h-0 2xl:flex-row 2xl:overflow-hidden">
+      <LeftPanel {...leftPanelProps} />
+      <main className="order-1 flex min-w-0 flex-1 flex-col gap-3 p-3 pb-24 md:gap-4 md:p-4 md:pb-24 2xl:order-2 2xl:p-5">
         <TopSummaryCards
           dateKey={selectedDateKey || "선택 없음"}
           dateLabel={activeRangeLabel}
@@ -887,7 +947,7 @@ export function AppShell() {
             </div>
           </div>
         </div>
-        <div className="h-[66svh] min-h-[460px] md:h-[68svh] min-[1400px]:min-h-0 min-[1400px]:flex-1">
+        <div className="h-[calc(100svh-340px)] min-h-[380px] md:h-[68svh] md:min-h-[460px] 2xl:min-h-0 2xl:flex-1">
           {canvasMode === "review" ? (
             <DailyReviewPanel
               review={dailyReview}
@@ -932,6 +992,105 @@ export function AppShell() {
         </div>
       </main>
       <DetailPanel node={selectedNode} dateSettings={dateSettings} />
+
+      {mobilePanel !== "none" ? (
+        <div className="fixed inset-0 z-50 2xl:hidden">
+          <button
+            type="button"
+            className="absolute inset-0 bg-slate-950/45"
+            aria-label="패널 닫기"
+            onClick={closeMobilePanel}
+          />
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-label={mobilePanelTitle}
+            className="absolute inset-x-0 bottom-0 max-h-[88svh] overflow-y-auto rounded-t-2xl border-t border-slate-200 bg-slate-50 p-4 shadow-2xl"
+          >
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <div>
+                <div className="text-sm font-semibold text-slate-950">{mobilePanelTitle}</div>
+                <div className="mt-1 text-xs text-slate-500">
+                  {mobilePanel === "controls"
+                    ? "날짜, 가져오기, 필터를 여기서 조정합니다."
+                    : "선택한 노드와 영상 기록을 확인합니다."}
+                </div>
+              </div>
+              <button
+                type="button"
+                className="h-9 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-600 shadow-sm"
+                onClick={closeMobilePanel}
+              >
+                닫기
+              </button>
+            </div>
+            {mobilePanel === "controls" ? (
+              <LeftPanel
+                {...leftPanelProps}
+                className="w-full bg-slate-50"
+                contentClassName="grid grid-cols-1 gap-4 md:grid-cols-2"
+                showIntro={false}
+                onItemsImported={handleMobileItemsImported}
+                onDateSelect={handleMobileDateSelect}
+                onRangeModeChange={handleMobileRangeModeChange}
+                onViewModeChange={handleMobileViewModeChange}
+              />
+            ) : (
+              <DetailPanel
+                className="w-full bg-slate-50"
+                showIntro={false}
+                node={selectedNode}
+                dateSettings={dateSettings}
+              />
+            )}
+          </section>
+        </div>
+      ) : null}
+
+      <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-6 gap-1 border-t border-slate-200 bg-white/95 p-2 shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur 2xl:hidden">
+        <button
+          type="button"
+          className={getMobileNavButtonClass(canvasMode === "review")}
+          onClick={() => handleMobileCanvasModeChange("review")}
+        >
+          회고
+        </button>
+        <button
+          type="button"
+          className={getMobileNavButtonClass(canvasMode === "weekly")}
+          onClick={() => handleMobileCanvasModeChange("weekly")}
+        >
+          리포트
+        </button>
+        <button
+          type="button"
+          className={getMobileNavButtonClass(canvasMode === "timeline")}
+          onClick={() => handleMobileCanvasModeChange("timeline")}
+        >
+          타임라인
+        </button>
+        <button
+          type="button"
+          className={getMobileNavButtonClass(canvasMode === "mindmap")}
+          onClick={() => handleMobileCanvasModeChange("mindmap")}
+        >
+          맵
+        </button>
+        <button
+          type="button"
+          className={getMobileNavButtonClass(mobilePanel === "controls")}
+          onClick={() => setMobilePanel("controls")}
+        >
+          설정
+        </button>
+        <button
+          type="button"
+          className={getMobileNavButtonClass(mobilePanel === "detail")}
+          onClick={() => setMobilePanel("detail")}
+        >
+          상세
+        </button>
+      </nav>
     </div>
   );
 }

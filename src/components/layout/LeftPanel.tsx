@@ -11,6 +11,9 @@ import type { MindMapViewMode } from "@/types/mindmap";
 import type { DateRangeMode, WatchItem } from "@/types/watch";
 
 type LeftPanelProps = {
+  className?: string;
+  contentClassName?: string;
+  showIntro?: boolean;
   dates: QuickDateOption[];
   activeSourceName: string;
   totalItemCount: number;
@@ -48,6 +51,9 @@ type LeftPanelProps = {
 };
 
 export function LeftPanel({
+  className = "hidden shrink-0 border-slate-200 bg-slate-50 2xl:order-1 2xl:block 2xl:h-full 2xl:w-80 2xl:overflow-y-auto 2xl:border-r 2xl:p-5",
+  contentClassName = "space-y-6",
+  showIntro = true,
   dates,
   activeSourceName,
   totalItemCount,
@@ -84,14 +90,16 @@ export function LeftPanel({
   onCollapseAll
 }: LeftPanelProps) {
   return (
-    <aside className="order-2 w-full shrink-0 border-t border-slate-200 bg-slate-50 p-4 min-[1400px]:order-1 min-[1400px]:h-full min-[1400px]:w-80 min-[1400px]:overflow-y-auto min-[1400px]:border-r min-[1400px]:border-t-0 min-[1400px]:p-5">
-      <div className="mb-4 min-[1400px]:mb-6">
-        <h1 className="text-xl font-bold text-slate-950">YouTube Daily Mind Map</h1>
-        <p className="mt-2 text-sm leading-relaxed text-slate-500">
-          하루의 YouTube 시청 기록을 주제, 시간대, 채널 구조로 살펴봅니다.
-        </p>
-      </div>
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4 min-[1400px]:block min-[1400px]:space-y-6">
+    <aside className={className}>
+      {showIntro ? (
+        <div className="mb-6">
+          <h1 className="text-xl font-bold text-slate-950">YouTube Daily Mind Map</h1>
+          <p className="mt-2 text-sm leading-relaxed text-slate-500">
+            하루의 YouTube 시청 기록을 주제, 시간대, 채널 구조로 살펴봅니다.
+          </p>
+        </div>
+      ) : null}
+      <div className={contentClassName}>
         <WatchHistoryImportPanel
           activeSourceName={activeSourceName}
           itemCount={totalItemCount}
