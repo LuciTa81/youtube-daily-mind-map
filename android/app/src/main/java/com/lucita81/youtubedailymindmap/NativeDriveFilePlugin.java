@@ -7,11 +7,14 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.Handler;
+import android.os.Looper;
 import android.provider.DocumentsContract;
 import android.provider.OpenableColumns;
 import android.text.TextUtils;
 import android.util.JsonReader;
 import android.util.JsonToken;
+import android.util.Log;
 import androidx.activity.result.ActivityResult;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
@@ -32,6 +35,8 @@ import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
@@ -40,6 +45,7 @@ import org.json.JSONArray;
 
 @CapacitorPlugin(name = "NativeDriveFile")
 public class NativeDriveFilePlugin extends Plugin {
+    private static final String TAG = "NativeDriveFile";
     private static final String PREFS_NAME = "native_drive_file";
     private static final String LAST_DRIVE_URI_KEY = "last_drive_uri";
     private static final String[] ZIP_MIME_TYPES = {
@@ -53,6 +59,8 @@ public class NativeDriveFilePlugin extends Plugin {
         "youtu.be/",
         "music.youtube.com/watch"
     };
+    private final ExecutorService importExecutor = Executors.newSingleThreadExecutor();
+    private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
     @PluginMethod
     public void pickTakeoutZip(PluginCall call) {
@@ -68,7 +76,7 @@ public class NativeDriveFilePlugin extends Plugin {
     }
 
     @ActivityCallback
-    private void handlePickTakeoutZip(PluginCall call, ActivityResult result) {
+    public void handlePickTakeoutZip(PluginCall call, ActivityResult result) {
         if (call == null) {
             return;
         }
@@ -105,7 +113,12 @@ public class NativeDriveFilePlugin extends Plugin {
             // Some providers grant one-time read access only. That is enough for this import.
         }
 
+        importExecutor.execute(() -> importTakeoutZip(call, resolver, uri, fileName, mimeType, size));
+    }
+
+    private void importTakeoutZip(PluginCall call, ContentResolver resolver, Uri uri, String fileName, String mimeType, long size) {
         try {
+            Log.i(TAG, "Starting native Takeout import: " + valueOrEmpty(fileName) + ", size=" + size);
             rememberLastDriveUri(uri);
             ParsedHistory parsedHistory = parseTakeoutZip(resolver, uri);
             JSObject response = new JSObject();
@@ -119,12 +132,23 @@ public class NativeDriveFilePlugin extends Plugin {
             response.put("parserSource", parsedHistory.parserSource);
             response.put("matchedFileName", parsedHistory.matchedFileName);
             response.put("archiveEntryCount", parsedHistory.archiveEntryCount);
-            call.resolve(response);
+            Log.i(TAG, "Finished native Takeout import: items=" + parsedHistory.items.length());
+            resolveOnMainThread(call, response);
         } catch (IOException error) {
-            call.reject("Drive ZIP을 읽지 못했습니다. 네트워크 상태나 Drive 파일 접근 권한을 확인해주세요.", error);
+            Log.e(TAG, "Failed to read Drive ZIP", error);
+            rejectOnMainThread(call, "Drive ZIP을 읽지 못했습니다. 네트워크 상태나 Drive 파일 접근 권한을 확인해주세요.", error);
         } catch (IllegalArgumentException error) {
-            call.reject(error.getMessage(), error);
+            Log.e(TAG, "Failed to parse Takeout ZIP", error);
+            rejectOnMainThread(call, error.getMessage(), error);
         }
+    }
+
+    private void resolveOnMainThread(PluginCall call, JSObject response) {
+        mainHandler.post(() -> call.resolve(response));
+    }
+
+    private void rejectOnMainThread(PluginCall call, String message, Exception error) {
+        mainHandler.post(() -> call.reject(message, error));
     }
 
     private void applyLastDriveUri(Intent intent) {
