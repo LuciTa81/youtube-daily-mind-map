@@ -29,6 +29,12 @@ type GoogleTokenClientConfig = {
 
 type PickerData = Record<string, unknown>;
 
+type GoogleGapiLoadOptions = {
+  callback: () => void;
+  onerror?: (error?: unknown) => void;
+  timeout?: number;
+};
+
 type GooglePickerNamespace = {
   Action: {
     PICKED: string;
@@ -46,11 +52,7 @@ type GooglePickerNamespace = {
   ViewId: {
     DOCS: string;
   };
-  DocsView: new (viewId: string) => {
-    setIncludeFolders: (value: boolean) => GooglePickerDocsView;
-    setSelectFolderEnabled: (value: boolean) => GooglePickerDocsView;
-    setMimeTypes: (mimeTypes: string) => GooglePickerDocsView;
-  };
+  DocsView: new (viewId: string) => GooglePickerDocsView;
   PickerBuilder: new () => GooglePickerBuilder;
 };
 
@@ -74,7 +76,7 @@ type GooglePickerBuilder = {
 declare global {
   interface Window {
     gapi?: {
-      load: (api: string, callback: () => void) => void;
+      load: (api: string, callbackOrOptions: (() => void) | GoogleGapiLoadOptions) => void;
     };
     google?: {
       accounts?: {
@@ -90,6 +92,9 @@ declare global {
 const DRIVE_FILE_SCOPE = "https://www.googleapis.com/auth/drive.file";
 const GIS_SCRIPT_ID = "google-identity-services-script";
 const PICKER_SCRIPT_ID = "google-picker-api-script";
+const SCRIPT_LOAD_TIMEOUT_MS = 15000;
+const GOOGLE_PICKER_LOAD_TIMEOUT_MS = 15000;
+const TOKEN_REQUEST_TIMEOUT_MS = 45000;
 const DRIVE_PICKER_MIME_TYPES = [
   "application/zip",
   "application/x-zip",
@@ -98,26 +103,107 @@ const DRIVE_PICKER_MIME_TYPES = [
   "text/html"
 ].join(",");
 
+const scriptLoadPromises = new Map<string, Promise<void>>();
+
+function withTimeout<T>(promise: Promise<T>, timeoutMs: number, message: string): Promise<T> {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+  const timeout = new Promise<never>((_resolve, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(new Error(message));
+    }, timeoutMs);
+  });
+
+  return Promise.race([promise, timeout]).finally(() => {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+  });
+}
+
+function normalizeConfig(config: GoogleDrivePickerConfig): GoogleDrivePickerConfig {
+  return {
+    clientId: config.clientId.trim(),
+    apiKey: config.apiKey.trim(),
+    appId: config.appId.trim()
+  };
+}
+
+function assertGoogleDriveConfig(config: GoogleDrivePickerConfig) {
+  const missing = [
+    ["NEXT_PUBLIC_GOOGLE_DRIVE_CLIENT_ID", config.clientId],
+    ["NEXT_PUBLIC_GOOGLE_DRIVE_API_KEY", config.apiKey],
+    ["NEXT_PUBLIC_GOOGLE_DRIVE_APP_ID", config.appId]
+  ]
+    .filter(([, value]) => !value)
+    .map(([name]) => name);
+
+  if (missing.length > 0) {
+    throw new Error(`Google Drive 가져오기 설정이 비어 있습니다. Vercel 환경 변수 ${missing.join(", ")}를 확인해주세요.`);
+  }
+}
+
 function loadScript(id: string, src: string): Promise<void> {
   if (typeof document === "undefined") {
     return Promise.reject(new Error("브라우저 환경에서만 Google Drive를 연결할 수 있습니다."));
   }
 
-  const existing = document.getElementById(id);
-  if (existing) {
+  const existing = document.getElementById(id) as HTMLScriptElement | null;
+  if (existing?.dataset.loaded === "true") {
     return Promise.resolve();
   }
 
-  return new Promise((resolve, reject) => {
-    const script = document.createElement("script");
-    script.id = id;
-    script.src = src;
-    script.async = true;
-    script.defer = true;
-    script.onload = () => resolve();
-    script.onerror = () => reject(new Error("Google 연결 스크립트를 불러오지 못했습니다."));
-    document.head.appendChild(script);
+  const pending = scriptLoadPromises.get(id);
+  if (pending) {
+    return pending;
+  }
+
+  existing?.remove();
+
+  const promise = withTimeout(
+    new Promise<void>((resolve, reject) => {
+      const script = document.createElement("script");
+      script.id = id;
+      script.src = src;
+      script.async = true;
+      script.defer = true;
+      script.onload = () => {
+        script.dataset.loaded = "true";
+        resolve();
+      };
+      script.onerror = () => {
+        script.remove();
+        reject(new Error("Google 연결 스크립트를 불러오지 못했습니다."));
+      };
+      document.head.appendChild(script);
+    }),
+    SCRIPT_LOAD_TIMEOUT_MS,
+    "Google 연결 스크립트 로딩 시간이 초과되었습니다. 네트워크 상태를 확인해주세요."
+  ).catch((error) => {
+    scriptLoadPromises.delete(id);
+    throw error;
   });
+
+  scriptLoadPromises.set(id, promise);
+  return promise;
+}
+
+function loadGapiPicker(): Promise<void> {
+  if (!window.gapi) {
+    return Promise.reject(new Error("Google Picker 모듈을 불러오지 못했습니다."));
+  }
+
+  return withTimeout(
+    new Promise<void>((resolve, reject) => {
+      window.gapi?.load("picker", {
+        callback: resolve,
+        onerror: () => reject(new Error("Google Picker 모듈을 초기화하지 못했습니다.")),
+        timeout: GOOGLE_PICKER_LOAD_TIMEOUT_MS
+      });
+    }),
+    GOOGLE_PICKER_LOAD_TIMEOUT_MS,
+    "Google Picker 초기화 시간이 초과되었습니다. 잠시 뒤 다시 시도해주세요."
+  );
 }
 
 async function loadGoogleIdentityServices(): Promise<void> {
@@ -130,14 +216,7 @@ async function loadGoogleIdentityServices(): Promise<void> {
 
 async function loadGooglePicker(): Promise<GooglePickerNamespace> {
   await loadScript(PICKER_SCRIPT_ID, "https://apis.google.com/js/api.js");
-
-  if (!window.gapi) {
-    throw new Error("Google Picker 모듈을 불러오지 못했습니다.");
-  }
-
-  await new Promise<void>((resolve) => {
-    window.gapi?.load("picker", resolve);
-  });
+  await loadGapiPicker();
 
   if (!window.google?.picker) {
     throw new Error("Google Picker를 초기화하지 못했습니다.");
@@ -148,28 +227,58 @@ async function loadGooglePicker(): Promise<GooglePickerNamespace> {
 
 function requestAccessToken(clientId: string): Promise<string> {
   return new Promise((resolve, reject) => {
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    let settled = false;
+
+    function settle(callback: () => void) {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      callback();
+    }
+
+    timeoutId = setTimeout(() => {
+      settle(() => reject(new Error("Google 인증 응답 시간이 초과되었습니다. 다시 시도해주세요.")));
+    }, TOKEN_REQUEST_TIMEOUT_MS);
+
     const tokenClient = window.google?.accounts?.oauth2?.initTokenClient({
       client_id: clientId,
       scope: DRIVE_FILE_SCOPE,
       callback: (response) => {
         if (response.error) {
-          reject(new Error(response.error_description || response.error));
+          settle(() => reject(new Error(response.error_description || response.error || "Google 인증에 실패했습니다.")));
           return;
         }
 
-        if (!response.access_token) {
-          reject(new Error("Google Drive 접근 토큰을 받지 못했습니다."));
+        const accessToken = response.access_token;
+        if (!accessToken) {
+          settle(() => reject(new Error("Google Drive 접근 토큰을 받지 못했습니다.")));
           return;
         }
 
-        resolve(response.access_token);
+        settle(() => resolve(accessToken));
       },
       error_callback: (error) => {
-        reject(new Error(error.message || error.type || "Google 인증 창이 닫혔습니다."));
+        settle(() => reject(new Error(error.message || error.type || "Google 인증 창이 닫혔습니다.")));
       }
     });
 
-    tokenClient?.requestAccessToken({ prompt: "consent" });
+    if (!tokenClient) {
+      settle(() => reject(new Error("Google 인증 클라이언트를 만들지 못했습니다.")));
+      return;
+    }
+
+    try {
+      tokenClient.requestAccessToken({ prompt: "consent" });
+    } catch (error) {
+      settle(() =>
+        reject(error instanceof Error ? error : new Error("Google 인증 요청을 시작하지 못했습니다."))
+      );
+    }
   });
 }
 
@@ -178,7 +287,10 @@ function getStringValue(record: Record<string, unknown>, key: string): string | 
   return typeof value === "string" ? value : undefined;
 }
 
-function getPickedDocument(data: PickerData, picker: GooglePickerNamespace): Pick<DriveFileMetadata, "id" | "name" | "mimeType"> | undefined {
+function getPickedDocument(
+  data: PickerData,
+  picker: GooglePickerNamespace
+): Pick<DriveFileMetadata, "id" | "name" | "mimeType"> | undefined {
   const docsValue = data[picker.Response.DOCUMENTS];
   if (!Array.isArray(docsValue) || docsValue.length === 0) {
     return undefined;
@@ -203,6 +315,16 @@ function openPicker(
   accessToken: string
 ): Promise<Pick<DriveFileMetadata, "id" | "name" | "mimeType"> | undefined> {
   return new Promise((resolve, reject) => {
+    let settled = false;
+
+    function settle(callback: () => void) {
+      if (settled) {
+        return;
+      }
+      settled = true;
+      callback();
+    }
+
     const view = new picker.DocsView(picker.ViewId.DOCS)
       .setIncludeFolders(false)
       .setSelectFolderEnabled(false)
@@ -216,7 +338,7 @@ function openPicker(
       .setCallback((data) => {
         const action = getStringValue(data, picker.Response.ACTION);
         if (action === picker.Action.CANCEL) {
-          resolve(undefined);
+          settle(() => resolve(undefined));
           return;
         }
 
@@ -226,11 +348,11 @@ function openPicker(
 
         const pickedDocument = getPickedDocument(data, picker);
         if (!pickedDocument) {
-          reject(new Error("선택한 Drive 파일 정보를 읽지 못했습니다."));
+          settle(() => reject(new Error("선택한 Drive 파일 정보를 읽지 못했습니다.")));
           return;
         }
 
-        resolve(pickedDocument);
+        settle(() => resolve(pickedDocument));
       })
       .build();
 
@@ -239,10 +361,13 @@ function openPicker(
 }
 
 export async function pickGoogleDriveFile(config: GoogleDrivePickerConfig): Promise<PickedDriveFile | undefined> {
+  const normalizedConfig = normalizeConfig(config);
+  assertGoogleDriveConfig(normalizedConfig);
+
   await loadGoogleIdentityServices();
   const picker = await loadGooglePicker();
-  const accessToken = await requestAccessToken(config.clientId);
-  const pickedDocument = await openPicker(picker, config, accessToken);
+  const accessToken = await requestAccessToken(normalizedConfig.clientId);
+  const pickedDocument = await openPicker(picker, normalizedConfig, accessToken);
 
   if (!pickedDocument) {
     return undefined;

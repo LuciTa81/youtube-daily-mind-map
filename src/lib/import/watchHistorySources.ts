@@ -1,4 +1,4 @@
-import { downloadDriveFile } from "@/lib/drive/googleDriveApi";
+import { downloadDriveFile, type DriveDownloadProgress } from "@/lib/drive/googleDriveApi";
 import type { PickedDriveFile } from "@/lib/drive/googlePicker";
 import {
   parseTakeoutBrowserFile,
@@ -11,18 +11,26 @@ export type WatchHistoryImportResult = ParsedWatchHistory & {
   sourceName: string;
 };
 
+export type WatchHistoryImportOptions = {
+  signal?: AbortSignal;
+  onStatusChange?: (message: string) => void;
+  onDownloadProgress?: (progress: DriveDownloadProgress) => void;
+};
+
 export interface WatchHistorySource<TInput> {
   readonly id: string;
   readonly label: string;
-  import(input: TInput): Promise<WatchHistoryImportResult>;
+  import(input: TInput, options?: WatchHistoryImportOptions): Promise<WatchHistoryImportResult>;
 }
 
 export class TakeoutFileWatchHistorySource implements WatchHistorySource<File> {
   readonly id = "takeout-file";
   readonly label = "Google Takeout 파일";
 
-  async import(file: File): Promise<WatchHistoryImportResult> {
+  async import(file: File, options?: WatchHistoryImportOptions): Promise<WatchHistoryImportResult> {
+    options?.onStatusChange?.("기기에서 Takeout 파일을 읽는 중입니다.");
     const result = await parseTakeoutBrowserFile(file);
+    options?.onStatusChange?.("시청 기록 파싱이 끝났습니다.");
 
     return {
       ...result,
@@ -45,11 +53,17 @@ export class GoogleDriveTakeoutWatchHistorySource implements WatchHistorySource<
   readonly id = "google-drive-takeout";
   readonly label = "Google Drive Takeout 파일";
 
-  async import(file: PickedDriveFile): Promise<WatchHistoryImportResult> {
-    const content = await downloadDriveFile(file.accessToken, file.id);
+  async import(file: PickedDriveFile, options?: WatchHistoryImportOptions): Promise<WatchHistoryImportResult> {
+    options?.onStatusChange?.("Drive 파일을 다운로드하는 중입니다.");
+    const content = await downloadDriveFile(file.accessToken, file.id, {
+      signal: options?.signal,
+      onProgress: options?.onDownloadProgress
+    });
+    options?.onStatusChange?.("Takeout 파일 안에서 시청 기록을 찾는 중입니다.");
     const result = isZipLikeFile(file.name, file.mimeType)
       ? await parseTakeoutZip(file.name, content)
       : parseTakeoutFile(file.name, new TextDecoder().decode(content));
+    options?.onStatusChange?.("Drive 시청 기록 파싱이 끝났습니다.");
 
     return {
       ...result,

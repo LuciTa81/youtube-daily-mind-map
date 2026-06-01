@@ -38,7 +38,9 @@ describe("GoogleDriveTakeoutWatchHistorySource", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     const source = new GoogleDriveTakeoutWatchHistorySource();
-    const result = await source.import(pickedFile());
+    const onStatusChange = vi.fn();
+    const onDownloadProgress = vi.fn();
+    const result = await source.import(pickedFile(), { onStatusChange, onDownloadProgress });
 
     expect(fetchMock).toHaveBeenCalledWith(
       "https://www.googleapis.com/drive/v3/files/drive-file-1?alt=media&supportsAllDrives=true",
@@ -48,6 +50,9 @@ describe("GoogleDriveTakeoutWatchHistorySource", () => {
         })
       })
     );
+    expect(onStatusChange).toHaveBeenCalledWith("Drive 파일을 다운로드하는 중입니다.");
+    expect(onStatusChange).toHaveBeenCalledWith("Takeout 파일 안에서 시청 기록을 찾는 중입니다.");
+    expect(onStatusChange).toHaveBeenCalledWith("Drive 시청 기록 파싱이 끝났습니다.");
     expect(result.sourceName).toBe("Drive · takeout.zip");
     expect(result.source).toBe("takeout-zip");
     expect(result.items).toHaveLength(1);
