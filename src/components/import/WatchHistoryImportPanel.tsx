@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import type { ParsedWatchHistory } from "@/lib/import/parseTakeout";
 import { TakeoutFileWatchHistorySource } from "@/lib/import/watchHistorySources";
 import type { WatchItem } from "@/types/watch";
+import { DriveTakeoutImportPanel } from "./DriveTakeoutImportPanel";
 
 const GOOGLE_TAKEOUT_YOUTUBE_URL = "https://takeout.google.com/settings/takeout/custom/youtube?dest=drive";
 const takeoutFileSource = new TakeoutFileWatchHistorySource();
@@ -129,10 +130,11 @@ export function WatchHistoryImportPanel({
       >
         YouTube Takeout 만들기
       </a>
+      <DriveTakeoutImportPanel onImported={onImported} />
       <div className="space-y-1 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs leading-relaxed text-slate-600">
         <div className="font-semibold text-slate-700">권장 흐름</div>
         <div>1. Google 화면에서 내보내기 생성</div>
-        <div>2. 완료된 .zip 파일 선택</div>
+        <div>2. 완료된 .zip 파일 선택 또는 Drive에서 선택</div>
         <div>3. 새 기록만 저장하고 중복은 건너뜀</div>
       </div>
       <p className="text-xs leading-relaxed text-slate-500">

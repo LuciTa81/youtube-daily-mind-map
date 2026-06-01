@@ -13,6 +13,7 @@
 - React Flow 기반 인터랙티브 시각화
 - YouTube Takeout ZIP/json/html 불러오기
 - 가져온 기록의 로컬 누적 저장과 중복 제거
+- Google Picker 기반 Drive Takeout ZIP 선택
 - PWA 기반 홈 화면 설치 지원
 
 ## 주의사항
@@ -28,13 +29,29 @@
 
 1. 앱의 `YouTube Takeout 만들기` 버튼으로 Takeout을 연다.
 2. Google 화면에서 YouTube 및 YouTube Music 기록 내보내기를 생성한다.
-3. 다운로드한 `.zip` 파일을 앱의 `ZIP/파일 선택`에서 고른다.
+3. 다운로드한 `.zip` 파일을 앱의 `ZIP/파일 선택`에서 고르거나, Drive에 저장된 파일을 `Drive에서 Takeout 선택`으로 고른다.
 4. 앱이 ZIP 안의 `watch-history.json` 또는 `watch-history.html`을 찾아 시청 기록을 불러온다.
 5. 이미 저장된 기록과 비교해 새 기록만 추가하고 중복은 건너뛴다.
 6. 오늘, 하루 전, 이틀 전 중 원하는 기준 날짜를 고른다.
 7. 필요하면 `최근 7일치`로 전환해 선택한 날짜까지의 일주일 기록을 함께 본다.
 
 압축을 미리 풀었다면 `watch-history.json`, `watch-history.html`, `watch-history.htm` 파일을 직접 선택해도 된다.
+
+## Google Drive Picker 설정
+
+Drive에서 Takeout ZIP을 선택하려면 Google Cloud에서 Drive API와 Picker API를 활성화하고 OAuth Client ID/API Key를 만든 뒤 환경변수를 설정한다.
+
+```bash
+NEXT_PUBLIC_GOOGLE_DRIVE_CLIENT_ID=
+NEXT_PUBLIC_GOOGLE_DRIVE_API_KEY=
+NEXT_PUBLIC_GOOGLE_DRIVE_APP_ID=
+```
+
+- `NEXT_PUBLIC_GOOGLE_DRIVE_CLIENT_ID`: 웹 OAuth Client ID
+- `NEXT_PUBLIC_GOOGLE_DRIVE_API_KEY`: Google Picker용 API Key
+- `NEXT_PUBLIC_GOOGLE_DRIVE_APP_ID`: Google Cloud 프로젝트 번호
+
+OAuth 동의 화면에는 Drive 전체 권한 대신 `https://www.googleapis.com/auth/drive.file`만 사용한다. 앱은 사용자가 Google Picker에서 선택한 파일 하나만 다운로드하고, 가져오기가 끝난 뒤 사용자가 동의하면 그 Drive 원본 파일을 휴지통으로 이동한다.
 
 ## 폰에 설치하기
 

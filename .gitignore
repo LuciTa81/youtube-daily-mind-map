@@ -3,6 +3,7 @@ node_modules
 out
 coverage
 .env*
+!.env.example
 *.log
 mindmap-screenshot.png
 fold-layout-screenshot.png

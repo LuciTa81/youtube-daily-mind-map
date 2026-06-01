@@ -1,4 +1,11 @@
-import { parseTakeoutBrowserFile, type ParsedWatchHistory } from "@/lib/import/parseTakeout";
+import { downloadDriveFile } from "@/lib/drive/googleDriveApi";
+import type { PickedDriveFile } from "@/lib/drive/googlePicker";
+import {
+  parseTakeoutBrowserFile,
+  parseTakeoutFile,
+  parseTakeoutZip,
+  type ParsedWatchHistory
+} from "@/lib/import/parseTakeout";
 
 export type WatchHistoryImportResult = ParsedWatchHistory & {
   sourceName: string;
@@ -20,6 +27,33 @@ export class TakeoutFileWatchHistorySource implements WatchHistorySource<File> {
     return {
       ...result,
       sourceName: file.name
+    };
+  }
+}
+
+function isZipLikeFile(fileName: string, mimeType?: string): boolean {
+  const lowerFileName = fileName.toLocaleLowerCase("ko-KR");
+  return (
+    lowerFileName.endsWith(".zip") ||
+    mimeType === "application/zip" ||
+    mimeType === "application/x-zip" ||
+    mimeType === "application/x-zip-compressed"
+  );
+}
+
+export class GoogleDriveTakeoutWatchHistorySource implements WatchHistorySource<PickedDriveFile> {
+  readonly id = "google-drive-takeout";
+  readonly label = "Google Drive Takeout 파일";
+
+  async import(file: PickedDriveFile): Promise<WatchHistoryImportResult> {
+    const content = await downloadDriveFile(file.accessToken, file.id);
+    const result = isZipLikeFile(file.name, file.mimeType)
+      ? await parseTakeoutZip(file.name, content)
+      : parseTakeoutFile(file.name, new TextDecoder().decode(content));
+
+    return {
+      ...result,
+      sourceName: `Drive · ${file.name}`
     };
   }
 }
