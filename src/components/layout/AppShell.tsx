@@ -853,7 +853,7 @@ export function AppShell() {
   return (
     <div className="min-h-screen bg-[#eef4ff] text-slate-950">
       <div className="mx-auto flex min-h-screen max-w-6xl flex-col">
-        <header className="bg-gradient-to-br from-sky-500 via-blue-500 to-indigo-500 px-4 pb-6 pt-5 text-white shadow-sm md:rounded-b-lg md:px-6">
+        <header className="app-safe-header bg-gradient-to-br from-sky-500 via-blue-500 to-indigo-500 px-4 pb-6 pt-5 text-white shadow-sm md:rounded-b-lg md:px-6">
           <div className="flex items-center justify-between gap-3">
             <div>
               <div className="text-xs font-bold uppercase tracking-[0.22em] text-sky-100">
@@ -997,7 +997,7 @@ export function AppShell() {
         </div>
       ) : null}
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 mx-auto grid max-w-2xl grid-cols-5 gap-1 rounded-t-lg border-t border-slate-200 bg-white/95 p-2 shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur">
+      <nav className="app-bottom-nav fixed inset-x-0 bottom-0 z-40 mx-auto grid max-w-2xl grid-cols-5 gap-1 rounded-t-lg border-t border-slate-200 bg-white/95 p-2 shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur">
         <button
           type="button"
           className={getAppNavButtonClass(canvasMode === "review")}

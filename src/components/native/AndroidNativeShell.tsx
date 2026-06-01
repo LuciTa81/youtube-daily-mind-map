@@ -12,6 +12,11 @@ export function AndroidNativeShell() {
       return;
     }
 
+    document.documentElement.classList.add("capacitor-native");
+    document.documentElement.style.setProperty("--native-safe-area-top", "32px");
+    document.documentElement.style.setProperty("--native-safe-area-bottom", "10px");
+
+    void StatusBar.setOverlaysWebView({ overlay: false }).catch(() => undefined);
     void StatusBar.setBackgroundColor({ color: "#f1f5f9" }).catch(() => undefined);
     void StatusBar.setStyle({ style: Style.Light }).catch(() => undefined);
     void SplashScreen.hide().catch(() => undefined);
@@ -26,6 +31,9 @@ export function AndroidNativeShell() {
     });
 
     return () => {
+      document.documentElement.classList.remove("capacitor-native");
+      document.documentElement.style.removeProperty("--native-safe-area-top");
+      document.documentElement.style.removeProperty("--native-safe-area-bottom");
       void backButtonListener.then((listener) => listener.remove());
     };
   }, []);
