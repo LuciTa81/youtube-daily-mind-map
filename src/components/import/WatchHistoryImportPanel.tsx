@@ -4,11 +4,14 @@ import { useRef, useState } from "react";
 import type { ParsedWatchHistory } from "@/lib/import/parseTakeout";
 import { TakeoutFileWatchHistorySource } from "@/lib/import/watchHistorySources";
 import {
+  addNativeDriveImportProgressListener,
   importNativeDriveTakeoutZip,
-  isNativeDriveFilePickerAvailable
+  isNativeDriveFilePickerAvailable,
+  type NativeDriveImportProgress
 } from "@/lib/native/nativeDriveFile";
 import type { WatchItem } from "@/types/watch";
 import { DriveTakeoutImportPanel } from "./DriveTakeoutImportPanel";
+import { ImportLoadingOverlay } from "./ImportLoadingOverlay";
 
 const takeoutFileSource = new TakeoutFileWatchHistorySource();
 const GOOGLE_TAKEOUT_YOUTUBE_DRIVE_URL = "https://takeout.google.com/settings/takeout/custom/youtube?dest=drive";
@@ -49,13 +52,20 @@ export function WatchHistoryImportPanel({
   const [errorMessage, setErrorMessage] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
   const [isReading, setIsReading] = useState(false);
+  const [nativeProgress, setNativeProgress] = useState<NativeDriveImportProgress | undefined>();
 
   async function handleNativeDrivePick() {
     setErrorMessage("");
     setStatusMessage("Google Drive의 Takeout ZIP을 선택해주세요.");
     setIsReading(true);
+    setNativeProgress(undefined);
 
+    let progressListener: { remove: () => Promise<void> } | undefined;
     try {
+      progressListener = await addNativeDriveImportProgressListener((progress) => {
+        setNativeProgress(progress);
+        setStatusMessage(progress.message);
+      });
       const result = await importNativeDriveTakeoutZip();
       if (result.items.length === 0) {
         throw new Error("선택한 Takeout ZIP에서 YouTube 시청 기록을 찾지 못했습니다.");
@@ -72,6 +82,8 @@ export function WatchHistoryImportPanel({
         setErrorMessage(message);
       }
     } finally {
+      void progressListener?.remove();
+      setNativeProgress(undefined);
       setIsReading(false);
     }
   }
@@ -107,7 +119,14 @@ export function WatchHistoryImportPanel({
   }
 
   return (
-    <section className="space-y-3 rounded-lg border border-slate-200 bg-white p-4">
+    <>
+      <ImportLoadingOverlay
+        open={isReading}
+        progress={nativeProgress}
+        statusMessage={statusMessage}
+        isNativeDriveImport={isNativeDrivePicker}
+      />
+      <section className="space-y-3 rounded-lg border border-slate-200 bg-white p-4">
       <div>
         <h2 className="text-sm font-semibold text-slate-900">Takeout 가져오기</h2>
         <p className="mt-1 text-xs leading-relaxed text-slate-500">
@@ -224,6 +243,7 @@ export function WatchHistoryImportPanel({
           {errorMessage}
         </div>
       ) : null}
-    </section>
+      </section>
+    </>
   );
 }
