@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { formatInTimeZone } from "date-fns-tz";
 import { MindMapCanvas } from "@/components/mindmap/MindMapCanvas";
+import { DailyReviewPanel } from "@/components/review/DailyReviewPanel";
 import { WatchTimeline } from "@/components/timeline/WatchTimeline";
 import { classifyItems } from "@/lib/classify/classify";
 import {
@@ -16,6 +17,8 @@ import { buildMindMap } from "@/lib/mindmap/buildMindMap";
 import { sampleWatchItems } from "@/lib/sample/sampleWatchItems";
 import { getVideoMetadata } from "@/lib/youtube/videoMetadata";
 import { mergeWatchItems, type WatchHistoryMergeResult } from "@/lib/history/mergeWatchItems";
+import { buildDailyReview } from "@/lib/review/buildDailyReview";
+import { indexedDbReviewNoteRepository } from "@/lib/storage/reviewNoteRepository";
 import { indexedDbWatchHistoryRepository } from "@/lib/storage/watchHistoryRepository";
 import type { ParsedWatchHistory } from "@/lib/import/parseTakeout";
 import type { MindMapBuildOptions, MindMapNode, MindMapViewMode } from "@/types/mindmap";
@@ -24,7 +27,7 @@ import { DetailPanel } from "./DetailPanel";
 import { LeftPanel } from "./LeftPanel";
 import { TopSummaryCards } from "./TopSummaryCards";
 
-type CanvasMode = "mindmap" | "timeline";
+type CanvasMode = "review" | "mindmap" | "timeline";
 type DataViewMode = "sample" | "saved";
 
 function normalizeSearch(value: string): string {
@@ -306,7 +309,7 @@ export function AppShell() {
   const [selectedDateKey, setSelectedDateKey] = useState("");
   const [rangeMode, setRangeMode] = useState<DateRangeMode>("day");
   const [viewMode, setViewMode] = useState<MindMapViewMode>("topic");
-  const [canvasMode, setCanvasMode] = useState<CanvasMode>("mindmap");
+  const [canvasMode, setCanvasMode] = useState<CanvasMode>("review");
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("");
   const [channelQuery, setChannelQuery] = useState("");
@@ -318,6 +321,8 @@ export function AppShell() {
   const [collapsedBranchIds, setCollapsedBranchIds] = useState<Set<string>>(() => new Set());
   const [selectedNodeId, setSelectedNodeId] = useState<string>();
   const [selectedTimelineNode, setSelectedTimelineNode] = useState<MindMapNode>();
+  const [reviewNote, setReviewNote] = useState("");
+  const [loadedReviewNoteKey, setLoadedReviewNoteKey] = useState("");
   const watchItems = dataViewMode === "saved" ? savedWatchItems : sampleWatchItems;
 
   useEffect(() => {
@@ -423,6 +428,14 @@ export function AppShell() {
     () => getRangeDisplayLabel(selectedDateKey, rangeMode, dateRange),
     [dateRange, rangeMode, selectedDateKey]
   );
+  const reviewNoteKey = useMemo(
+    () => `${rangeMode}:${selectedRangeLabel}`,
+    [rangeMode, selectedRangeLabel]
+  );
+  const dailyReview = useMemo(
+    () => buildDailyReview(filteredItems, summary, dateSettings),
+    [dateSettings, filteredItems, summary]
+  );
   const buildOptions = useMemo<MindMapBuildOptions>(
     () => ({
       viewMode,
@@ -437,6 +450,52 @@ export function AppShell() {
     () => buildMindMap(filteredItems, buildOptions),
     [filteredItems, buildOptions]
   );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadReviewNote() {
+      try {
+        const note = await indexedDbReviewNoteRepository.load(reviewNoteKey);
+        if (!cancelled) {
+          setReviewNote(note?.text ?? "");
+          setLoadedReviewNoteKey(reviewNoteKey);
+        }
+      } catch {
+        if (!cancelled) {
+          setReviewNote("");
+          setLoadedReviewNoteKey(reviewNoteKey);
+        }
+      }
+    }
+
+    void loadReviewNote();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [reviewNoteKey]);
+
+  useEffect(() => {
+    if (loadedReviewNoteKey !== reviewNoteKey) {
+      return;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      const trimmedNote = reviewNote.trim();
+      if (trimmedNote) {
+        void indexedDbReviewNoteRepository.save({
+          key: reviewNoteKey,
+          text: reviewNote,
+          updatedAt: new Date().toISOString()
+        });
+      } else {
+        void indexedDbReviewNoteRepository.delete(reviewNoteKey);
+      }
+    }, 450);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [loadedReviewNoteKey, reviewNote, reviewNoteKey]);
 
   useEffect(() => {
     setSelectedNodeId(baseRoot.id);
@@ -695,12 +754,12 @@ export function AppShell() {
           dateLabel={selectedRangeLabel}
           summary={summary}
           viewMode={viewMode}
-          displayModeLabel={canvasMode === "timeline" ? "타임라인" : undefined}
+          displayModeLabel={canvasMode === "review" ? "회고" : canvasMode === "timeline" ? "타임라인" : undefined}
         />
         <div className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-white px-4 py-3 md:flex-row md:items-center md:justify-between">
           <div className="min-w-0">
             <div className="text-sm font-semibold text-slate-900">
-              {canvasMode === "mindmap" ? "마인드맵" : "시청 타임라인"}
+              {canvasMode === "review" ? "오늘 회고" : canvasMode === "mindmap" ? "마인드맵" : "시청 타임라인"}
             </div>
             <div className="mt-1 text-xs leading-relaxed text-slate-500">
               {dateRange?.label ?? "날짜 범위를 계산하는 중"} ·{" "}
@@ -708,7 +767,18 @@ export function AppShell() {
             </div>
           </div>
           <div className="flex flex-col gap-2 md:items-end">
-            <div className="grid grid-cols-2 gap-1 rounded-lg border border-slate-200 bg-slate-100 p-1">
+            <div className="grid grid-cols-3 gap-1 rounded-lg border border-slate-200 bg-slate-100 p-1">
+              <button
+                type="button"
+                className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${
+                  canvasMode === "review"
+                    ? "bg-white text-slate-900 shadow-sm"
+                    : "text-slate-500 hover:text-slate-800"
+                }`}
+                onClick={() => handleCanvasModeChange("review")}
+              >
+                회고
+              </button>
               <button
                 type="button"
                 className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${
@@ -734,14 +804,27 @@ export function AppShell() {
             </div>
             <div className="text-xs leading-relaxed text-slate-500 md:text-right">
               {importNote ||
-                (canvasMode === "mindmap"
+                (canvasMode === "review"
+                  ? "오늘의 관심사 흐름과 기억할 영상을 회고 형태로 정리합니다."
+                  : canvasMode === "mindmap"
                   ? "검색은 일치 노드를 강조하고 숨겨진 그룹을 자동으로 펼칩니다."
                   : "시청 기록을 시간순으로 배치합니다. 카드를 누르면 상세 정보를 볼 수 있습니다.")}
             </div>
           </div>
         </div>
         <div className="h-[66svh] min-h-[460px] md:h-[68svh] min-[1400px]:min-h-0 min-[1400px]:flex-1">
-          {canvasMode === "mindmap" ? (
+          {canvasMode === "review" ? (
+            <DailyReviewPanel
+              review={dailyReview}
+              summary={summary}
+              items={filteredItems}
+              dateLabel={selectedRangeLabel}
+              dateSettings={dateSettings}
+              note={reviewNote}
+              onNoteChange={setReviewNote}
+              onItemSelect={handleTimelineItemSelect}
+            />
+          ) : canvasMode === "mindmap" ? (
             <MindMapCanvas
               root={displayRoot}
               selectedNodeId={selectedTimelineNode ? undefined : selectedNode?.id}

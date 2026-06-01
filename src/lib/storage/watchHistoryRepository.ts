@@ -13,8 +13,9 @@ type StoredWatchHistory = {
 };
 
 const DB_NAME = "youtube-daily-mind-map";
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const STORE_NAME = "watch-history";
+const REVIEW_NOTES_STORE_NAME = "review-notes";
 const STORE_KEY: StoredWatchHistory["id"] = "watch-history";
 
 function getIndexedDb(): IDBFactory {
@@ -37,6 +38,9 @@ export class IndexedDbWatchHistoryRepository implements WatchHistoryRepository {
           const db = request.result;
           if (!db.objectStoreNames.contains(STORE_NAME)) {
             db.createObjectStore(STORE_NAME, { keyPath: "id" });
+          }
+          if (!db.objectStoreNames.contains(REVIEW_NOTES_STORE_NAME)) {
+            db.createObjectStore(REVIEW_NOTES_STORE_NAME, { keyPath: "key" });
           }
         };
 
