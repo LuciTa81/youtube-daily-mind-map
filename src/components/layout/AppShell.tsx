@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { formatInTimeZone } from "date-fns-tz";
 import { MindMapCanvas } from "@/components/mindmap/MindMapCanvas";
 import { DailyReviewPanel } from "@/components/review/DailyReviewPanel";
+import { WeeklyReportPanel } from "@/components/review/WeeklyReportPanel";
 import { WatchTimeline } from "@/components/timeline/WatchTimeline";
 import { classifyItems } from "@/lib/classify/classify";
 import {
@@ -18,6 +19,7 @@ import { sampleWatchItems } from "@/lib/sample/sampleWatchItems";
 import { getVideoMetadata } from "@/lib/youtube/videoMetadata";
 import { mergeWatchItems, type WatchHistoryMergeResult } from "@/lib/history/mergeWatchItems";
 import { buildDailyReview } from "@/lib/review/buildDailyReview";
+import { buildWeeklyReport } from "@/lib/review/buildWeeklyReport";
 import { indexedDbReviewNoteRepository } from "@/lib/storage/reviewNoteRepository";
 import { indexedDbWatchHistoryRepository } from "@/lib/storage/watchHistoryRepository";
 import type { ParsedWatchHistory } from "@/lib/import/parseTakeout";
@@ -27,7 +29,7 @@ import { DetailPanel } from "./DetailPanel";
 import { LeftPanel } from "./LeftPanel";
 import { TopSummaryCards } from "./TopSummaryCards";
 
-type CanvasMode = "review" | "mindmap" | "timeline";
+type CanvasMode = "review" | "weekly" | "mindmap" | "timeline";
 type DataViewMode = "sample" | "saved";
 
 function normalizeSearch(value: string): string {
@@ -384,12 +386,24 @@ export function AppShell() {
         : undefined,
     [dateSettings, rangeMode, selectedDateKey]
   );
+  const weeklyDateRange = useMemo(
+    () =>
+      selectedDateKey
+        ? getDateRangeForSelection(selectedDateKey, dateSettings, "week")
+        : undefined,
+    [dateSettings, selectedDateKey]
+  );
 
   const rawDateItems = useMemo(
     () => (dateRange ? filterItemsByDateRange(watchItems, dateRange) : []),
     [dateRange, watchItems]
   );
+  const rawWeeklyItems = useMemo(
+    () => (weeklyDateRange ? filterItemsByDateRange(watchItems, weeklyDateRange) : []),
+    [weeklyDateRange, watchItems]
+  );
   const classifiedItems = useMemo(() => classifyItems(rawDateItems), [rawDateItems]);
+  const weeklyClassifiedItems = useMemo(() => classifyItems(rawWeeklyItems), [rawWeeklyItems]);
   const categories = useMemo(
     () =>
       Array.from(new Set(classifiedItems.map((item) => item.category))).sort((a, b) =>
@@ -416,6 +430,25 @@ export function AppShell() {
       }),
     [classifiedItems, categoryFilter, channelQuery, lowConfidenceOnly]
   );
+  const weeklyFilteredItems = useMemo(
+    () =>
+      weeklyClassifiedItems.filter((item) => {
+        if (categoryFilter && item.category !== categoryFilter) {
+          return false;
+        }
+        if (lowConfidenceOnly && item.confidence > 0.5) {
+          return false;
+        }
+        if (channelQuery.trim()) {
+          const channelName = item.channelName?.toLocaleLowerCase("ko-KR") ?? "";
+          if (!channelName.includes(channelQuery.trim().toLocaleLowerCase("ko-KR"))) {
+            return false;
+          }
+        }
+        return true;
+      }),
+    [weeklyClassifiedItems, categoryFilter, channelQuery, lowConfidenceOnly]
+  );
   const searchResultCount = useMemo(
     () => filteredItems.filter((item) => itemMatchesSearch(item, searchQuery)).length,
     [filteredItems, searchQuery]
@@ -428,14 +461,29 @@ export function AppShell() {
     () => getRangeDisplayLabel(selectedDateKey, rangeMode, dateRange),
     [dateRange, rangeMode, selectedDateKey]
   );
+  const weeklyRangeLabel = useMemo(
+    () => getRangeDisplayLabel(selectedDateKey, "week", weeklyDateRange),
+    [selectedDateKey, weeklyDateRange]
+  );
   const reviewNoteKey = useMemo(
-    () => `${rangeMode}:${selectedRangeLabel}`,
-    [rangeMode, selectedRangeLabel]
+    () => (canvasMode === "weekly" ? `weekly:${weeklyRangeLabel}` : `${rangeMode}:${selectedRangeLabel}`),
+    [canvasMode, rangeMode, selectedRangeLabel, weeklyRangeLabel]
   );
   const dailyReview = useMemo(
     () => buildDailyReview(filteredItems, summary, dateSettings),
     [dateSettings, filteredItems, summary]
   );
+  const weeklyReport = useMemo(
+    () =>
+      buildWeeklyReport(
+        weeklyFilteredItems,
+        dateSettings,
+        weeklyDateRange ?? getDateRangeForSelection(selectedDateKey || getRelativeDateKey(0, dateSettings), dateSettings, "week")
+      ),
+    [dateSettings, selectedDateKey, weeklyDateRange, weeklyFilteredItems]
+  );
+  const activeSummary = canvasMode === "weekly" ? weeklyReport.summary : summary;
+  const activeRangeLabel = canvasMode === "weekly" ? weeklyRangeLabel : selectedRangeLabel;
   const buildOptions = useMemo<MindMapBuildOptions>(
     () => ({
       viewMode,
@@ -751,23 +799,37 @@ export function AppShell() {
       <main className="order-1 flex min-w-0 flex-1 flex-col gap-3 p-3 md:gap-4 md:p-4 min-[1400px]:order-2 min-[1400px]:p-5">
         <TopSummaryCards
           dateKey={selectedDateKey || "선택 없음"}
-          dateLabel={selectedRangeLabel}
-          summary={summary}
+          dateLabel={activeRangeLabel}
+          summary={activeSummary}
           viewMode={viewMode}
-          displayModeLabel={canvasMode === "review" ? "회고" : canvasMode === "timeline" ? "타임라인" : undefined}
+          displayModeLabel={
+            canvasMode === "review"
+              ? "회고"
+              : canvasMode === "weekly"
+              ? "주간 리포트"
+              : canvasMode === "timeline"
+              ? "타임라인"
+              : undefined
+          }
         />
         <div className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-white px-4 py-3 md:flex-row md:items-center md:justify-between">
           <div className="min-w-0">
             <div className="text-sm font-semibold text-slate-900">
-              {canvasMode === "review" ? "오늘 회고" : canvasMode === "mindmap" ? "마인드맵" : "시청 타임라인"}
+              {canvasMode === "review"
+                ? "오늘 회고"
+                : canvasMode === "weekly"
+                ? "주간 리포트"
+                : canvasMode === "mindmap"
+                ? "마인드맵"
+                : "시청 타임라인"}
             </div>
             <div className="mt-1 text-xs leading-relaxed text-slate-500">
-              {dateRange?.label ?? "날짜 범위를 계산하는 중"} ·{" "}
-              {rangeMode === "week" ? "선택일 기준 최근 7일" : "자정 기준 하루"}
+              {(canvasMode === "weekly" ? weeklyDateRange?.label : dateRange?.label) ?? "날짜 범위를 계산하는 중"} ·{" "}
+              {canvasMode === "weekly" || rangeMode === "week" ? "선택일 기준 최근 7일" : "자정 기준 하루"}
             </div>
           </div>
           <div className="flex flex-col gap-2 md:items-end">
-            <div className="grid grid-cols-3 gap-1 rounded-lg border border-slate-200 bg-slate-100 p-1">
+            <div className="grid grid-cols-4 gap-1 rounded-lg border border-slate-200 bg-slate-100 p-1">
               <button
                 type="button"
                 className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${
@@ -778,6 +840,17 @@ export function AppShell() {
                 onClick={() => handleCanvasModeChange("review")}
               >
                 회고
+              </button>
+              <button
+                type="button"
+                className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${
+                  canvasMode === "weekly"
+                    ? "bg-white text-slate-900 shadow-sm"
+                    : "text-slate-500 hover:text-slate-800"
+                }`}
+                onClick={() => handleCanvasModeChange("weekly")}
+              >
+                리포트
               </button>
               <button
                 type="button"
@@ -806,6 +879,8 @@ export function AppShell() {
               {importNote ||
                 (canvasMode === "review"
                   ? "오늘의 관심사 흐름과 기억할 영상을 회고 형태로 정리합니다."
+                  : canvasMode === "weekly"
+                  ? "선택한 날짜를 끝으로 최근 7일의 관심사 변화를 정리합니다."
                   : canvasMode === "mindmap"
                   ? "검색은 일치 노드를 강조하고 숨겨진 그룹을 자동으로 펼칩니다."
                   : "시청 기록을 시간순으로 배치합니다. 카드를 누르면 상세 정보를 볼 수 있습니다.")}
@@ -819,6 +894,15 @@ export function AppShell() {
               summary={summary}
               items={filteredItems}
               dateLabel={selectedRangeLabel}
+              dateSettings={dateSettings}
+              note={reviewNote}
+              onNoteChange={setReviewNote}
+              onItemSelect={handleTimelineItemSelect}
+            />
+          ) : canvasMode === "weekly" ? (
+            <WeeklyReportPanel
+              report={weeklyReport}
+              dateLabel={weeklyRangeLabel}
               dateSettings={dateSettings}
               note={reviewNote}
               onNoteChange={setReviewNote}
