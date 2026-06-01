@@ -6,7 +6,6 @@ import { TakeoutFileWatchHistorySource } from "@/lib/import/watchHistorySources"
 import type { WatchItem } from "@/types/watch";
 import { DriveTakeoutImportPanel } from "./DriveTakeoutImportPanel";
 
-const GOOGLE_TAKEOUT_YOUTUBE_URL = "https://takeout.google.com/settings/takeout/custom/youtube?dest=drive";
 const takeoutFileSource = new TakeoutFileWatchHistorySource();
 
 type WatchHistoryImportPanelProps = {
@@ -122,20 +121,13 @@ export function WatchHistoryImportPanel({
           </button>
         </div>
       ) : null}
-      <a
-        href={GOOGLE_TAKEOUT_YOUTUBE_URL}
-        target="_blank"
-        rel="noreferrer"
-        className="flex items-center justify-center rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-      >
-        YouTube Takeout 만들기
-      </a>
       <DriveTakeoutImportPanel onImported={onImported} />
       <div className="space-y-1 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs leading-relaxed text-slate-600">
         <div className="font-semibold text-slate-700">권장 흐름</div>
-        <div>1. Google 화면에서 내보내기 생성</div>
-        <div>2. 완료된 .zip 파일 선택 또는 Drive에서 선택</div>
-        <div>3. 새 기록만 저장하고 중복은 건너뜀</div>
+        <div>1. Drive로 Takeout 만들기</div>
+        <div>2. Google 화면에서 내보내기 생성</div>
+        <div>3. 완료된 .zip 파일 선택 또는 Drive에서 선택</div>
+        <div>4. 새 기록만 저장하고 중복은 건너뜀</div>
       </div>
       <p className="text-xs leading-relaxed text-slate-500">
         파일은 서버로 업로드하지 않고 현재 기기에서만 읽습니다. 저장된 기록은 이 브라우저에 남습니다.

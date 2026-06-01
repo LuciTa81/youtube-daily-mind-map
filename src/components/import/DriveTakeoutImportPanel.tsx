@@ -197,6 +197,9 @@ export function DriveTakeoutImportPanel({ onImported }: DriveTakeoutImportPanelP
         <p className="mt-1 text-xs leading-relaxed text-slate-500">
           Drive 전체를 검색하지 않고, Google Picker에서 고른 Takeout ZIP 하나만 다운로드합니다.
         </p>
+        <p className="mt-1 text-xs leading-relaxed text-slate-500">
+          Takeout 만들기는 Google 화면을 여는 단계이고, 내보내기가 완료된 뒤 Drive ZIP을 선택하면 됩니다.
+        </p>
       </div>
 
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">

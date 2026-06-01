@@ -952,7 +952,7 @@ export function AppShell() {
               <LeftPanel
                 {...leftPanelProps}
                 className="w-full bg-transparent"
-                contentClassName="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3"
+                layoutVariant="settings"
                 showIntro={false}
               />
             </section>
