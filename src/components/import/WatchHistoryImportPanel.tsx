@@ -3,10 +3,15 @@
 import { useRef, useState } from "react";
 import type { ParsedWatchHistory } from "@/lib/import/parseTakeout";
 import { TakeoutFileWatchHistorySource } from "@/lib/import/watchHistorySources";
+import {
+  importNativeDriveTakeoutZip,
+  isNativeDriveFilePickerAvailable
+} from "@/lib/native/nativeDriveFile";
 import type { WatchItem } from "@/types/watch";
 import { DriveTakeoutImportPanel } from "./DriveTakeoutImportPanel";
 
 const takeoutFileSource = new TakeoutFileWatchHistorySource();
+const GOOGLE_TAKEOUT_YOUTUBE_DRIVE_URL = "https://takeout.google.com/settings/takeout/custom/youtube?dest=drive";
 
 type WatchHistoryImportPanelProps = {
   activeSourceName: string;
@@ -20,6 +25,14 @@ type WatchHistoryImportPanelProps = {
   onClearSaved: () => void | Promise<void>;
 };
 
+function getImportErrorMessage(error: unknown): string {
+  if (!(error instanceof Error)) {
+    return "파일을 읽는 중 문제가 발생했습니다.";
+  }
+
+  return error.message;
+}
+
 export function WatchHistoryImportPanel({
   activeSourceName,
   itemCount,
@@ -32,9 +45,36 @@ export function WatchHistoryImportPanel({
   onClearSaved
 }: WatchHistoryImportPanelProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const isNativeDrivePicker = isNativeDriveFilePickerAvailable();
   const [errorMessage, setErrorMessage] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
   const [isReading, setIsReading] = useState(false);
+
+  async function handleNativeDrivePick() {
+    setErrorMessage("");
+    setStatusMessage("Google Drive의 Takeout ZIP을 선택해주세요.");
+    setIsReading(true);
+
+    try {
+      const result = await importNativeDriveTakeoutZip();
+      if (result.items.length === 0) {
+        throw new Error("선택한 Takeout ZIP에서 YouTube 시청 기록을 찾지 못했습니다.");
+      }
+
+      setStatusMessage("시청 기록을 저장소에 반영하는 중입니다.");
+      await onImported(result.items, result.sourceName, result);
+      setStatusMessage(`${result.items.length}개 기록을 읽었습니다. 기존 기록과 비교해 새 기록만 저장합니다.`);
+    } catch (error) {
+      const message = getImportErrorMessage(error);
+      if (message.includes("취소")) {
+        setStatusMessage("파일 선택을 취소했습니다.");
+      } else {
+        setErrorMessage(message);
+      }
+    } finally {
+      setIsReading(false);
+    }
+  }
 
   async function handleFileChange(file?: File) {
     setErrorMessage("");
@@ -57,7 +97,7 @@ export function WatchHistoryImportPanel({
       await onImported(result.items, result.sourceName, result);
       setStatusMessage(`${result.items.length}개 기록을 읽었습니다. 기존 기록과 비교해 새 기록만 저장합니다.`);
     } catch (error) {
-      setErrorMessage(error instanceof Error ? error.message : "파일을 읽는 중 문제가 발생했습니다.");
+      setErrorMessage(getImportErrorMessage(error));
     } finally {
       setIsReading(false);
       if (inputRef.current) {
@@ -71,8 +111,9 @@ export function WatchHistoryImportPanel({
       <div>
         <h2 className="text-sm font-semibold text-slate-900">Takeout 가져오기</h2>
         <p className="mt-1 text-xs leading-relaxed text-slate-500">
-          가장 안정적인 방법은 Takeout ZIP을 그대로 선택하는 것입니다. 압축을 풀 필요 없이 브라우저나 앱 안에서
-          시청 기록만 읽습니다.
+          {isNativeDrivePicker
+            ? "Android 앱에서는 Google Drive의 Takeout ZIP만 선택합니다. JSON이나 HTML 파일을 직접 찾을 필요가 없습니다."
+            : "Takeout ZIP을 그대로 선택하면 압축을 풀지 않고 시청 기록만 읽습니다."}
         </p>
       </div>
 
@@ -83,28 +124,47 @@ export function WatchHistoryImportPanel({
         <div className="mt-1 text-xs text-slate-500">저장된 내 기록 {savedItemCount}개</div>
       </div>
 
-      <input
-        ref={inputRef}
-        type="file"
-        accept=".zip,.json,.html,.htm,application/zip,application/x-zip,application/x-zip-compressed,application/octet-stream,application/json,text/html"
-        className="hidden"
-        onChange={(event) => {
-          void handleFileChange(event.target.files?.[0]);
-        }}
-      />
+      <a
+        href={GOOGLE_TAKEOUT_YOUTUBE_DRIVE_URL}
+        target="_blank"
+        rel="noreferrer"
+        className="flex w-full items-center justify-center rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+      >
+        Drive로 Takeout 만들기
+      </a>
+
+      {!isNativeDrivePicker ? (
+        <input
+          ref={inputRef}
+          type="file"
+          accept=".zip,.json,.html,.htm,application/zip,application/x-zip,application/x-zip-compressed,application/octet-stream,application/json,text/html"
+          className="hidden"
+          onChange={(event) => {
+            void handleFileChange(event.target.files?.[0]);
+          }}
+        />
+      ) : null}
 
       <div className="space-y-2">
         <button
           type="button"
           className="w-full rounded-md bg-slate-900 px-3 py-3 text-sm font-semibold text-white hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
           disabled={isReading}
-          onClick={() => inputRef.current?.click()}
+          onClick={() => {
+            if (isNativeDrivePicker) {
+              void handleNativeDrivePick();
+              return;
+            }
+
+            inputRef.current?.click();
+          }}
         >
-          {isReading ? "파일 읽는 중" : "기기/Drive ZIP 선택"}
+          {isReading ? "가져오는 중" : isNativeDrivePicker ? "Google Drive ZIP 선택" : "ZIP/파일 선택"}
         </button>
         <p className="text-xs leading-relaxed text-slate-500">
-          Android 앱에서는 이 버튼을 먼저 사용하세요. 파일 앱이나 Drive 앱에서 Takeout ZIP을 바로 고르면 Google
-          로그인 스크립트 문제를 피할 수 있습니다.
+          {isNativeDrivePicker
+            ? "Android 시스템 파일 선택기에서 Google Drive를 열고 Takeout ZIP을 고르세요. Drive가 아닌 위치나 ZIP이 아닌 파일은 거절됩니다."
+            : "웹에서는 ZIP, watch-history.json, watch-history.html을 선택할 수 있습니다."}
         </p>
       </div>
 
@@ -145,13 +205,13 @@ export function WatchHistoryImportPanel({
         </div>
       ) : null}
 
-      <DriveTakeoutImportPanel onImported={onImported} />
+      {!isNativeDrivePicker ? <DriveTakeoutImportPanel onImported={onImported} /> : null}
 
       <div className="space-y-1 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs leading-relaxed text-slate-600">
         <div className="font-semibold text-slate-700">권장 흐름</div>
         <div>1. Drive로 Takeout 만들기</div>
         <div>2. Google 화면에서 내보내기 생성</div>
-        <div>3. 완료된 ZIP을 기기/Drive ZIP 선택으로 불러오기</div>
+        <div>3. 완료된 Takeout ZIP을 Google Drive에서 선택</div>
         <div>4. 새 기록만 저장하고 중복은 건너뛰기</div>
       </div>
 
