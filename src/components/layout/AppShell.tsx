@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { formatInTimeZone } from "date-fns-tz";
 import { MindMapCanvas } from "@/components/mindmap/MindMapCanvas";
-import { DailyReviewPanel } from "@/components/review/DailyReviewPanel";
 import { WeeklyReportPanel } from "@/components/review/WeeklyReportPanel";
 import { WatchTimeline } from "@/components/timeline/WatchTimeline";
 import { classifyItems } from "@/lib/classify/classify";
@@ -26,13 +25,12 @@ import type { ParsedWatchHistory } from "@/lib/import/parseTakeout";
 import type { MindMapBuildOptions, MindMapNode, MindMapViewMode } from "@/types/mindmap";
 import type { ClassifiedWatchItem, DateRangeMode, DateSettings, WatchItem } from "@/types/watch";
 import { DetailPanel } from "./DetailPanel";
-import { ImportStatusBanner } from "./ImportStatusBanner";
+import { HomeDashboard } from "./HomeDashboard";
 import { LeftPanel } from "./LeftPanel";
-import { TopSummaryCards } from "./TopSummaryCards";
 
-type CanvasMode = "review" | "weekly" | "mindmap" | "timeline";
+type CanvasMode = "review" | "weekly" | "mindmap" | "timeline" | "settings";
 type DataViewMode = "sample" | "saved";
-type MobilePanel = "none" | "controls" | "detail";
+type MobilePanel = "none" | "detail";
 
 function normalizeSearch(value: string): string {
   return value.trim().toLocaleLowerCase("ko-KR");
@@ -785,46 +783,6 @@ export function AppShell() {
     setMobilePanel("none");
   }, []);
 
-  const handleMobileDateSelect = useCallback(
-    (dateKey: string) => {
-      handleDateSelect(dateKey);
-      closeMobilePanel();
-    },
-    [closeMobilePanel, handleDateSelect]
-  );
-
-  const handleMobileRangeModeChange = useCallback(
-    (mode: DateRangeMode) => {
-      handleRangeModeChange(mode);
-      closeMobilePanel();
-    },
-    [closeMobilePanel, handleRangeModeChange]
-  );
-
-  const handleMobileViewModeChange = useCallback(
-    (mode: MindMapViewMode) => {
-      handleViewModeChange(mode);
-      closeMobilePanel();
-    },
-    [closeMobilePanel, handleViewModeChange]
-  );
-
-  const handleMobileCanvasModeChange = useCallback(
-    (mode: CanvasMode) => {
-      handleCanvasModeChange(mode);
-      closeMobilePanel();
-    },
-    [closeMobilePanel, handleCanvasModeChange]
-  );
-
-  const handleMobileItemsImported = useCallback(
-    async (items: WatchItem[], sourceName: string, result: ParsedWatchHistory) => {
-      await handleItemsImported(items, sourceName, result);
-      closeMobilePanel();
-    },
-    [closeMobilePanel, handleItemsImported]
-  );
-
   const leftPanelProps = {
     dates: quickDateOptions,
     activeSourceName,
@@ -862,167 +820,148 @@ export function AppShell() {
     onCollapseAll: handleCollapseAll
   };
 
-  const getMobileNavButtonClass = (isActive: boolean) =>
-    `flex min-h-12 flex-col items-center justify-center rounded-lg px-1 text-[11px] font-semibold transition ${
+  const getAppNavButtonClass = (isActive: boolean) =>
+    `flex min-h-12 flex-col items-center justify-center rounded-lg px-1 text-[11px] font-bold transition ${
       isActive
-        ? "bg-slate-950 text-white shadow-sm"
+        ? "bg-sky-500 text-white shadow-sm"
         : "text-slate-500 hover:bg-slate-100 hover:text-slate-900"
     }`;
 
-  const mobilePanelTitle = mobilePanel === "controls" ? "가져오기와 필터" : "상세 정보";
+  const screenTitle =
+    canvasMode === "review"
+      ? "오늘의 YouTube 기록"
+      : canvasMode === "timeline"
+      ? "시청 타임라인"
+      : canvasMode === "mindmap"
+      ? "마인드맵"
+      : canvasMode === "weekly"
+      ? "주간 리포트"
+      : "가져오기와 설정";
+  const screenDescription =
+    canvasMode === "review"
+      ? "하루의 관심사와 기억할 영상을 정리합니다."
+      : canvasMode === "timeline"
+      ? "언제 어떤 영상을 봤는지 시간순으로 봅니다."
+      : canvasMode === "mindmap"
+      ? "주제, 시간대, 채널 구조를 한눈에 봅니다."
+      : canvasMode === "weekly"
+      ? "선택한 날짜까지 최근 7일의 관심사 흐름을 봅니다."
+      : "Takeout 가져오기, 날짜, 필터를 관리합니다.";
+  const activeRangeDescription =
+    (canvasMode === "weekly" ? weeklyDateRange?.label : dateRange?.label) ?? "날짜 범위를 계산하는 중";
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-100 text-slate-900 2xl:h-screen 2xl:min-h-0 2xl:flex-row 2xl:overflow-hidden">
-      <LeftPanel {...leftPanelProps} />
-      <main className="order-1 flex min-w-0 flex-1 flex-col gap-3 p-3 pb-24 md:gap-4 md:p-4 md:pb-24 2xl:order-2 2xl:p-5">
-        <ImportStatusBanner
-          activeSourceName={activeSourceName}
-          totalItemCount={watchItems.length}
-          savedItemCount={savedWatchItems.length}
-          isUsingSample={dataViewMode === "sample"}
-          isStorageReady={isStorageReady}
-          importNote={importNote}
-          onOpenImport={() => setMobilePanel("controls")}
-          onUseSaved={handleUseSaved}
-        />
-        <TopSummaryCards
-          dateKey={selectedDateKey || "선택 없음"}
-          dateLabel={activeRangeLabel}
-          summary={activeSummary}
-          viewMode={viewMode}
-          displayModeLabel={
-            canvasMode === "review"
-              ? "회고"
-              : canvasMode === "weekly"
-              ? "주간 리포트"
-              : canvasMode === "timeline"
-              ? "타임라인"
-              : undefined
-          }
-        />
-        <div className="flex flex-col gap-2 rounded-lg border border-slate-200 bg-white px-4 py-3 md:flex-row md:items-center md:justify-between">
-          <div className="min-w-0">
-            <div className="text-sm font-semibold text-slate-900">
-              {canvasMode === "review"
-                ? "오늘 회고"
-                : canvasMode === "weekly"
-                ? "주간 리포트"
-                : canvasMode === "mindmap"
-                ? "마인드맵"
-                : "시청 타임라인"}
+    <div className="min-h-screen bg-[#eef4ff] text-slate-950">
+      <div className="mx-auto flex min-h-screen max-w-6xl flex-col">
+        <header className="bg-gradient-to-br from-sky-500 via-blue-500 to-indigo-500 px-4 pb-6 pt-5 text-white shadow-sm md:rounded-b-lg md:px-6">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <div className="text-xs font-bold uppercase tracking-[0.22em] text-sky-100">
+                YouTube Daily Mind Map
+              </div>
+              <h1 className="mt-3 text-2xl font-black tracking-tight md:text-3xl">{screenTitle}</h1>
+              <p className="mt-2 text-sm leading-relaxed text-sky-50">{screenDescription}</p>
             </div>
-            <div className="mt-1 text-xs leading-relaxed text-slate-500">
-              {(canvasMode === "weekly" ? weeklyDateRange?.label : dateRange?.label) ?? "날짜 범위를 계산하는 중"} ·{" "}
-              {canvasMode === "weekly" || rangeMode === "week" ? "선택일 기준 최근 7일" : "자정 기준 하루"}
+            <button
+              type="button"
+              className="shrink-0 rounded-full bg-white/15 px-3 py-2 text-xs font-bold text-white backdrop-blur transition hover:bg-white/25"
+              onClick={() => handleCanvasModeChange("settings")}
+            >
+              설정
+            </button>
+          </div>
+          <div className="mt-5 grid grid-cols-3 gap-2">
+            <div className="rounded-lg bg-white/15 p-3 backdrop-blur">
+              <div className="text-[11px] font-bold text-sky-100">선택 범위</div>
+              <div className="mt-1 truncate text-sm font-black">{activeRangeLabel}</div>
+            </div>
+            <div className="rounded-lg bg-white/15 p-3 backdrop-blur">
+              <div className="text-[11px] font-bold text-sky-100">기록 수</div>
+              <div className="mt-1 text-sm font-black">{activeSummary.totalCount}개</div>
+            </div>
+            <div className="rounded-lg bg-white/15 p-3 backdrop-blur">
+              <div className="text-[11px] font-bold text-sky-100">Top 주제</div>
+              <div className="mt-1 truncate text-sm font-black">{activeSummary.topCategory?.name ?? "없음"}</div>
             </div>
           </div>
-          <div className="flex flex-col gap-2 md:items-end">
-            <div className="grid grid-cols-4 gap-1 rounded-lg border border-slate-200 bg-slate-100 p-1">
-              <button
-                type="button"
-                className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${
-                  canvasMode === "review"
-                    ? "bg-white text-slate-900 shadow-sm"
-                    : "text-slate-500 hover:text-slate-800"
-                }`}
-                onClick={() => handleCanvasModeChange("review")}
-              >
-                회고
-              </button>
-              <button
-                type="button"
-                className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${
-                  canvasMode === "weekly"
-                    ? "bg-white text-slate-900 shadow-sm"
-                    : "text-slate-500 hover:text-slate-800"
-                }`}
-                onClick={() => handleCanvasModeChange("weekly")}
-              >
-                리포트
-              </button>
-              <button
-                type="button"
-                className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${
-                  canvasMode === "mindmap"
-                    ? "bg-white text-slate-900 shadow-sm"
-                    : "text-slate-500 hover:text-slate-800"
-                }`}
-                onClick={() => handleCanvasModeChange("mindmap")}
-              >
-                마인드맵
-              </button>
-              <button
-                type="button"
-                className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${
-                  canvasMode === "timeline"
-                    ? "bg-white text-slate-900 shadow-sm"
-                    : "text-slate-500 hover:text-slate-800"
-                }`}
-                onClick={() => handleCanvasModeChange("timeline")}
-              >
-                타임라인
-              </button>
-            </div>
-            <div className="text-xs leading-relaxed text-slate-500 md:text-right">
-              {importNote ||
-                (canvasMode === "review"
-                  ? "오늘의 관심사 흐름과 기억할 영상을 회고 형태로 정리합니다."
-                  : canvasMode === "weekly"
-                  ? "선택한 날짜를 끝으로 최근 7일의 관심사 변화를 정리합니다."
-                  : canvasMode === "mindmap"
-                  ? "검색은 일치 노드를 강조하고 숨겨진 그룹을 자동으로 펼칩니다."
-                  : "시청 기록을 시간순으로 배치합니다. 카드를 누르면 상세 정보를 볼 수 있습니다.")}
-            </div>
-          </div>
-        </div>
-        <div className="h-[calc(100svh-340px)] min-h-[380px] md:h-[68svh] md:min-h-[460px] 2xl:min-h-0 2xl:flex-1">
+          {importNote ? <p className="mt-3 text-xs leading-relaxed text-sky-50">{importNote}</p> : null}
+        </header>
+
+        <main className="flex-1 px-4 py-4 pb-24 md:px-6">
           {canvasMode === "review" ? (
-            <DailyReviewPanel
-              review={dailyReview}
-              summary={summary}
-              items={filteredItems}
+            <HomeDashboard
               dateLabel={selectedRangeLabel}
+              rangeLabel={activeRangeDescription}
+              dates={quickDateOptions}
+              selectedDateKey={selectedDateKey}
+              rangeMode={rangeMode}
+              summary={summary}
+              review={dailyReview}
               dateSettings={dateSettings}
               note={reviewNote}
               onNoteChange={setReviewNote}
+              onDateSelect={handleDateSelect}
+              onRangeModeChange={handleRangeModeChange}
+              onOpenSettings={() => handleCanvasModeChange("settings")}
+              onOpenTimeline={() => handleCanvasModeChange("timeline")}
+              onOpenMindMap={() => handleCanvasModeChange("mindmap")}
+              onOpenWeekly={() => handleCanvasModeChange("weekly")}
               onItemSelect={handleTimelineItemSelect}
             />
           ) : canvasMode === "weekly" ? (
-            <WeeklyReportPanel
-              report={weeklyReport}
-              dateLabel={weeklyRangeLabel}
-              dateSettings={dateSettings}
-              note={reviewNote}
-              onNoteChange={setReviewNote}
-              onItemSelect={handleTimelineItemSelect}
-            />
+            <div className="min-h-[calc(100svh-236px)] md:min-h-[620px]">
+              <WeeklyReportPanel
+                report={weeklyReport}
+                dateLabel={weeklyRangeLabel}
+                dateSettings={dateSettings}
+                note={reviewNote}
+                onNoteChange={setReviewNote}
+                onItemSelect={handleTimelineItemSelect}
+              />
+            </div>
           ) : canvasMode === "mindmap" ? (
-            <MindMapCanvas
-              root={displayRoot}
-              selectedNodeId={selectedTimelineNode ? undefined : selectedNode?.id}
-              onNodeSelect={handleNodeSelect}
-              onToggleBranch={handleToggleBranch}
-              onToggleCollapsedGroup={handleToggleCollapsedGroup}
-              onExpandAll={handleExpandAll}
-              onCollapseAll={handleCollapseAll}
-            />
+            <div className="h-[calc(100svh-236px)] min-h-[500px]">
+              <MindMapCanvas
+                root={displayRoot}
+                selectedNodeId={selectedTimelineNode ? undefined : selectedNode?.id}
+                onNodeSelect={handleNodeSelect}
+                onToggleBranch={handleToggleBranch}
+                onToggleCollapsedGroup={handleToggleCollapsedGroup}
+                onExpandAll={handleExpandAll}
+                onCollapseAll={handleCollapseAll}
+              />
+            </div>
+          ) : canvasMode === "timeline" ? (
+            <div className="h-[calc(100svh-236px)] min-h-[500px]">
+              <WatchTimeline
+                items={filteredItems}
+                dateKey={selectedRangeLabel}
+                dateSettings={dateSettings}
+                selectedItemId={(selectedTimelineNode?.meta?.item as ClassifiedWatchItem | undefined)?.id}
+                onItemSelect={handleTimelineItemSelect}
+              />
+            </div>
           ) : (
-            <WatchTimeline
-              items={filteredItems}
-              dateKey={selectedRangeLabel}
-              dateSettings={dateSettings}
-              selectedItemId={
-                (selectedTimelineNode?.meta?.item as ClassifiedWatchItem | undefined)?.id
-              }
-              onItemSelect={handleTimelineItemSelect}
-            />
+            <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+              <div className="mb-4">
+                <h2 className="text-xl font-black text-slate-950">가져오기와 설정</h2>
+                <p className="mt-2 text-sm leading-relaxed text-slate-500">
+                  날짜, Takeout 가져오기, 검색 필터, 마인드맵 표시 방식을 관리합니다.
+                </p>
+              </div>
+              <LeftPanel
+                {...leftPanelProps}
+                className="w-full bg-transparent"
+                contentClassName="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3"
+                showIntro={false}
+              />
+            </section>
           )}
-        </div>
-      </main>
-      <DetailPanel node={selectedNode} dateSettings={dateSettings} />
+        </main>
+      </div>
 
       {mobilePanel !== "none" ? (
-        <div className="fixed inset-0 z-50 2xl:hidden">
+        <div className="fixed inset-0 z-50">
           <button
             type="button"
             className="absolute inset-0 bg-slate-950/45"
@@ -1032,17 +971,13 @@ export function AppShell() {
           <section
             role="dialog"
             aria-modal="true"
-            aria-label={mobilePanelTitle}
+            aria-label="상세 정보"
             className="absolute inset-x-0 bottom-0 max-h-[88svh] overflow-y-auto rounded-t-2xl border-t border-slate-200 bg-slate-50 p-4 shadow-2xl"
           >
             <div className="mb-3 flex items-center justify-between gap-3">
               <div>
-                <div className="text-sm font-semibold text-slate-950">{mobilePanelTitle}</div>
-                <div className="mt-1 text-xs text-slate-500">
-                  {mobilePanel === "controls"
-                    ? "날짜, 가져오기, 필터를 여기서 조정합니다."
-                    : "선택한 노드와 영상 기록을 확인합니다."}
-                </div>
+                <div className="text-sm font-semibold text-slate-950">상세 정보</div>
+                <div className="mt-1 text-xs text-slate-500">선택한 노드와 영상 기록을 확인합니다.</div>
               </div>
               <button
                 type="button"
@@ -1052,71 +987,51 @@ export function AppShell() {
                 닫기
               </button>
             </div>
-            {mobilePanel === "controls" ? (
-              <LeftPanel
-                {...leftPanelProps}
-                className="w-full bg-slate-50"
-                contentClassName="grid grid-cols-1 gap-4 md:grid-cols-2"
-                showIntro={false}
-                onItemsImported={handleMobileItemsImported}
-                onDateSelect={handleMobileDateSelect}
-                onRangeModeChange={handleMobileRangeModeChange}
-                onViewModeChange={handleMobileViewModeChange}
-              />
-            ) : (
-              <DetailPanel
-                className="w-full bg-slate-50"
-                showIntro={false}
-                node={selectedNode}
-                dateSettings={dateSettings}
-              />
-            )}
+            <DetailPanel
+              className="w-full bg-slate-50"
+              showIntro={false}
+              node={selectedNode}
+              dateSettings={dateSettings}
+            />
           </section>
         </div>
       ) : null}
 
-      <nav className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-6 gap-1 border-t border-slate-200 bg-white/95 p-2 shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur 2xl:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-40 mx-auto grid max-w-2xl grid-cols-5 gap-1 rounded-t-lg border-t border-slate-200 bg-white/95 p-2 shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur">
         <button
           type="button"
-          className={getMobileNavButtonClass(canvasMode === "review")}
-          onClick={() => handleMobileCanvasModeChange("review")}
+          className={getAppNavButtonClass(canvasMode === "review")}
+          onClick={() => handleCanvasModeChange("review")}
         >
-          회고
+          홈
         </button>
         <button
           type="button"
-          className={getMobileNavButtonClass(canvasMode === "weekly")}
-          onClick={() => handleMobileCanvasModeChange("weekly")}
-        >
-          리포트
-        </button>
-        <button
-          type="button"
-          className={getMobileNavButtonClass(canvasMode === "timeline")}
-          onClick={() => handleMobileCanvasModeChange("timeline")}
+          className={getAppNavButtonClass(canvasMode === "timeline")}
+          onClick={() => handleCanvasModeChange("timeline")}
         >
           타임라인
         </button>
         <button
           type="button"
-          className={getMobileNavButtonClass(canvasMode === "mindmap")}
-          onClick={() => handleMobileCanvasModeChange("mindmap")}
+          className={getAppNavButtonClass(canvasMode === "mindmap")}
+          onClick={() => handleCanvasModeChange("mindmap")}
         >
           맵
         </button>
         <button
           type="button"
-          className={getMobileNavButtonClass(mobilePanel === "controls")}
-          onClick={() => setMobilePanel("controls")}
+          className={getAppNavButtonClass(canvasMode === "weekly")}
+          onClick={() => handleCanvasModeChange("weekly")}
         >
-          설정
+          리포트
         </button>
         <button
           type="button"
-          className={getMobileNavButtonClass(mobilePanel === "detail")}
-          onClick={() => setMobilePanel("detail")}
+          className={getAppNavButtonClass(canvasMode === "settings")}
+          onClick={() => handleCanvasModeChange("settings")}
         >
-          상세
+          설정
         </button>
       </nav>
     </div>
