@@ -17,7 +17,7 @@ type NativeDriveFilePlugin = {
 };
 
 export type NativeDriveImportProgress = {
-  phase: "opening" | "scanning" | "reading" | "parsing" | "complete";
+  phase: "opening" | "copying" | "scanning" | "reading" | "parsing" | "complete";
   percent: number;
   message: string;
   fileName?: string;

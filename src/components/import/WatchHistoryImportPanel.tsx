@@ -51,18 +51,22 @@ export function WatchHistoryImportPanel({
   const isNativeDrivePicker = isNativeDriveFilePickerAvailable();
   const [errorMessage, setErrorMessage] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
+  const [isSelectingFile, setIsSelectingFile] = useState(false);
   const [isReading, setIsReading] = useState(false);
   const [nativeProgress, setNativeProgress] = useState<NativeDriveImportProgress | undefined>();
 
   async function handleNativeDrivePick() {
     setErrorMessage("");
     setStatusMessage("Google Drive의 Takeout ZIP을 선택해주세요.");
-    setIsReading(true);
+    setIsSelectingFile(true);
+    setIsReading(false);
     setNativeProgress(undefined);
 
     let progressListener: { remove: () => Promise<void> } | undefined;
     try {
       progressListener = await addNativeDriveImportProgressListener((progress) => {
+        setIsSelectingFile(false);
+        setIsReading(true);
         setNativeProgress(progress);
         setStatusMessage(progress.message);
       });
@@ -84,6 +88,7 @@ export function WatchHistoryImportPanel({
     } finally {
       void progressListener?.remove();
       setNativeProgress(undefined);
+      setIsSelectingFile(false);
       setIsReading(false);
     }
   }
@@ -168,7 +173,7 @@ export function WatchHistoryImportPanel({
         <button
           type="button"
           className="w-full rounded-md bg-slate-900 px-3 py-3 text-sm font-semibold text-white hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-60"
-          disabled={isReading}
+          disabled={isReading || isSelectingFile}
           onClick={() => {
             if (isNativeDrivePicker) {
               void handleNativeDrivePick();
@@ -178,7 +183,7 @@ export function WatchHistoryImportPanel({
             inputRef.current?.click();
           }}
         >
-          {isReading ? "가져오는 중" : isNativeDrivePicker ? "Google Drive ZIP 선택" : "ZIP/파일 선택"}
+          {isReading ? "가져오는 중" : isSelectingFile ? "파일 선택 중" : isNativeDrivePicker ? "Google Drive ZIP 선택" : "ZIP/파일 선택"}
         </button>
         <p className="text-xs leading-relaxed text-slate-500">
           {isNativeDrivePicker

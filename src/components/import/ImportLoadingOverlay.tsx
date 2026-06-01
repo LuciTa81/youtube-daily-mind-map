@@ -62,7 +62,8 @@ export function ImportLoadingOverlay({
     return () => window.clearInterval(intervalId);
   }, [open]);
 
-  const displayProgress = Math.max(2, Math.min(100, progress?.percent ?? estimatedProgress));
+  const measuredProgress = progress?.phase === "complete" ? 100 : progress?.percent ?? 0;
+  const displayProgress = Math.max(2, Math.min(100, Math.max(measuredProgress, estimatedProgress)));
   const radius = 96;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (displayProgress / 100) * circumference;
