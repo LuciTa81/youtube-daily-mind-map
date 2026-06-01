@@ -112,7 +112,7 @@ export function WatchHistoryImportPanel({
         <h2 className="text-sm font-semibold text-slate-900">Takeout 가져오기</h2>
         <p className="mt-1 text-xs leading-relaxed text-slate-500">
           {isNativeDrivePicker
-            ? "Android 앱에서는 Google Drive의 Takeout ZIP만 선택합니다. JSON이나 HTML 파일을 직접 찾을 필요가 없습니다."
+            ? "Android 앱에서는 Google Drive의 Takeout ZIP만 선택합니다. 큰 ZIP도 앱 안에서 필요한 기록만 찾아 읽습니다."
             : "Takeout ZIP을 그대로 선택하면 압축을 풀지 않고 시청 기록만 읽습니다."}
         </p>
       </div>
@@ -163,7 +163,7 @@ export function WatchHistoryImportPanel({
         </button>
         <p className="text-xs leading-relaxed text-slate-500">
           {isNativeDrivePicker
-            ? "Android 시스템 파일 선택기에서 Google Drive를 열고 Takeout ZIP을 고르세요. Drive가 아닌 위치나 ZIP이 아닌 파일은 거절됩니다."
+            ? "Android 파일 선택기에서 Google Drive를 열고 Takeout ZIP을 고르세요. 한 번 선택한 뒤에는 가능한 경우 마지막 Drive 위치를 먼저 엽니다."
             : "웹에서는 ZIP, watch-history.json, watch-history.html을 선택할 수 있습니다."}
         </p>
       </div>
