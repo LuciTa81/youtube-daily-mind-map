@@ -26,6 +26,7 @@ import type { ParsedWatchHistory } from "@/lib/import/parseTakeout";
 import type { MindMapBuildOptions, MindMapNode, MindMapViewMode } from "@/types/mindmap";
 import type { ClassifiedWatchItem, DateRangeMode, DateSettings, WatchItem } from "@/types/watch";
 import { DetailPanel } from "./DetailPanel";
+import { ImportStatusBanner } from "./ImportStatusBanner";
 import { LeftPanel } from "./LeftPanel";
 import { TopSummaryCards } from "./TopSummaryCards";
 
@@ -857,6 +858,16 @@ export function AppShell() {
     <div className="flex min-h-screen flex-col bg-slate-100 text-slate-900 2xl:h-screen 2xl:min-h-0 2xl:flex-row 2xl:overflow-hidden">
       <LeftPanel {...leftPanelProps} />
       <main className="order-1 flex min-w-0 flex-1 flex-col gap-3 p-3 pb-24 md:gap-4 md:p-4 md:pb-24 2xl:order-2 2xl:p-5">
+        <ImportStatusBanner
+          activeSourceName={activeSourceName}
+          totalItemCount={watchItems.length}
+          savedItemCount={savedWatchItems.length}
+          isUsingSample={dataViewMode === "sample"}
+          isStorageReady={isStorageReady}
+          importNote={importNote}
+          onOpenImport={() => setMobilePanel("controls")}
+          onUseSaved={handleUseSaved}
+        />
         <TopSummaryCards
           dateKey={selectedDateKey || "선택 없음"}
           dateLabel={activeRangeLabel}
