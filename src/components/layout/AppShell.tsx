@@ -240,6 +240,15 @@ function getRangeDisplayLabel(
   return dateKey;
 }
 
+function getImportSourceLabel(result: ParsedWatchHistory): string {
+  if (result.source === "takeout-zip") {
+    const innerType = result.parserSource === "takeout-html" ? "HTML" : "JSON";
+    return `Takeout ZIP · ${innerType}`;
+  }
+
+  return result.source === "takeout-json" ? "JSON" : "HTML";
+}
+
 export function AppShell() {
   const [watchItems, setWatchItems] = useState<WatchItem[]>(sampleWatchItems);
   const [activeSourceName, setActiveSourceName] = useState("샘플 데이터");
@@ -417,9 +426,9 @@ export function AppShell() {
       setWatchItems(items);
       setActiveSourceName(sourceName);
       setImportNote(
-        `${result.source === "takeout-json" ? "JSON" : "HTML"}에서 ${items.length}개 기록을 불러왔습니다${
+        `${getImportSourceLabel(result)}에서 ${items.length}개 기록을 불러왔습니다${
           result.skippedCount > 0 ? ` · ${result.skippedCount}개 항목은 건너뜀` : ""
-        }`
+        }${result.matchedFileName ? ` · ${result.matchedFileName}` : ""}`
       );
       setSelectedDateKey("");
       setRangeMode("day");

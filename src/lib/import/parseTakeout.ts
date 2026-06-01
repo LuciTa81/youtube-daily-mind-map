@@ -1,3 +1,4 @@
+import JSZip from "jszip";
 import type { WatchItem } from "@/types/watch";
 
 type TakeoutJsonEntry = {
@@ -14,10 +15,15 @@ type TakeoutJsonEntry = {
 export type ParsedWatchHistory = {
   items: WatchItem[];
   skippedCount: number;
-  source: "takeout-html" | "takeout-json";
+  source: "takeout-html" | "takeout-json" | "takeout-zip";
+  parserSource?: "takeout-html" | "takeout-json";
+  matchedFileName?: string;
+  archiveEntryCount?: number;
 };
 
 const YOUTUBE_WATCH_PATTERNS = ["youtube.com/watch", "youtu.be/", "music.youtube.com/watch"];
+const ZIP_FILE_EXTENSIONS = [".zip"];
+const TEXT_HISTORY_FILE_EXTENSIONS = [".json", ".html", ".htm"];
 
 function decodeHtml(value: string): string {
   return value
@@ -294,5 +300,109 @@ export function parseTakeoutFile(fileName: string, content: string): ParsedWatch
     return parseTakeoutHtml(content);
   }
 
-  throw new Error("지원하는 파일은 YouTube Takeout의 watch-history.json 또는 watch-history.html입니다.");
+  throw new Error("지원하는 파일은 YouTube Takeout의 .zip, watch-history.json, watch-history.html입니다.");
+}
+
+function isZipFile(fileName: string, fileType?: string): boolean {
+  const lowerFileName = fileName.toLocaleLowerCase("ko-KR");
+  return ZIP_FILE_EXTENSIONS.some((extension) => lowerFileName.endsWith(extension)) || fileType === "application/zip";
+}
+
+function isTextHistoryFile(fileName: string): boolean {
+  const lowerFileName = fileName.toLocaleLowerCase("ko-KR");
+  return TEXT_HISTORY_FILE_EXTENSIONS.some((extension) => lowerFileName.endsWith(extension));
+}
+
+function scoreZipEntry(fileName: string): number {
+  const lowerFileName = fileName.replace(/\\/g, "/").toLocaleLowerCase("ko-KR");
+  const pathParts = lowerFileName.split("/");
+  const baseName = pathParts[pathParts.length - 1] ?? lowerFileName;
+  let score = 0;
+
+  if (baseName === "watch-history.json") {
+    score += 120;
+  }
+  if (baseName === "watch-history.html" || baseName === "watch-history.htm") {
+    score += 110;
+  }
+  if (lowerFileName.includes("watch-history")) {
+    score += 80;
+  }
+  if (lowerFileName.includes("youtube")) {
+    score += 40;
+  }
+  if (lowerFileName.includes("history") || lowerFileName.includes("기록")) {
+    score += 25;
+  }
+  if (lowerFileName.endsWith(".json")) {
+    score += 8;
+  }
+  if (lowerFileName.endsWith(".html") || lowerFileName.endsWith(".htm")) {
+    score += 6;
+  }
+
+  return score;
+}
+
+function isPotentialZipHistoryEntry(fileName: string): boolean {
+  if (!isTextHistoryFile(fileName)) {
+    return false;
+  }
+
+  return scoreZipEntry(fileName) > 0;
+}
+
+type ZipCandidate = {
+  fileName: string;
+  file: JSZip.JSZipObject;
+  score: number;
+};
+
+function getZipCandidates(zip: JSZip): ZipCandidate[] {
+  const files = Object.values(zip.files).filter((file) => !file.dir);
+  const preferred = files.filter((file) => isPotentialZipHistoryEntry(file.name));
+  const fallback = preferred.length > 0 ? preferred : files.filter((file) => isTextHistoryFile(file.name));
+
+  return fallback
+    .map((file) => ({ fileName: file.name, file, score: scoreZipEntry(file.name) }))
+    .sort((a, b) => b.score - a.score || a.fileName.localeCompare(b.fileName));
+}
+
+export async function parseTakeoutZip(fileName: string, content: ArrayBuffer): Promise<ParsedWatchHistory> {
+  const zip = await JSZip.loadAsync(content);
+  const archiveEntryCount = Object.values(zip.files).filter((file) => !file.dir).length;
+  const candidates = getZipCandidates(zip);
+  const parseErrors: string[] = [];
+
+  for (const candidate of candidates) {
+    try {
+      const text = await candidate.file.async("string");
+      const parsed = parseTakeoutFile(candidate.fileName, text);
+
+      if (parsed.items.length > 0) {
+        return {
+          ...parsed,
+          source: "takeout-zip",
+          parserSource: parsed.source === "takeout-zip" ? undefined : parsed.source,
+          matchedFileName: candidate.fileName,
+          archiveEntryCount
+        };
+      }
+    } catch (error) {
+      parseErrors.push(error instanceof Error ? error.message : `${candidate.fileName} 파일을 읽지 못했습니다.`);
+    }
+  }
+
+  const detail = parseErrors.length > 0 ? ` 마지막 오류: ${parseErrors[parseErrors.length - 1]}` : "";
+  throw new Error(
+    `${fileName} 안에서 YouTube 시청 기록을 찾지 못했습니다. Takeout에서 YouTube 및 YouTube Music의 기록을 포함했는지 확인해주세요.${detail}`
+  );
+}
+
+export async function parseTakeoutBrowserFile(file: File): Promise<ParsedWatchHistory> {
+  if (isZipFile(file.name, file.type)) {
+    return parseTakeoutZip(file.name, await file.arrayBuffer());
+  }
+
+  return parseTakeoutFile(file.name, await file.text());
 }
