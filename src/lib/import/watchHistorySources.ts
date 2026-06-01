@@ -45,7 +45,8 @@ function isZipLikeFile(fileName: string, mimeType?: string): boolean {
     lowerFileName.endsWith(".zip") ||
     mimeType === "application/zip" ||
     mimeType === "application/x-zip" ||
-    mimeType === "application/x-zip-compressed"
+    mimeType === "application/x-zip-compressed" ||
+    mimeType === "application/octet-stream"
   );
 }
 

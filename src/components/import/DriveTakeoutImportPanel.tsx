@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { Capacitor } from "@capacitor/core";
 import { formatDriveFileSize, getDriveApiUserMessage, trashDriveFile } from "@/lib/drive/googleDriveApi";
 import { pickGoogleDriveFile, type PickedDriveFile } from "@/lib/drive/googlePicker";
 import type { ParsedWatchHistory } from "@/lib/import/parseTakeout";
@@ -79,8 +80,10 @@ function getProgressPercent(downloadedBytes: number, totalBytes?: number): numbe
 
 export function DriveTakeoutImportPanel({ onImported }: DriveTakeoutImportPanelProps) {
   const config = useMemo(getDriveConfig, []);
+  const isNativeApp = useMemo(() => Capacitor.isNativePlatform(), []);
   const missingConfigLabels = useMemo(() => getMissingConfigLabels(config), [config]);
   const isConfigured = missingConfigLabels.length === 0;
+  const isPickerAvailable = isConfigured && !isNativeApp;
   const [phase, setPhase] = useState<DriveImportPhase>("idle");
   const [statusMessage, setStatusMessage] = useState("");
   const [errorMessage, setErrorMessage] = useState("");
@@ -195,11 +198,15 @@ export function DriveTakeoutImportPanel({ onImported }: DriveTakeoutImportPanelP
       <div>
         <div className="text-xs font-semibold text-slate-700">Drive에서 가져오기</div>
         <p className="mt-1 text-xs leading-relaxed text-slate-500">
-          Drive 전체를 검색하지 않고, Google Picker에서 고른 Takeout ZIP 하나만 다운로드합니다.
+          웹/PWA에서는 Google Picker로 Drive의 Takeout ZIP 하나만 선택할 수 있습니다. Drive 전체를 검색하지
+          않습니다.
         </p>
-        <p className="mt-1 text-xs leading-relaxed text-slate-500">
-          Takeout 만들기는 Google 화면을 여는 단계이고, 내보내기가 완료된 뒤 Drive ZIP을 선택하면 됩니다.
-        </p>
+        {isNativeApp ? (
+          <p className="mt-2 rounded-md border border-amber-200 bg-amber-50 px-2 py-2 text-xs leading-relaxed text-amber-800">
+            Android 앱에서는 Google 로그인 스크립트가 WebView에서 막힐 수 있습니다. 위의 기기/Drive ZIP 선택이
+            더 안정적입니다.
+          </p>
+        ) : null}
       </div>
 
       <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
@@ -214,7 +221,7 @@ export function DriveTakeoutImportPanel({ onImported }: DriveTakeoutImportPanelP
         <button
           type="button"
           className="rounded-md bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
-          disabled={!isConfigured || isPicking}
+          disabled={!isPickerAvailable || isPicking}
           onClick={() => {
             void handlePickDriveFile();
           }}
@@ -254,7 +261,9 @@ export function DriveTakeoutImportPanel({ onImported }: DriveTakeoutImportPanelP
           <div className="mt-1 truncate">{selectedFile.name}</div>
           <div className="mt-1 text-slate-500">
             {formatDriveFileSize(selectedFile.size)}
-            {selectedFile.capabilities?.canTrash === false ? " · 앱에서 휴지통 이동 불가" : " · 가져오기 후 정리 가능"}
+            {selectedFile.capabilities?.canTrash === false
+              ? " · 앱에서 휴지통 이동 불가"
+              : " · 가져오기 후 정리 가능"}
           </div>
         </div>
       ) : null}

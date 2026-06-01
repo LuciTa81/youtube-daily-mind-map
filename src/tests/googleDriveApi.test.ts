@@ -14,10 +14,13 @@ describe("googleDriveApi", () => {
 
   it("downloads a Drive file and reports byte progress", async () => {
     const content = new TextEncoder().encode("watch history");
-    const fetchMock = vi.fn(async () => new Response(content, {
-      status: 200,
-      headers: { "content-length": String(content.byteLength) }
-    }));
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(content, {
+          status: 200,
+          headers: { "content-length": String(content.byteLength) }
+        })
+    );
     vi.stubGlobal("fetch", fetchMock);
 
     const onProgress = vi.fn();
@@ -31,14 +34,20 @@ describe("googleDriveApi", () => {
   });
 
   it("normalizes Drive API permission errors", async () => {
-    const fetchMock = vi.fn(async () => new Response(JSON.stringify({
-      error: {
-        code: 403,
-        message: "The user does not have sufficient permissions for file.",
-        status: "PERMISSION_DENIED",
-        errors: [{ reason: "insufficientFilePermissions" }]
-      }
-    }), { status: 403 }));
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            error: {
+              code: 403,
+              message: "The user does not have sufficient permissions for file.",
+              status: "PERMISSION_DENIED",
+              errors: [{ reason: "insufficientFilePermissions" }]
+            }
+          }),
+          { status: 403 }
+        )
+    );
     vi.stubGlobal("fetch", fetchMock);
 
     try {
@@ -56,12 +65,18 @@ describe("googleDriveApi", () => {
   });
 
   it("moves a selected Drive file to trash", async () => {
-    const fetchMock = vi.fn(async () => new Response(JSON.stringify({
-      id: "drive-file-1",
-      name: "takeout.zip",
-      trashed: true,
-      capabilities: { canTrash: true, canDelete: true }
-    }), { status: 200 }));
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            id: "drive-file-1",
+            name: "takeout.zip",
+            trashed: true,
+            capabilities: { canTrash: true, canDelete: true }
+          }),
+          { status: 200 }
+        )
+    );
     vi.stubGlobal("fetch", fetchMock);
 
     const result = await trashDriveFile("token", "drive-file-1");

@@ -66,6 +66,7 @@ type GooglePickerBuilder = {
   addView: (view: GooglePickerDocsView) => GooglePickerBuilder;
   setAppId: (appId: string) => GooglePickerBuilder;
   setDeveloperKey: (apiKey: string) => GooglePickerBuilder;
+  setOrigin?: (origin: string) => GooglePickerBuilder;
   setOAuthToken: (accessToken: string) => GooglePickerBuilder;
   setCallback: (callback: (data: PickerData) => void) => GooglePickerBuilder;
   build: () => {
@@ -86,6 +87,10 @@ declare global {
       };
       picker?: GooglePickerNamespace;
     };
+    Capacitor?: {
+      isNativePlatform?: () => boolean;
+      getPlatform?: () => string;
+    };
   }
 }
 
@@ -99,6 +104,7 @@ const DRIVE_PICKER_MIME_TYPES = [
   "application/zip",
   "application/x-zip",
   "application/x-zip-compressed",
+  "application/octet-stream",
   "application/json",
   "text/html"
 ].join(",");
@@ -129,6 +135,14 @@ function normalizeConfig(config: GoogleDrivePickerConfig): GoogleDrivePickerConf
   };
 }
 
+function isNativeCapacitorRuntime(): boolean {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  return Boolean(window.Capacitor?.isNativePlatform?.());
+}
+
 function assertGoogleDriveConfig(config: GoogleDrivePickerConfig) {
   const missing = [
     ["NEXT_PUBLIC_GOOGLE_DRIVE_CLIENT_ID", config.clientId],
@@ -143,9 +157,67 @@ function assertGoogleDriveConfig(config: GoogleDrivePickerConfig) {
   }
 }
 
-function loadScript(id: string, src: string): Promise<void> {
+function delay(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+function appendCacheBuster(src: string): string {
+  const separator = src.includes("?") ? "&" : "?";
+  return `${src}${separator}retry=${Date.now()}`;
+}
+
+function loadScriptAttempt(id: string, src: string): Promise<void> {
+  return new Promise<void>((resolve, reject) => {
+    const script = document.createElement("script");
+    script.id = id;
+    script.src = src;
+    script.async = true;
+    script.defer = true;
+    script.onload = () => {
+      script.dataset.loaded = "true";
+      resolve();
+    };
+    script.onerror = () => {
+      script.remove();
+      reject(new Error("Google 연결 스크립트를 불러오지 못했습니다."));
+    };
+    document.head.appendChild(script);
+  });
+}
+
+async function loadScriptWithRetry(id: string, src: string): Promise<void> {
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    document.getElementById(id)?.remove();
+
+    try {
+      await withTimeout(
+        loadScriptAttempt(id, attempt === 0 ? src : appendCacheBuster(src)),
+        SCRIPT_LOAD_TIMEOUT_MS,
+        "Google 연결 스크립트 로딩 시간이 초과되었습니다. 네트워크 상태를 확인해주세요."
+      );
+      return;
+    } catch (error) {
+      lastError = error;
+      await delay(300);
+    }
+  }
+
+  throw lastError instanceof Error
+    ? lastError
+    : new Error("Google 연결 스크립트를 불러오지 못했습니다.");
+}
+
+function loadScript(id: string, src: string, isReady?: () => boolean): Promise<void> {
   if (typeof document === "undefined") {
     return Promise.reject(new Error("브라우저 환경에서만 Google Drive를 연결할 수 있습니다."));
+  }
+
+  if (isReady?.()) {
+    return Promise.resolve();
   }
 
   const existing = document.getElementById(id) as HTMLScriptElement | null;
@@ -158,28 +230,7 @@ function loadScript(id: string, src: string): Promise<void> {
     return pending;
   }
 
-  existing?.remove();
-
-  const promise = withTimeout(
-    new Promise<void>((resolve, reject) => {
-      const script = document.createElement("script");
-      script.id = id;
-      script.src = src;
-      script.async = true;
-      script.defer = true;
-      script.onload = () => {
-        script.dataset.loaded = "true";
-        resolve();
-      };
-      script.onerror = () => {
-        script.remove();
-        reject(new Error("Google 연결 스크립트를 불러오지 못했습니다."));
-      };
-      document.head.appendChild(script);
-    }),
-    SCRIPT_LOAD_TIMEOUT_MS,
-    "Google 연결 스크립트 로딩 시간이 초과되었습니다. 네트워크 상태를 확인해주세요."
-  ).catch((error) => {
+  const promise = loadScriptWithRetry(id, src).catch((error) => {
     scriptLoadPromises.delete(id);
     throw error;
   });
@@ -207,7 +258,9 @@ function loadGapiPicker(): Promise<void> {
 }
 
 async function loadGoogleIdentityServices(): Promise<void> {
-  await loadScript(GIS_SCRIPT_ID, "https://accounts.google.com/gsi/client");
+  await loadScript(GIS_SCRIPT_ID, "https://accounts.google.com/gsi/client", () =>
+    Boolean(window.google?.accounts?.oauth2)
+  );
 
   if (!window.google?.accounts?.oauth2) {
     throw new Error("Google 로그인 모듈을 초기화하지 못했습니다.");
@@ -215,7 +268,7 @@ async function loadGoogleIdentityServices(): Promise<void> {
 }
 
 async function loadGooglePicker(): Promise<GooglePickerNamespace> {
-  await loadScript(PICKER_SCRIPT_ID, "https://apis.google.com/js/api.js");
+  await loadScript(PICKER_SCRIPT_ID, "https://apis.google.com/js/api.js", () => Boolean(window.gapi));
   await loadGapiPicker();
 
   if (!window.google?.picker) {
@@ -275,9 +328,7 @@ function requestAccessToken(clientId: string): Promise<string> {
     try {
       tokenClient.requestAccessToken({ prompt: "consent" });
     } catch (error) {
-      settle(() =>
-        reject(error instanceof Error ? error : new Error("Google 인증 요청을 시작하지 못했습니다."))
-      );
+      settle(() => reject(error instanceof Error ? error : new Error("Google 인증 요청을 시작하지 못했습니다.")));
     }
   });
 }
@@ -330,7 +381,7 @@ function openPicker(
       .setSelectFolderEnabled(false)
       .setMimeTypes(DRIVE_PICKER_MIME_TYPES);
 
-    const pickerInstance = new picker.PickerBuilder()
+    const pickerBuilder = new picker.PickerBuilder()
       .setAppId(config.appId)
       .setDeveloperKey(config.apiKey)
       .setOAuthToken(accessToken)
@@ -353,14 +404,24 @@ function openPicker(
         }
 
         settle(() => resolve(pickedDocument));
-      })
-      .build();
+      });
 
+    if (typeof pickerBuilder.setOrigin === "function" && window.location.origin) {
+      pickerBuilder.setOrigin(window.location.origin);
+    }
+
+    const pickerInstance = pickerBuilder.build();
     pickerInstance.setVisible(true);
   });
 }
 
 export async function pickGoogleDriveFile(config: GoogleDrivePickerConfig): Promise<PickedDriveFile | undefined> {
+  if (isNativeCapacitorRuntime()) {
+    throw new Error(
+      "Android 앱에서는 Google Drive 로그인 스크립트가 막힐 수 있습니다. 위의 기기/Drive ZIP 선택으로 파일 앱이나 Drive 앱에서 Takeout ZIP을 선택해주세요."
+    );
+  }
+
   const normalizedConfig = normalizeConfig(config);
   assertGoogleDriveConfig(normalizedConfig);
 

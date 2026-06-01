@@ -94,7 +94,11 @@ async function readDriveError(response: Response): Promise<DriveApiError> {
 
   const apiError = body?.error;
   const firstDetail = apiError?.errors?.[0];
-  const message = apiError?.message || firstDetail?.message || text || `Google Drive 요청에 실패했습니다. (${response.status})`;
+  const message =
+    apiError?.message ||
+    firstDetail?.message ||
+    text ||
+    `Google Drive 요청에 실패했습니다. (${response.status})`;
 
   return new DriveApiError(message, response.status, apiError?.status, firstDetail?.reason);
 }
