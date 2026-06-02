@@ -128,9 +128,9 @@ This matrix maps the existing smoke results to `docs/checklists/android-smoke-te
 
 | Checklist area | Status | Evidence | Remaining gap |
 | --- | --- | --- | --- |
-| Preconditions | Pass | Debug build, release build, APK install, real device, and non-private fixtures were recorded in the 2026-06-02 and 2026-06-03 smoke sections. | Record the exact build commit in the next smoke result block. |
+| Preconditions | Pass | Debug build, release build, APK install, real device, emulator clean install, non-private fixtures, and exact build commits were recorded in the 2026-06-02 and 2026-06-03 smoke sections. | Repeat for the final signed release or Play Store candidate. |
 | Privacy guardrails | Pass | Release APK was not debuggable, and filtered native import/share logcat produced no output during invalid ZIP, valid ZIP, duplicate import, and YouTube share smoke. | Repeat for the final signed release or Play Store candidate. |
-| Device matrix | Partial | Samsung SM-F966N foldable device covered foldable and Drive-provider behavior. | Standard non-foldable Android phone still needs smoke before broad sharing. |
+| Device matrix | Partial | Samsung SM-F966N foldable device covered foldable and Drive-provider behavior; GitHub Actions debug APK clean-installed and launched on an Android 16 x86_64 emulator. | Real standard non-foldable Android phone still needs smoke before broad sharing. |
 | Invalid or missing watch-history ZIP | Pass | Known 56.83 kB Drive ZIP returned a visible error in debug and refreshed release smoke, with saved records unchanged. | Keep this case in every release smoke because it previously regressed. |
 | Valid small fixture ZIP | Pass | Drive-hosted `takeout-codex-normal-20260602.zip` completed and reported import counts in debug and release smoke. | None for small fixtures. |
 | Duplicate fixture re-import | Pass | Re-import reported duplicate counts and no additional records for the same fixture. | Large real duplicate archive still needs performance/storage verification. |
@@ -189,13 +189,43 @@ Remaining device-specific risks:
 - This was one Samsung foldable device only; standard non-foldable Android coverage is still pending.
 - The device already had local records, so this confirms WebView thumbnail fallback and logcat silence during Timeline render rather than a completely fresh sample-data-only run.
 
+## GitHub Actions APK Emulator Clean Install Smoke Result - 2026-06-03
+
+Device: Android Emulator `codex_clean_api36`, model `sdk_gphone64_x86_64`, Android 16, API 36.
+APK: GitHub Actions artifact `youtube-daily-mind-map-debug-apk` from `Build Android APK` run `26847441070`, artifact id `7369620624`, extracted as `app-debug.apk`, size 4,635,782 bytes.
+Build commit: `440856a4eef2cbf003f544645dd83273a1b7b064`.
+
+- [x] Artifact ZIP downloaded from GitHub Actions; size 4,249,040 bytes.
+- [x] `app-debug.apk` was extracted from the artifact.
+- [x] `apksigner verify` passed.
+- [x] APK Signature Scheme v2 verified true.
+- [x] APK signer was `C=US, O=Android, CN=Android Debug`.
+- [x] `aapt dump badging` found package `com.lucita81.youtubedailymindmap`.
+- [x] `aapt dump badging` found application label `YouTube Daily Mind Map`.
+- [x] `aapt dump badging` found `sdkVersion:'24'` and `targetSdkVersion:'36'`.
+- [x] Android command-line tools and `system-images;android-36;google_apis;x86_64` were installed locally for this emulator smoke.
+- [x] Clean AVD `codex_clean_api36` was launched with `-wipe-data`.
+- [x] Emulator boot completed on model `sdk_gphone64_x86_64`, Android 16, API 36.
+- [x] APK clean installed on the emulator with `adb install`.
+- [x] Launcher resolved to `com.lucita81.youtubedailymindmap/.MainActivity`.
+- [x] App launched and `.MainActivity` became the resumed activity.
+- [x] Home screen rendered in the emulator screenshot.
+- [x] Emulator was shut down after smoke testing.
+
+Remaining emulator-specific risks:
+
+- This was a GitHub Actions debug artifact, not a release or Play Store signed artifact.
+- This smoke confirms clean install and first-screen launch only; Drive import, YouTube share, duplicate import, deletion, and layout flows were not repeated on the emulator.
+- A real standard non-foldable Android phone still needs smoke before broad sharing.
+
 ## Current Remaining Risks
 
 - Drive file selection may behave differently across Android vendors and file providers; direct `file://` and MediaStore `content://` upload attempts did not produce a selectable Drive file, while the Google Drive app's own upload flow did.
 - Android Drive duplicate re-import passed with the small synthetic watch-history fixture, but large real duplicate archives still need performance/storage verification.
 - The 1.62 GiB real Takeout structure scan found a localized Korean watch-history candidate, but Android full Drive copy/parsing/loading UI remains unverified because that real ZIP was not user-selected from Drive in the smoke run.
 - Release APK native import logcat silence, invalid ZIP rejection visibility, valid fixture completion, duplicate-summary visibility, and YouTube share behavior passed on the Samsung SM-F966N; standard phone and additional vendor/device coverage still need review before public release.
-- Debug and locally smoke-signed release APK WebView thumbnail smoke passed on the Samsung SM-F966N with no synthetic sample thumbnail requests or 404 logs, but Play Store-signed release and standard phone coverage still need repeat passes before broad sharing.
+- GitHub Actions debug APK clean-installed and launched on an Android 16 emulator, but Drive import, YouTube share, duplicate import, deletion, and layout flows were not repeated there.
+- Debug and locally smoke-signed release APK WebView thumbnail smoke passed on the Samsung SM-F966N with no synthetic sample thumbnail requests or 404 logs, but Play Store-signed release and real standard phone coverage still need repeat passes before broad sharing.
 - Storage fields for video memory are currently lightweight `WatchItem` fields, not a versioned migration.
 - UI copy and layout passed a foldable smoke path, but standard phone layout and long Korean copy still need review before public sharing.
 - The working tree may include multiple feature groups; release notes should separate them before commit or deploy.

@@ -42,6 +42,7 @@ describe("pre-release change summary checklist", () => {
     expect(checklist).toContain("## Android Smoke Checklist Coverage - 2026-06-03");
     expect(checklist).toContain("## Android WebView Thumbnail Smoke Result - 2026-06-03");
     expect(checklist).toContain("## Android Release WebView Thumbnail Smoke Result - 2026-06-03");
+    expect(checklist).toContain("## GitHub Actions APK Emulator Clean Install Smoke Result - 2026-06-03");
     expect(checklist).toContain("## Current Remaining Risks");
     expect(checklist).toContain("## Go / No-go Notes");
   });
@@ -154,6 +155,23 @@ describe("pre-release change summary checklist", () => {
     expect(checklist).toContain("timeline_yt_or_404_count=0");
     expect(checklist).toContain("final_sample_related_count=0");
     expect(checklist).toContain("final_yt_or_404_count=0");
+    expect(checklist).toContain("GitHub Actions APK Emulator Clean Install Smoke Result - 2026-06-03");
+    expect(checklist).toContain("codex_clean_api36");
+    expect(checklist).toContain("sdk_gphone64_x86_64");
+    expect(checklist).toContain("Build commit: `440856a4eef2cbf003f544645dd83273a1b7b064`");
+    expect(checklist).toContain("youtube-daily-mind-map-debug-apk");
+    expect(checklist).toContain("Build Android APK` run `26847441070`");
+    expect(checklist).toContain("artifact id `7369620624`");
+    expect(checklist).toContain("app-debug.apk");
+    expect(checklist).toContain("APK Signature Scheme v2 verified true");
+    expect(checklist).toContain("C=US, O=Android, CN=Android Debug");
+    expect(checklist).toContain("com.lucita81.youtubedailymindmap");
+    expect(checklist).toContain("application label `YouTube Daily Mind Map`");
+    expect(checklist).toContain("`sdkVersion:'24'` and `targetSdkVersion:'36'`");
+    expect(checklist).toContain("system-images;android-36;google_apis;x86_64");
+    expect(checklist).toContain("Clean AVD `codex_clean_api36` was launched with `-wipe-data`");
+    expect(checklist).toContain("Launcher resolved to `com.lucita81.youtubedailymindmap/.MainActivity`");
+    expect(checklist).toContain("Home screen rendered in the emulator screenshot");
   });
 
   it("keeps privacy and product-boundary reminders visible", () => {
@@ -170,6 +188,8 @@ describe("pre-release change summary checklist", () => {
     expect(checklist).toContain("Known 56.83 kB Drive ZIP returned a visible error");
     expect(checklist).toContain("Valid small fixture ZIP");
     expect(checklist).toContain("completed and reported import counts in debug and release smoke");
+    expect(checklist).toContain("GitHub Actions debug APK clean-installed and launched on an Android 16 x86_64 emulator");
+    expect(checklist).toContain("Drive import, YouTube share, duplicate import, deletion, and layout flows were not repeated there");
     expect(checklist).toContain("Android Drive duplicate re-import passed with the small synthetic watch-history fixture");
     expect(checklist).toContain("large real duplicate archives still need performance/storage verification");
     expect(checklist).toContain("localized Korean watch-history candidate");
@@ -178,7 +198,7 @@ describe("pre-release change summary checklist", () => {
     expect(checklist).toContain("valid fixture completion, duplicate-summary visibility, and YouTube share behavior passed");
     expect(checklist).toContain("standard phone and additional vendor/device coverage still need review");
     expect(checklist).toContain("Debug and locally smoke-signed release APK WebView thumbnail smoke passed on the Samsung SM-F966N");
-    expect(checklist).toContain("Play Store-signed release and standard phone coverage still need repeat passes");
+    expect(checklist).toContain("Play Store-signed release and real standard phone coverage still need repeat passes");
     expect(checklist).toContain("standard phone layout and long Korean copy still need review");
   });
 });
