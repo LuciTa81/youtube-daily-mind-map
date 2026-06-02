@@ -6,10 +6,14 @@ import { formatDriveFileSize, getDriveApiUserMessage, trashDriveFile } from "@/l
 import { pickGoogleDriveFile, type PickedDriveFile } from "@/lib/drive/googlePicker";
 import type { ParsedWatchHistory } from "@/lib/import/parseTakeout";
 import { GoogleDriveTakeoutWatchHistorySource } from "@/lib/import/watchHistorySources";
-import type { WatchItem } from "@/types/watch";
+import type { WatchHistoryImportSummary, WatchItem } from "@/types/watch";
 
 type DriveTakeoutImportPanelProps = {
-  onImported: (items: WatchItem[], sourceName: string, result: ParsedWatchHistory) => void | Promise<void>;
+  onImported: (
+    items: WatchItem[],
+    sourceName: string,
+    result: ParsedWatchHistory
+  ) => WatchHistoryImportSummary | Promise<WatchHistoryImportSummary>;
 };
 
 type DriveImportPhase = "idle" | "auth" | "download" | "parse" | "save" | "done" | "cleanup" | "error";
@@ -18,7 +22,12 @@ type DriveImportSummary = {
   fileName: string;
   fileSizeLabel: string;
   itemCount: number;
+  addedCount: number;
+  duplicateCount: number;
+  savedCount: number;
   skippedCount: number;
+  cleanedExistingDuplicateCount: number;
+  persisted: boolean;
   matchedFileName?: string;
   archiveEntryCount?: number;
 };
@@ -142,14 +151,19 @@ export function DriveTakeoutImportPanel({ onImported }: DriveTakeoutImportPanelP
 
       setPhase("save");
       setStatusMessage("새 기록만 저장소에 반영하는 중입니다.");
-      await onImported(result.items, result.sourceName, result);
+      const appliedSummary = await onImported(result.items, result.sourceName, result);
 
       setCleanupTarget(pickedFile);
       setImportSummary({
         fileName: pickedFile.name,
         fileSizeLabel: formatDriveFileSize(pickedFile.size),
         itemCount: result.items.length,
+        addedCount: appliedSummary.addedCount,
+        duplicateCount: appliedSummary.duplicateCount,
+        savedCount: appliedSummary.savedCount,
         skippedCount: result.skippedCount,
+        cleanedExistingDuplicateCount: appliedSummary.cleanedExistingDuplicateCount,
+        persisted: appliedSummary.persisted,
         matchedFileName: result.matchedFileName,
         archiveEntryCount: result.archiveEntryCount
       });
@@ -271,8 +285,32 @@ export function DriveTakeoutImportPanel({ onImported }: DriveTakeoutImportPanelP
       {importSummary ? (
         <div className="rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs leading-relaxed text-emerald-800">
           <div className="font-semibold">가져오기 결과</div>
-          <div className="mt-1">읽은 시청 기록 {importSummary.itemCount}개</div>
+          <div className="mt-2 grid grid-cols-3 gap-2">
+            <div className="rounded-md bg-white/75 px-2 py-2">
+              <div className="text-[11px] text-emerald-700">읽은 기록</div>
+              <div className="mt-1 text-sm font-black text-emerald-950">
+                {importSummary.itemCount.toLocaleString("ko-KR")}개
+              </div>
+            </div>
+            <div className="rounded-md bg-white/75 px-2 py-2">
+              <div className="text-[11px] text-emerald-700">새로 추가</div>
+              <div className="mt-1 text-sm font-black text-emerald-950">
+                {importSummary.addedCount.toLocaleString("ko-KR")}개
+              </div>
+            </div>
+            <div className="rounded-md bg-white/75 px-2 py-2">
+              <div className="text-[11px] text-emerald-700">중복 건너뜀</div>
+              <div className="mt-1 text-sm font-black text-emerald-950">
+                {importSummary.duplicateCount.toLocaleString("ko-KR")}개
+              </div>
+            </div>
+          </div>
+          <div className="mt-2">저장된 기록 {importSummary.savedCount.toLocaleString("ko-KR")}개</div>
           {importSummary.skippedCount > 0 ? <div>읽지 못한 항목 {importSummary.skippedCount}개</div> : null}
+          {importSummary.cleanedExistingDuplicateCount > 0 ? (
+            <div>기존 중복 {importSummary.cleanedExistingDuplicateCount}개 정리</div>
+          ) : null}
+          {!importSummary.persisted ? <div>저장소 오류로 이번 화면에만 반영되었습니다.</div> : null}
           <div>원본 크기 {importSummary.fileSizeLabel}</div>
           {importSummary.archiveEntryCount ? <div>ZIP 내부 파일 {importSummary.archiveEntryCount}개 확인</div> : null}
           {importSummary.matchedFileName ? <div className="truncate">사용한 파일 {importSummary.matchedFileName}</div> : null}

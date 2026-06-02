@@ -5,10 +5,12 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.ApplicationInfo;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.SystemClock;
 import android.provider.DocumentsContract;
 import android.provider.OpenableColumns;
 import android.text.TextUtils;
@@ -64,6 +66,10 @@ public class NativeDriveFilePlugin extends Plugin {
         "youtu.be/",
         "music.youtube.com/watch"
     };
+    private static final long MAX_HISTORY_ENTRY_UNCOMPRESSED_BYTES = 512L * 1024L * 1024L;
+    private static final long MAX_HTML_HISTORY_ENTRY_BYTES = 96L * 1024L * 1024L;
+    private static final int HTML_PARSE_PROGRESS_ITEM_INTERVAL = 250;
+    private static final long HTML_PARSE_PROGRESS_TIME_INTERVAL_MS = 700L;
     private final ExecutorService importExecutor = Executors.newSingleThreadExecutor();
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
 
@@ -123,8 +129,8 @@ public class NativeDriveFilePlugin extends Plugin {
 
     private void importTakeoutZip(PluginCall call, ContentResolver resolver, Uri uri, String fileName, String mimeType, long size) {
         try {
-            Log.i(TAG, "Starting native Takeout import: " + valueOrEmpty(fileName) + ", size=" + size);
-            emitImportProgress("opening", 2, "Drive ZIP을 준비하는 중입니다.", fileName, 0L, size, 0, 0);
+            logImportInfo("Starting native Takeout import: size=" + size);
+            emitImportProgress("opening", 0, "Drive ZIP을 준비하는 중입니다.", fileName, 0L, size, 0, 0);
             rememberLastDriveUri(uri);
             File localZipFile = copyDriveZipToCache(resolver, uri, fileName, size);
             ParsedHistory parsedHistory;
@@ -132,7 +138,7 @@ public class NativeDriveFilePlugin extends Plugin {
                 parsedHistory = parseTakeoutZip(localZipFile, fileName, size);
             } finally {
                 if (!localZipFile.delete()) {
-                    Log.w(TAG, "Failed to delete temporary Takeout ZIP: " + localZipFile.getAbsolutePath());
+                    logImportWarning("Failed to delete temporary Takeout ZIP from cache");
                 }
             }
             JSObject response = new JSObject();
@@ -146,7 +152,7 @@ public class NativeDriveFilePlugin extends Plugin {
             response.put("parserSource", parsedHistory.parserSource);
             response.put("matchedFileName", parsedHistory.matchedFileName);
             response.put("archiveEntryCount", parsedHistory.archiveEntryCount);
-            Log.i(TAG, "Finished native Takeout import: items=" + parsedHistory.items.length());
+            logImportInfo("Finished native Takeout import: items=" + parsedHistory.items.length());
             emitImportProgress(
                 "complete",
                 100,
@@ -159,10 +165,10 @@ public class NativeDriveFilePlugin extends Plugin {
             );
             resolveOnMainThread(call, response);
         } catch (IOException error) {
-            Log.e(TAG, "Failed to read Drive ZIP", error);
+            logImportError("Failed to read Drive ZIP", error);
             rejectOnMainThread(call, "Drive ZIP을 읽지 못했습니다. 네트워크 상태나 Drive 파일 접근 권한을 확인해주세요.", error);
         } catch (IllegalArgumentException error) {
-            Log.e(TAG, "Failed to parse Takeout ZIP", error);
+            logImportError("Failed to parse Takeout ZIP", error);
             rejectOnMainThread(call, error.getMessage(), error);
         }
     }
@@ -215,18 +221,64 @@ public class NativeDriveFilePlugin extends Plugin {
 
     private File copyDriveZipToCache(ContentResolver resolver, Uri uri, String fileName, long size) throws IOException {
         File tempFile = File.createTempFile("takeout-import-", ".zip", getContext().getCacheDir());
-        try (InputStream inputStream = resolver.openInputStream(uri)) {
-            if (inputStream == null) {
-                throw new IOException("Input stream is null");
-            }
+        long copyStartedAtMs = SystemClock.elapsedRealtime();
+        String providerLabel = getSafeProviderLabel(uri);
+        logImportInfo("Native Drive copy started: provider=" + providerLabel + ", totalBytes=" + size);
+        emitImportProgress(
+            "opening",
+            8,
+            "Drive가 ZIP 파일을 앱에 넘길 준비를 하고 있습니다. 큰 파일은 이 단계가 오래 걸릴 수 있습니다.",
+            fileName,
+            0L,
+            size,
+            0,
+            0
+        );
+        long openInputStreamStartedAtMs = SystemClock.elapsedRealtime();
+        logImportInfo("Native Drive openInputStream starting: provider=" + providerLabel + ", elapsedMs=0");
+        InputStream driveInputStream = resolver.openInputStream(uri);
+        long openInputStreamElapsedMs = elapsedSince(openInputStreamStartedAtMs);
+        logImportInfo("Native Drive openInputStream completed: provider=" + providerLabel + ", elapsedMs=" + openInputStreamElapsedMs);
+        if (driveInputStream == null) {
+            throw new IOException("Input stream is null");
+        }
+
+        emitImportProgress(
+            "copying",
+            getCopyPercent(0L, size),
+            "Drive에서 ZIP을 앱 캐시로 복사하는 중입니다.",
+            fileName,
+            0L,
+            size,
+            0,
+            0
+        );
+
+        try (InputStream inputStream = driveInputStream) {
             try (FileOutputStream outputStream = new FileOutputStream(tempFile)) {
                 byte[] buffer = new byte[1024 * 1024];
                 int read;
                 long copiedBytes = 0L;
                 long lastEmitTimeMs = 0L;
                 int lastPercent = -1;
+                boolean firstReadLogged = false;
+                long firstReadStartedAtMs = SystemClock.elapsedRealtime();
+                logImportInfo("Native Drive first byte wait started: provider=" + providerLabel);
 
                 while ((read = inputStream.read(buffer)) != -1) {
+                    if (!firstReadLogged) {
+                        firstReadLogged = true;
+                        logImportInfo(
+                            "Native Drive first byte received: provider=" +
+                            providerLabel +
+                            ", firstReadElapsedMs=" +
+                            elapsedSince(firstReadStartedAtMs) +
+                            ", totalElapsedMs=" +
+                            elapsedSince(copyStartedAtMs) +
+                            ", firstChunkBytes=" +
+                            read
+                        );
+                    }
                     outputStream.write(buffer, 0, read);
                     copiedBytes += read;
 
@@ -247,10 +299,29 @@ public class NativeDriveFilePlugin extends Plugin {
                         );
                     }
                 }
+                logImportInfo(
+                    "Native Drive copy completed: provider=" +
+                    providerLabel +
+                    ", totalElapsedMs=" +
+                    elapsedSince(copyStartedAtMs) +
+                    ", copiedBytes=" +
+                    copiedBytes +
+                    ", totalBytes=" +
+                    size
+                );
             }
         } catch (IOException error) {
+            logImportWarning(
+                "Native Drive copy failed: provider=" +
+                providerLabel +
+                ", totalElapsedMs=" +
+                elapsedSince(copyStartedAtMs) +
+                ", totalBytes=" +
+                size,
+                error
+            );
             if (!tempFile.delete()) {
-                Log.w(TAG, "Failed to delete incomplete temporary Takeout ZIP: " + tempFile.getAbsolutePath());
+                logImportWarning("Failed to delete incomplete temporary Takeout ZIP from cache");
             }
             throw error;
         }
@@ -258,12 +329,54 @@ public class NativeDriveFilePlugin extends Plugin {
         return tempFile;
     }
 
-    private int getCopyPercent(long copiedBytes, long totalBytes) {
-        if (totalBytes <= 0L) {
-            return 12;
+    private long elapsedSince(long startedAtMs) {
+        return Math.max(0L, SystemClock.elapsedRealtime() - startedAtMs);
+    }
+
+    private String getSafeProviderLabel(Uri uri) {
+        String authority = uri.getAuthority();
+        return authority != null ? authority : "unknown";
+    }
+
+    private void logImportInfo(String message) {
+        if (isDebugBuild()) {
+            Log.i(TAG, message);
+        }
+    }
+
+    private void logImportWarning(String message) {
+        if (isDebugBuild()) {
+            Log.w(TAG, message);
+        }
+    }
+
+    private void logImportWarning(String message, Exception error) {
+        if (isDebugBuild()) {
+            Log.w(TAG, message, error);
+        }
+    }
+
+    private void logImportError(String message, Exception error) {
+        if (isDebugBuild()) {
+            Log.e(TAG, message, error);
+        }
+    }
+
+    private boolean isDebugBuild() {
+        Context context = getContext();
+        if (context == null) {
+            return false;
         }
 
-        return Math.max(3, Math.min(72, 3 + (int) ((copiedBytes * 69L) / totalBytes)));
+        return (context.getApplicationInfo().flags & ApplicationInfo.FLAG_DEBUGGABLE) != 0;
+    }
+
+    private int getCopyPercent(long copiedBytes, long totalBytes) {
+        if (totalBytes <= 0L) {
+            return 0;
+        }
+
+        return Math.max(0, Math.min(72, (int) ((copiedBytes * 72L) / totalBytes)));
     }
 
     private ParsedHistory parseTakeoutZip(File zipFile, String fileName, long size) throws IOException {
@@ -302,7 +415,7 @@ public class NativeDriveFilePlugin extends Plugin {
                         0
                     );
                     try (InputStream entryStream = zip.getInputStream(entry)) {
-                        ParsedHistory parsedHistory = parseHistoryEntry(entryStream, entryName, fileName);
+                        ParsedHistory parsedHistory = parseHistoryEntry(entry, entryStream, entryName, fileName, size, archiveEntryCount);
                         if (parsedHistory.items.length() > 0) {
                             parsedHistory.archiveEntryCount = archiveEntryCount;
                             parsedHistory.matchedFileName = entryName;
@@ -318,7 +431,7 @@ public class NativeDriveFilePlugin extends Plugin {
                 String entryName = candidate.entry.getName();
                 try {
                     try (InputStream entryStream = zip.getInputStream(candidate.entry)) {
-                        ParsedHistory parsedHistory = parseHistoryEntry(entryStream, entryName, fileName);
+                        ParsedHistory parsedHistory = parseHistoryEntry(candidate.entry, entryStream, entryName, fileName, size, archiveEntryCount);
                         if (parsedHistory.items.length() > 0) {
                             parsedHistory.archiveEntryCount = archiveEntryCount;
                             parsedHistory.matchedFileName = entryName;
@@ -386,17 +499,48 @@ public class NativeDriveFilePlugin extends Plugin {
         return count;
     }
 
-    private ParsedHistory parseHistoryEntry(InputStream inputStream, String entryName, String fileName) throws IOException {
+    private ParsedHistory parseHistoryEntry(
+        ZipEntry entry,
+        InputStream inputStream,
+        String entryName,
+        String fileName,
+        long totalBytes,
+        int archiveEntryCount
+    ) throws IOException {
         String lowerName = normalizeFileName(entryName);
+        long entryReadLimitBytes = getHistoryEntryReadLimitBytes(lowerName);
+        assertHistoryEntryWithinReadLimit(entry, entryName, entryReadLimitBytes);
+        InputStream limitedInputStream = new LimitedInputStream(inputStream, entryReadLimitBytes, entryName);
         if (lowerName.endsWith(".json")) {
-            return parseJsonHistory(inputStream, fileName);
+            return parseJsonHistory(limitedInputStream, fileName);
         }
 
         if (lowerName.endsWith(".html") || lowerName.endsWith(".htm")) {
-            return parseHtmlHistory(readEntryAsString(inputStream));
+            return parseHtmlHistory(readEntryAsString(limitedInputStream, entryReadLimitBytes, entryName), fileName, totalBytes, archiveEntryCount);
         }
 
         throw new IllegalArgumentException("지원하지 않는 Takeout 기록 파일입니다.");
+    }
+
+    private long getHistoryEntryReadLimitBytes(String lowerName) {
+        if (lowerName.endsWith(".html") || lowerName.endsWith(".htm")) {
+            return MAX_HTML_HISTORY_ENTRY_BYTES;
+        }
+
+        return MAX_HISTORY_ENTRY_UNCOMPRESSED_BYTES;
+    }
+
+    private void assertHistoryEntryWithinReadLimit(ZipEntry entry, String entryName, long maxBytes) {
+        long declaredSize = entry.getSize();
+        if (declaredSize > maxBytes) {
+            throw new IllegalArgumentException(
+                "Takeout 시청 기록 파일이 너무 큽니다. " +
+                getSafeEntryLabel(entryName) +
+                " 파일을 " +
+                formatBytesForMessage(maxBytes) +
+                " 이하로 나누어 다시 시도해주세요."
+            );
+        }
     }
 
     private ParsedHistory parseJsonHistory(InputStream inputStream, String fileName) throws IOException {
@@ -544,10 +688,12 @@ public class NativeDriveFilePlugin extends Plugin {
         return item;
     }
 
-    private ParsedHistory parseHtmlHistory(String content) {
+    private ParsedHistory parseHtmlHistory(String content, String fileName, long totalBytes, int archiveEntryCount) {
         List<String> blocks = splitHtmlIntoHistoryBlocks(content);
         JSONArray items = new JSONArray();
         int skippedCount = 0;
+        int lastEmittedItemCount = 0;
+        long lastEmitTimeMs = 0L;
 
         for (int index = 0; index < blocks.size(); index += 1) {
             JSObject item = parseHtmlBlock(blocks.get(index), index);
@@ -556,9 +702,38 @@ public class NativeDriveFilePlugin extends Plugin {
             } else {
                 skippedCount += 1;
             }
+
+            long now = System.currentTimeMillis();
+            int itemCount = items.length();
+            boolean hasItemHeartbeat = itemCount - lastEmittedItemCount >= HTML_PARSE_PROGRESS_ITEM_INTERVAL;
+            boolean hasWaitedEnough = now - lastEmitTimeMs >= HTML_PARSE_PROGRESS_TIME_INTERVAL_MS;
+            boolean isFinalBlock = index + 1 == blocks.size();
+            if ((hasItemHeartbeat && hasWaitedEnough) || isFinalBlock) {
+                lastEmittedItemCount = itemCount;
+                lastEmitTimeMs = now;
+                emitImportProgress(
+                    "parsing",
+                    getParsePercent(index + 1, blocks.size()),
+                    "시청 기록을 정리하는 중입니다.",
+                    fileName,
+                    totalBytes,
+                    totalBytes,
+                    archiveEntryCount,
+                    itemCount
+                );
+            }
         }
 
         return new ParsedHistory(items, skippedCount, "takeout-html");
+    }
+
+    private int getParsePercent(int processedBlocks, int totalBlocks) {
+        if (totalBlocks <= 0) {
+            return 82;
+        }
+
+        int percent = 82 + (int) ((Math.max(0, processedBlocks) * 16L) / totalBlocks);
+        return Math.max(82, Math.min(98, percent));
     }
 
     private JSObject parseHtmlBlock(String block, int index) {
@@ -875,6 +1050,29 @@ public class NativeDriveFilePlugin extends Plugin {
         return valueOrEmpty(fileName).replace("\\", "/").toLowerCase(Locale.KOREAN);
     }
 
+    private String getSafeEntryLabel(String entryName) {
+        String normalized = valueOrEmpty(entryName).replace("\\", "/");
+        String[] parts = normalized.split("/");
+        List<String> safeParts = new ArrayList<>();
+        for (String part : parts) {
+            if (!part.isEmpty()) {
+                safeParts.add(part);
+            }
+        }
+
+        if (safeParts.isEmpty()) {
+            return "watch-history";
+        }
+
+        int fromIndex = Math.max(0, safeParts.size() - 3);
+        return TextUtils.join("/", safeParts.subList(fromIndex, safeParts.size()));
+    }
+
+    private String formatBytesForMessage(long bytes) {
+        long mib = Math.max(1L, bytes / 1024L / 1024L);
+        return mib + "MiB";
+    }
+
     private String getDisplayName(ContentResolver resolver, Uri uri) {
         try (Cursor cursor = resolver.query(uri, null, null, null, null)) {
             if (cursor == null || !cursor.moveToFirst()) {
@@ -905,11 +1103,20 @@ public class NativeDriveFilePlugin extends Plugin {
         return -1;
     }
 
-    private String readEntryAsString(InputStream inputStream) throws IOException {
+    private String readEntryAsString(InputStream inputStream, long maxBytes, String entryName) throws IOException {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         byte[] buffer = new byte[8192];
         int read;
         while ((read = inputStream.read(buffer)) != -1) {
+            if (outputStream.size() + read > maxBytes) {
+                throw new IOException(
+                    "Takeout 시청 기록 파일이 너무 큽니다. " +
+                    getSafeEntryLabel(entryName) +
+                    " 파일을 " +
+                    formatBytesForMessage(maxBytes) +
+                    " 이하로 나누어 다시 시도해주세요."
+                );
+            }
             outputStream.write(buffer, 0, read);
         }
 
@@ -1024,6 +1231,50 @@ public class NativeDriveFilePlugin extends Plugin {
         ZipCandidate(ZipEntry entry, int score) {
             this.entry = entry;
             this.score = score;
+        }
+    }
+
+    private class LimitedInputStream extends InputStream {
+        private final InputStream delegate;
+        private final long maxBytes;
+        private final String entryName;
+        private long bytesRead = 0L;
+
+        LimitedInputStream(InputStream delegate, long maxBytes, String entryName) {
+            this.delegate = delegate;
+            this.maxBytes = maxBytes;
+            this.entryName = entryName;
+        }
+
+        @Override
+        public int read() throws IOException {
+            int value = delegate.read();
+            if (value != -1) {
+                trackBytesRead(1L);
+            }
+            return value;
+        }
+
+        @Override
+        public int read(byte[] buffer, int offset, int length) throws IOException {
+            int read = delegate.read(buffer, offset, length);
+            if (read > 0) {
+                trackBytesRead(read);
+            }
+            return read;
+        }
+
+        private void trackBytesRead(long count) throws IOException {
+            bytesRead += count;
+            if (bytesRead > maxBytes) {
+                throw new IOException(
+                    "Takeout 시청 기록 파일이 너무 큽니다. " +
+                    getSafeEntryLabel(entryName) +
+                    " 파일을 " +
+                    formatBytesForMessage(maxBytes) +
+                    " 이하로 나누어 다시 시도해주세요."
+                );
+            }
         }
     }
 

@@ -8,7 +8,7 @@ import { PwaInstallPrompt } from "@/components/pwa/PwaInstallPrompt";
 import type { QuickDateOption } from "@/lib/date/dateKeys";
 import type { ParsedWatchHistory } from "@/lib/import/parseTakeout";
 import type { MindMapViewMode } from "@/types/mindmap";
-import type { DateRangeMode, WatchItem } from "@/types/watch";
+import type { DateRangeMode, WatchHistoryImportSummary, WatchItem } from "@/types/watch";
 
 type LeftPanelProps = {
   className?: string;
@@ -21,7 +21,12 @@ type LeftPanelProps = {
   savedItemCount: number;
   isUsingSample: boolean;
   isStorageReady: boolean;
-  onItemsImported: (items: WatchItem[], sourceName: string, result: ParsedWatchHistory) => void | Promise<void>;
+  latestImportSummary?: WatchHistoryImportSummary;
+  onItemsImported: (
+    items: WatchItem[],
+    sourceName: string,
+    result: ParsedWatchHistory
+  ) => WatchHistoryImportSummary | Promise<WatchHistoryImportSummary>;
   onUseSample: () => void;
   onUseSaved: () => void;
   onClearSaved: () => void | Promise<void>;
@@ -71,6 +76,7 @@ export function LeftPanel({
   savedItemCount,
   isUsingSample,
   isStorageReady,
+  latestImportSummary,
   onItemsImported,
   onUseSample,
   onUseSaved,
@@ -107,6 +113,7 @@ export function LeftPanel({
       savedItemCount={savedItemCount}
       isUsingSample={isUsingSample}
       isStorageReady={isStorageReady}
+      latestImportSummary={latestImportSummary}
       onImported={onItemsImported}
       onUseSample={onUseSample}
       onUseSaved={onUseSaved}

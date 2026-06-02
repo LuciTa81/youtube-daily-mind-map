@@ -21,6 +21,12 @@ export type ParsedWatchHistory = {
   archiveEntryCount?: number;
 };
 
+export const WATCH_HISTORY_MISSING_TAKEOUT_MESSAGE =
+  "Takeout ZIP에서 YouTube 시청 기록을 찾지 못했습니다. Google Takeout에서 \"YouTube 및 YouTube Music\" > \"기록\" > \"시청 기록\"을 포함해 다시 내보낸 ZIP을 선택해 주세요. 앱은 ZIP 안의 watch-history.json 또는 watch-history.html을 찾습니다.";
+
+const ARCHIVE_BROWSER_ONLY_TAKEOUT_HINT =
+  "archive_browser.html은 Takeout 목차 파일이라 시청 기록으로 사용할 수 없습니다.";
+
 const YOUTUBE_WATCH_PATTERNS = ["youtube.com/watch", "youtu.be/", "music.youtube.com/watch"];
 const ZIP_FILE_EXTENSIONS = [".zip"];
 const TEXT_HISTORY_FILE_EXTENSIONS = [".json", ".html", ".htm"];
@@ -358,6 +364,21 @@ type ZipCandidate = {
   score: number;
 };
 
+function buildMissingWatchHistoryMessage(
+  fileName: string,
+  candidates: ZipCandidate[],
+  parseErrors: string[]
+): string {
+  const candidateNames = candidates.map((candidate) => candidate.fileName.replace(/\\/g, "/").toLocaleLowerCase("ko-KR"));
+  const hasArchiveBrowser = candidateNames.some((candidateName) => candidateName.endsWith("archive_browser.html"));
+  const hasWatchHistoryCandidate = candidateNames.some((candidateName) => candidateName.includes("watch-history"));
+  const archiveBrowserHint = hasArchiveBrowser && !hasWatchHistoryCandidate ? ` ${ARCHIVE_BROWSER_ONLY_TAKEOUT_HINT}` : "";
+  const lastError = parseErrors.at(-1);
+  const detail = lastError ? ` 마지막 오류: ${lastError}` : "";
+
+  return `${fileName}: ${WATCH_HISTORY_MISSING_TAKEOUT_MESSAGE}${archiveBrowserHint}${detail}`;
+}
+
 function getZipCandidates(zip: JSZip): ZipCandidate[] {
   const files = Object.values(zip.files).filter((file) => !file.dir);
   const preferred = files.filter((file) => isPotentialZipHistoryEntry(file.name));
@@ -393,10 +414,7 @@ export async function parseTakeoutZip(fileName: string, content: ArrayBuffer): P
     }
   }
 
-  const detail = parseErrors.length > 0 ? ` 마지막 오류: ${parseErrors[parseErrors.length - 1]}` : "";
-  throw new Error(
-    `${fileName} 안에서 YouTube 시청 기록을 찾지 못했습니다. Takeout에서 YouTube 및 YouTube Music의 기록을 포함했는지 확인해주세요.${detail}`
-  );
+  throw new Error(buildMissingWatchHistoryMessage(fileName, candidates, parseErrors));
 }
 
 export async function parseTakeoutBrowserFile(file: File): Promise<ParsedWatchHistory> {

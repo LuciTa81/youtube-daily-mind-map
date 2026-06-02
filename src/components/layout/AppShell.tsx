@@ -23,7 +23,13 @@ import { indexedDbReviewNoteRepository } from "@/lib/storage/reviewNoteRepositor
 import { indexedDbWatchHistoryRepository } from "@/lib/storage/watchHistoryRepository";
 import type { ParsedWatchHistory } from "@/lib/import/parseTakeout";
 import type { MindMapBuildOptions, MindMapNode, MindMapViewMode } from "@/types/mindmap";
-import type { ClassifiedWatchItem, DateRangeMode, DateSettings, WatchItem } from "@/types/watch";
+import type {
+  ClassifiedWatchItem,
+  DateRangeMode,
+  DateSettings,
+  WatchHistoryImportSummary,
+  WatchItem
+} from "@/types/watch";
 import { DetailPanel } from "./DetailPanel";
 import { HomeDashboard } from "./HomeDashboard";
 import { LeftPanel } from "./LeftPanel";
@@ -257,6 +263,26 @@ function getImportSourceLabel(result: ParsedWatchHistory): string {
   return result.source === "takeout-json" ? "JSON" : "HTML";
 }
 
+function buildImportSummary(
+  sourceName: string,
+  result: ParsedWatchHistory,
+  mergeResult: WatchHistoryMergeResult,
+  persisted: boolean
+): WatchHistoryImportSummary {
+  return {
+    sourceName,
+    sourceLabel: getImportSourceLabel(result),
+    matchedFileName: result.matchedFileName,
+    readCount: result.items.length,
+    addedCount: mergeResult.addedCount,
+    duplicateCount: mergeResult.duplicateCount,
+    savedCount: mergeResult.items.length,
+    skippedCount: result.skippedCount,
+    cleanedExistingDuplicateCount: mergeResult.cleanedExistingDuplicateCount,
+    persisted
+  };
+}
+
 function getImportResultNote(
   sourceName: string,
   result: ParsedWatchHistory,
@@ -315,6 +341,7 @@ export function AppShell() {
   const [dataViewMode, setDataViewMode] = useState<DataViewMode>("sample");
   const [activeSourceName, setActiveSourceName] = useState("샘플 데이터");
   const [importNote, setImportNote] = useState("");
+  const [latestImportSummary, setLatestImportSummary] = useState<WatchHistoryImportSummary>();
   const [isStorageReady, setIsStorageReady] = useState(false);
   const [dateSettings, setDateSettings] = useState<DateSettings>({
     timezone: "Asia/Seoul",
@@ -346,6 +373,17 @@ export function AppShell() {
     if (browserTimezone) {
       setDateSettings((current) => ({ ...current, timezone: browserTimezone }));
     }
+  }, []);
+
+  useEffect(() => {
+    const handleGoHome = () => {
+      setCanvasMode("review");
+      setMobilePanel("none");
+      setSelectedTimelineNode(undefined);
+    };
+
+    window.addEventListener("youtubeMindMap:goHome", handleGoHome);
+    return () => window.removeEventListener("youtubeMindMap:goHome", handleGoHome);
   }, []);
 
   useEffect(() => {
@@ -627,7 +665,11 @@ export function AppShell() {
   }, []);
 
   const handleItemsImported = useCallback(
-    async (items: WatchItem[], sourceName: string, result: ParsedWatchHistory) => {
+    async (
+      items: WatchItem[],
+      sourceName: string,
+      result: ParsedWatchHistory
+    ): Promise<WatchHistoryImportSummary> => {
       const mergeResult = mergeWatchItems(savedWatchItems, items);
       let persisted = true;
 
@@ -640,6 +682,8 @@ export function AppShell() {
       setSavedWatchItems(mergeResult.items);
       setDataViewMode("saved");
       setActiveSourceName("내 기록 저장소");
+      const importSummary = buildImportSummary(sourceName, result, mergeResult, persisted);
+      setLatestImportSummary(importSummary);
       setImportNote(getImportResultNote(sourceName, result, mergeResult, persisted));
       resetWorkspaceState(
         setSelectedDateKey,
@@ -652,6 +696,7 @@ export function AppShell() {
         setExpandedGroupIds,
         setCollapsedBranchIds
       );
+      return importSummary;
     },
     [savedWatchItems]
   );
@@ -659,6 +704,7 @@ export function AppShell() {
   const handleUseSample = useCallback(() => {
     setDataViewMode("sample");
     setActiveSourceName("샘플 데이터");
+    setLatestImportSummary(undefined);
     setImportNote("샘플 데이터로 돌아왔습니다.");
     resetWorkspaceState(
       setSelectedDateKey,
@@ -704,6 +750,7 @@ export function AppShell() {
     setSavedWatchItems([]);
     setDataViewMode("sample");
     setActiveSourceName("샘플 데이터");
+    setLatestImportSummary(undefined);
     setImportNote("저장된 내 기록을 삭제하고 샘플 데이터로 전환했습니다.");
     resetWorkspaceState(
       setSelectedDateKey,
@@ -790,6 +837,7 @@ export function AppShell() {
     savedItemCount: savedWatchItems.length,
     isUsingSample: dataViewMode === "sample",
     isStorageReady,
+    latestImportSummary,
     onItemsImported: handleItemsImported,
     onUseSample: handleUseSample,
     onUseSaved: handleUseSaved,
@@ -898,6 +946,7 @@ export function AppShell() {
               summary={summary}
               review={dailyReview}
               dateSettings={dateSettings}
+              latestImportSummary={latestImportSummary}
               note={reviewNote}
               onNoteChange={setReviewNote}
               onDateSelect={handleDateSelect}

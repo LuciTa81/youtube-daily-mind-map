@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 import JSZip from "jszip";
-import { parseTakeoutFile, parseTakeoutHtml, parseTakeoutJson, parseTakeoutZip } from "@/lib/import/parseTakeout";
+import {
+  parseTakeoutFile,
+  parseTakeoutHtml,
+  parseTakeoutJson,
+  parseTakeoutZip,
+  WATCH_HISTORY_MISSING_TAKEOUT_MESSAGE
+} from "@/lib/import/parseTakeout";
 
 describe("Takeout watch history parser", () => {
   it("parses YouTube Takeout JSON entries", () => {
@@ -115,5 +121,21 @@ describe("Takeout watch history parser", () => {
     expect(result.parserSource).toBe("takeout-html");
     expect(result.items).toHaveLength(1);
     expect(result.items[0].title).toBe("Next.js App Router 강의");
+  });
+
+  it("explains archive_browser-only Takeout ZIPs are missing YouTube watch history", async () => {
+    const zip = new JSZip();
+    zip.file("Takeout/archive_browser.html", "<html><body>Takeout index</body></html>");
+
+    const content = await zip.generateAsync({ type: "arraybuffer" });
+
+    await expect(parseTakeoutZip("takeout-archive-only.zip", content)).rejects.toThrow(
+      WATCH_HISTORY_MISSING_TAKEOUT_MESSAGE
+    );
+    await expect(parseTakeoutZip("takeout-archive-only.zip", content)).rejects.toThrow(
+      "archive_browser.html은 Takeout 목차 파일이라 시청 기록으로 사용할 수 없습니다."
+    );
+    await expect(parseTakeoutZip("takeout-archive-only.zip", content)).rejects.toThrow("watch-history.json");
+    await expect(parseTakeoutZip("takeout-archive-only.zip", content)).rejects.toThrow("watch-history.html");
   });
 });

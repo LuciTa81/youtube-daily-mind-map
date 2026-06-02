@@ -9,6 +9,19 @@ export type WatchItem = {
   source: "takeout-html" | "takeout-json" | "manual" | "sample";
 };
 
+export type WatchHistoryImportSummary = {
+  sourceName: string;
+  sourceLabel: string;
+  matchedFileName?: string;
+  readCount: number;
+  addedCount: number;
+  duplicateCount: number;
+  savedCount: number;
+  skippedCount: number;
+  cleanedExistingDuplicateCount: number;
+  persisted: boolean;
+};
+
 export type ClassifiedWatchItem = WatchItem & {
   category: string;
   subcategory?: string;

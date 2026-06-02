@@ -16,8 +16,12 @@ type NativeDriveFilePlugin = {
   ) => Promise<PluginListenerHandle>;
 };
 
+type NativeDriveProgressHandle = {
+  remove: () => Promise<void>;
+};
+
 export type NativeDriveImportProgress = {
-  phase: "opening" | "copying" | "scanning" | "reading" | "parsing" | "complete";
+  phase: "opening" | "copying" | "scanning" | "reading" | "parsing" | "finalizing" | "complete" | "error";
   percent: number;
   message: string;
   fileName?: string;
@@ -37,7 +41,49 @@ export type NativeDriveTakeoutImportResult = ParsedWatchHistory & {
   };
 };
 
+type NativeDriveImportRunnerOptions = {
+  staleTimeoutMs?: number;
+  onProgress?: (progress: NativeDriveImportProgress) => void;
+};
+
+type NativeDriveImportRunnerDependencies = {
+  addProgressListener: (listener: (progress: NativeDriveImportProgress) => void) => Promise<NativeDriveProgressHandle>;
+  importTakeoutZip: () => Promise<NativeDriveTakeoutImportResult>;
+};
+
+export const NATIVE_DRIVE_IMPORT_STALE_TIMEOUT_MS = 60_000;
+export const NATIVE_DRIVE_IMPORT_LARGE_FILE_BYTES = 1_000 * 1024 * 1024;
+export const NATIVE_DRIVE_IMPORT_LARGE_FILE_STALE_TIMEOUT_MS = 20 * 60_000;
+export const NATIVE_DRIVE_IMPORT_STALE_MESSAGE =
+  "Drive ZIP을 읽는 중 진행이 멈췄습니다. 네트워크 상태를 확인한 뒤 같은 파일을 다시 선택해주세요.";
+
 const NativeDriveFile = registerPlugin<NativeDriveFilePlugin>("NativeDriveFile");
+
+function getNativeDriveErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "Drive ZIP을 읽는 중 문제가 발생했습니다.";
+}
+
+function removeProgressListenerInBackground(progressHandle: NativeDriveProgressHandle) {
+  try {
+    void progressHandle.remove().catch(() => undefined);
+  } catch {
+    // Listener cleanup must not block import completion or error propagation.
+  }
+}
+
+export function getNativeDriveImportStaleTimeoutMs(
+  progress: NativeDriveImportProgress,
+  fallbackTimeoutMs = NATIVE_DRIVE_IMPORT_STALE_TIMEOUT_MS
+): number {
+  const totalBytes = progress.totalBytes ?? 0;
+  const isLargeDriveFile = totalBytes >= NATIVE_DRIVE_IMPORT_LARGE_FILE_BYTES;
+
+  if (isLargeDriveFile) {
+    return Math.max(fallbackTimeoutMs, NATIVE_DRIVE_IMPORT_LARGE_FILE_STALE_TIMEOUT_MS);
+  }
+
+  return fallbackTimeoutMs;
+}
 
 export function isNativeDriveFilePickerAvailable(): boolean {
   return Capacitor.getPlatform() === "android";
@@ -67,4 +113,91 @@ export async function importNativeDriveTakeoutZip(): Promise<NativeDriveTakeoutI
       provider: pickedFile.provider
     }
   };
+}
+
+export async function runNativeDriveTakeoutZipImportWithProgressTimeout(
+  dependencies: NativeDriveImportRunnerDependencies,
+  options?: NativeDriveImportRunnerOptions
+): Promise<NativeDriveTakeoutImportResult> {
+  const staleTimeoutMs = options?.staleTimeoutMs ?? NATIVE_DRIVE_IMPORT_STALE_TIMEOUT_MS;
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  let latestProgress: NativeDriveImportProgress | undefined;
+  let rejectForStaleProgress: ((error: Error) => void) | undefined;
+  let settled = false;
+
+  function clearStaleTimer() {
+    if (timeoutId !== undefined) {
+      clearTimeout(timeoutId);
+      timeoutId = undefined;
+    }
+  }
+
+  function scheduleStaleTimer(progress: NativeDriveImportProgress) {
+    clearStaleTimer();
+    if (progress.phase === "complete" || progress.phase === "error") {
+      return;
+    }
+
+    timeoutId = setTimeout(() => {
+      if (settled) {
+        return;
+      }
+
+      const timeoutProgress: NativeDriveImportProgress = {
+        ...(latestProgress ?? {}),
+        phase: "error",
+        percent: latestProgress?.percent ?? 0,
+        message: NATIVE_DRIVE_IMPORT_STALE_MESSAGE
+      };
+      latestProgress = timeoutProgress;
+      options?.onProgress?.(timeoutProgress);
+      rejectForStaleProgress?.(new Error(NATIVE_DRIVE_IMPORT_STALE_MESSAGE));
+    }, getNativeDriveImportStaleTimeoutMs(progress, staleTimeoutMs));
+  }
+
+  const staleProgressPromise = new Promise<never>((_, reject) => {
+    rejectForStaleProgress = reject;
+  });
+
+  const progressHandle = await dependencies.addProgressListener((progress) => {
+    latestProgress = progress;
+    options?.onProgress?.(progress);
+    scheduleStaleTimer(progress);
+  });
+
+  const importPromise = dependencies.importTakeoutZip();
+  importPromise.catch(() => undefined);
+
+  try {
+    return await Promise.race([importPromise, staleProgressPromise]);
+  } catch (error) {
+    if (latestProgress?.phase !== "error") {
+      const errorProgress: NativeDriveImportProgress = {
+        ...(latestProgress ?? {}),
+        phase: "error",
+        percent: latestProgress?.percent ?? 0,
+        message: getNativeDriveErrorMessage(error)
+      };
+      latestProgress = errorProgress;
+      options?.onProgress?.(errorProgress);
+    }
+
+    throw error;
+  } finally {
+    settled = true;
+    clearStaleTimer();
+    removeProgressListenerInBackground(progressHandle);
+  }
+}
+
+export function importNativeDriveTakeoutZipWithProgressTimeout(
+  options?: NativeDriveImportRunnerOptions
+): Promise<NativeDriveTakeoutImportResult> {
+  return runNativeDriveTakeoutZipImportWithProgressTimeout(
+    {
+      addProgressListener: addNativeDriveImportProgressListener,
+      importTakeoutZip: importNativeDriveTakeoutZip
+    },
+    options
+  );
 }

@@ -1,11 +1,12 @@
 "use client";
 
 import { formatInTimeZone } from "date-fns-tz";
+import { ImportSummaryCard } from "@/components/import/ImportSummaryCard";
 import type { DaySummary } from "@/lib/analytics/summarizeDay";
 import type { QuickDateOption } from "@/lib/date/dateKeys";
 import type { DailyReview } from "@/lib/review/buildDailyReview";
 import { getVideoMetadata } from "@/lib/youtube/videoMetadata";
-import type { ClassifiedWatchItem, DateRangeMode, DateSettings } from "@/types/watch";
+import type { ClassifiedWatchItem, DateRangeMode, DateSettings, WatchHistoryImportSummary } from "@/types/watch";
 
 type HomeDashboardProps = {
   dateLabel: string;
@@ -16,6 +17,7 @@ type HomeDashboardProps = {
   summary: DaySummary;
   review: DailyReview;
   dateSettings: DateSettings;
+  latestImportSummary?: WatchHistoryImportSummary;
   note: string;
   onNoteChange: (value: string) => void;
   onDateSelect: (dateKey: string) => void;
@@ -114,6 +116,7 @@ export function HomeDashboard({
   summary,
   review,
   dateSettings,
+  latestImportSummary,
   note,
   onNoteChange,
   onDateSelect,
@@ -129,6 +132,8 @@ export function HomeDashboard({
 
   return (
     <div className="space-y-4">
+      {latestImportSummary ? <ImportSummaryCard summary={latestImportSummary} /> : null}
+
       <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">

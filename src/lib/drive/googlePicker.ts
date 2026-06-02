@@ -280,7 +280,6 @@ async function loadGooglePicker(): Promise<GooglePickerNamespace> {
 
 function requestAccessToken(clientId: string): Promise<string> {
   return new Promise((resolve, reject) => {
-    let timeoutId: ReturnType<typeof setTimeout> | undefined;
     let settled = false;
 
     function settle(callback: () => void) {
@@ -288,13 +287,11 @@ function requestAccessToken(clientId: string): Promise<string> {
         return;
       }
       settled = true;
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
+      clearTimeout(timeoutId);
       callback();
     }
 
-    timeoutId = setTimeout(() => {
+    const timeoutId = setTimeout(() => {
       settle(() => reject(new Error("Google 인증 응답 시간이 초과되었습니다. 다시 시도해주세요.")));
     }, TOKEN_REQUEST_TIMEOUT_MS);
 
