@@ -48,6 +48,7 @@ describe("pre-release change summary checklist", () => {
     expect(checklist).toContain("## GitHub Actions APK Emulator Clean Install Smoke Result - 2026-06-03 (0d327d1)");
     expect(checklist).toContain("## GitHub Actions APK Emulator Clean Install Smoke Result - 2026-06-03 (b2b5bf8)");
     expect(checklist).toContain("## GitHub Actions APK Emulator Clean Install Smoke Result - 2026-06-03 (7ec33e2)");
+    expect(checklist).toContain("## GitHub Actions APK Emulator Clean Install Smoke Result - 2026-06-03 (1768952)");
     expect(checklist).toContain("## Current Remaining Risks");
     expect(checklist).toContain("## Go / No-go Notes");
   });
@@ -229,6 +230,15 @@ describe("pre-release change summary checklist", () => {
     expect(checklist).toContain("app-debug.apk`, size 4,635,774 bytes");
     expect(checklist).toContain("codex-7ec33e2-emulator-clean-install-launch-after-wait.png");
     expect(checklist).toContain("codex-7ec33e2-emulator-window.xml");
+    expect(checklist).toContain("Build commit: `1768952a66c0da3d3805c83c3abbac6dd9b7a0d1`");
+    expect(checklist).toContain("Build Android APK` run `26854263946`");
+    expect(checklist).toContain("artifact id `7372326613`");
+    expect(checklist).toContain("Artifact ZIP downloaded from GitHub Actions; size 4,249,040 bytes");
+    expect(checklist).toContain("Initial screenshot showed a `System UI isn't responding` dialog");
+    expect(checklist).toContain("the smoke tapped `Wait` and rechecked the app after the system UI recovered");
+    expect(checklist).toContain("codex-1768952-emulator-clean-install-launch-after-systemui-wait.png");
+    expect(checklist).toContain("codex-1768952-emulator-window-after-systemui-wait.xml");
+    expect(checklist).toContain("The first screenshot showed a System UI ANR dialog before the app became focused");
   });
 
   it("keeps privacy and product-boundary reminders visible", () => {
@@ -246,7 +256,7 @@ describe("pre-release change summary checklist", () => {
     expect(checklist).toContain("Valid small fixture ZIP");
     expect(checklist).toContain("completed and reported import counts in debug and release smoke");
     expect(checklist).toContain("GitHub Actions debug APK clean-installed and launched on an Android 16 x86_64 emulator");
-    expect(checklist).toContain("GitHub Actions debug APK clean-installed and launched on an Android 16 emulator for commits `440856a`, `cbe4b9a`, `a2e2d01`, `0d327d1`, `b2b5bf8`, and `7ec33e2`");
+    expect(checklist).toContain("GitHub Actions debug APK clean-installed and launched on an Android 16 emulator for commits `440856a`, `cbe4b9a`, `a2e2d01`, `0d327d1`, `b2b5bf8`, `7ec33e2`, and `1768952`");
     expect(checklist).toContain("Drive import, YouTube share, duplicate import, deletion, and layout flows were not repeated there");
     expect(checklist).toContain("Android Drive duplicate re-import passed with the small synthetic watch-history fixture");
     expect(checklist).toContain("large real duplicate archives still need performance/storage verification");
