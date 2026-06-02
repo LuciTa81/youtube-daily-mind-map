@@ -4,6 +4,7 @@ const config: CapacitorConfig = {
   appId: "com.lucita81.youtubedailymindmap",
   appName: "YouTube Daily Mind Map",
   webDir: "out",
+  loggingBehavior: "none",
   server: {
     androidScheme: "https"
   },
