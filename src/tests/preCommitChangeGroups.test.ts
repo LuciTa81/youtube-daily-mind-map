@@ -41,6 +41,177 @@ const groupOneExcludedPatterns = [
   "src/tests/capacitorPrivacyConfig.test.ts",
 ];
 
+const groupTwoWholeFiles = [
+  "android/app/src/main/java/com/lucita81/youtubedailymindmap/NativeDriveFilePlugin.java",
+  "src/components/import/DriveTakeoutImportPanel.tsx",
+  "src/components/import/ImportSummaryCard.tsx",
+  "src/components/import/ImportLoadingOverlay.tsx",
+  "src/components/import/WatchHistoryImportPanel.tsx",
+  "src/lib/drive/googlePicker.ts",
+  "src/lib/import/parseTakeout.ts",
+  "src/lib/native/nativeDriveFile.ts",
+  "scripts/smoke-large-takeout.mjs",
+  "src/tests/fixtures/takeoutFixtures.ts",
+  "src/tests/importLoadingOverlay.test.ts",
+  "src/tests/importResultSummary.test.ts",
+  "src/tests/largeTakeoutSmokeScript.test.ts",
+  "src/tests/nativeDriveFile.test.ts",
+  "src/tests/nativeDriveFilePluginSource.test.ts",
+  "src/tests/parseTakeout.test.ts",
+  "src/tests/takeoutFixtureFlow.test.ts",
+  "src/tests/watchHistoryImportPanelError.test.ts",
+];
+
+const groupTwoMixedFiles = [
+  "src/types/watch.ts",
+  "src/components/layout/AppShell.tsx",
+  "src/components/layout/LeftPanel.tsx",
+  "src/components/layout/HomeDashboard.tsx",
+];
+
+const groupTwoMixedHunkIncludes = [
+  "the `WatchHistoryImportSummary` type block",
+  "`buildImportSummary(...)`",
+  "`latestImportSummary` state",
+  "returning `Promise<WatchHistoryImportSummary>`",
+  "passing `latestImportSummary` into `LeftPanel` and `HomeDashboard`",
+  "the `youtubeMindMap:goHome` listener only as native-import return-home handling",
+  "`latestImportSummary` prop and pass-through into `WatchHistoryImportPanel`",
+  "`ImportSummaryCard` import",
+  "rendering `<ImportSummaryCard summary={latestImportSummary} />`",
+];
+
+const groupTwoMixedHunkExcludes = [
+  "`VideoMemoryTag`, `memoryTag`, `memoryNote`, and `memoryUpdatedAt`",
+  "`getDateKeyForItem`, `addNativeShareIntentListener`, `consumePendingNativeShareIntent`",
+  "`saveSharedYouTubeVideo`, `applyVideoMemoryDraft`, `SharedMemoryPrompt`",
+  "shared-memory state/effects/handlers",
+  "`handleVideoMemorySave`, `onVideoMemorySave`, and settings bottom-padding hunks",
+  "`getVideoMemorySummary`, video memory badges, `markedMemoryItems`",
+  "the `오늘 남긴 영상` section",
+];
+
+const groupTwoExcludedPatterns = [
+  "android/app/src/main/AndroidManifest.xml",
+  "android/app/src/main/java/com/lucita81/youtubedailymindmap/MainActivity.java",
+  "android/app/src/main/java/com/lucita81/youtubedailymindmap/NativeShareIntentPlugin.java",
+  "capacitor.config.ts",
+  "src/components/share/**",
+  "src/lib/native/nativeShareIntent.ts",
+  "src/lib/share/**",
+  "src/lib/review/**",
+  "src/components/review/**",
+  "src/components/timeline/**",
+  "src/components/mindmap/NodeDetailRenderer.tsx",
+  "src/components/layout/LeftPanel.tsx",
+  "src/tests/sharedYouTubeVideo.test.ts",
+  "src/tests/shareGuideCopy.test.ts",
+  "src/tests/videoMemory.test.ts",
+  "src/tests/buildDailyReview.test.ts",
+  "src/tests/buildWeeklyReport.test.ts",
+  "src/tests/mobileSettingsLayout.test.ts",
+  "src/tests/capacitorPrivacyConfig.test.ts",
+];
+
+const groupThreeWholeFiles = [
+  "android/app/src/main/AndroidManifest.xml",
+  "android/app/src/main/java/com/lucita81/youtubedailymindmap/MainActivity.java",
+  "android/app/src/main/java/com/lucita81/youtubedailymindmap/NativeShareIntentPlugin.java",
+  "src/components/share/SharedMemoryPrompt.tsx",
+  "src/lib/native/nativeShareIntent.ts",
+  "src/lib/share/sharedYouTubeVideo.ts",
+  "src/lib/share/videoMemory.ts",
+  "src/tests/sharedYouTubeVideo.test.ts",
+  "src/tests/shareGuideCopy.test.ts",
+  "src/tests/videoMemory.test.ts",
+];
+
+const groupThreeMixedFiles = [
+  "src/types/watch.ts",
+  "src/components/layout/AppShell.tsx",
+];
+
+const groupThreeMixedHunkIncludes = [
+  "`VideoMemoryTag`",
+  "`memoryTag`, `memoryNote`, and `memoryUpdatedAt` on `WatchItem`",
+  "`getDateKeyForItem` import for routing a shared video into the selected day",
+  "`addNativeShareIntentListener` and `consumePendingNativeShareIntent` imports",
+  "`saveSharedYouTubeVideo`, `applyVideoMemoryDraft`, and `SharedMemoryPrompt` imports",
+  "shared-memory state, pending native-share consumption, native-share listener",
+  "same-day duplicate handling",
+  "rendering `<SharedMemoryPrompt ... />`",
+];
+
+const groupThreeExcludedPatterns = [
+  "src/components/layout/DetailPanel.tsx",
+  "src/components/mindmap/NodeDetailRenderer.tsx",
+  "src/components/layout/HomeDashboard.tsx",
+  "src/components/review/**",
+  "src/components/timeline/**",
+  "src/lib/review/**",
+  "src/tests/buildDailyReview.test.ts",
+  "src/tests/buildWeeklyReport.test.ts",
+  "src/tests/mobileSettingsLayout.test.ts",
+  "capacitor.config.ts",
+  "src/tests/capacitorPrivacyConfig.test.ts",
+];
+
+const groupFourWholeFiles = [
+  "src/components/layout/DetailPanel.tsx",
+  "src/components/layout/HomeDashboard.tsx",
+  "src/components/mindmap/NodeDetailRenderer.tsx",
+  "src/components/review/WeeklyReportPanel.tsx",
+  "src/components/timeline/WatchTimeline.tsx",
+  "src/lib/review/buildDailyReview.ts",
+  "src/lib/review/buildWeeklyReport.ts",
+  "src/lib/review/memorableItems.ts",
+  "src/tests/buildDailyReview.test.ts",
+  "src/tests/buildWeeklyReport.test.ts",
+];
+
+const groupFourHunkIncludes = [
+  "passing `onVideoMemorySave={dataViewMode === \"saved\" ? handleVideoMemorySave : undefined}` into `DetailPanel`",
+  "Keep `buildDailyReview`, `buildWeeklyReport`, and `memorableItems` as pure domain/report logic",
+  "Do not display watch duration unless true duration data exists",
+  "confirm only the `onVideoMemorySave` prop hunk is staged",
+  "daily review, timeline, and weekly report",
+];
+
+const groupFourExcludedPatterns = [
+  "src/components/layout/AppShell.tsx` settings safe-area bottom-padding hunks",
+  "src/tests/mobileSettingsLayout.test.ts",
+  "capacitor.config.ts",
+  "src/tests/capacitorPrivacyConfig.test.ts",
+  "docs/checklists/pre-commit-change-groups.md",
+  "src/tests/preCommitChangeGroups.test.ts",
+];
+
+const groupFiveHunkIncludes = [
+  "`defaultBottomPaddingClass`",
+  "`settingsBottomPaddingClass`",
+  "`mainContentClassName`",
+  'replacing the static `<main className="flex-1 px-4 py-4 pb-24 md:px-6">`',
+  "confirm only the settings bottom-padding hunk is staged",
+];
+
+const groupFiveExcludedPatterns = [
+  "src/components/layout/DetailPanel.tsx",
+  "src/components/layout/HomeDashboard.tsx",
+  "src/components/mindmap/NodeDetailRenderer.tsx",
+  "src/components/review/WeeklyReportPanel.tsx",
+  "src/components/timeline/WatchTimeline.tsx",
+  "src/lib/review/**",
+  "src/tests/buildDailyReview.test.ts",
+  "src/tests/buildWeeklyReport.test.ts",
+  "capacitor.config.ts",
+  "src/tests/capacitorPrivacyConfig.test.ts",
+];
+
+const groupSixWholeFiles = [
+  "capacitor.config.ts",
+  "src/tests/capacitorPrivacyConfig.test.ts",
+];
+
 function readPreCommitGroups(): string {
   return readFileSync(preCommitGroupsPath, "utf8");
 }
@@ -91,22 +262,33 @@ describe("pre-commit change groups checklist", () => {
     expect(checklist).toContain("src/lib/import/parseTakeout.ts");
     expect(checklist).toContain("src/lib/native/nativeDriveFile.ts");
     expect(checklist).toContain("src/tests/takeoutFixtureFlow.test.ts");
+    expect(checklist).toContain("Candidate whole files:");
+    expect(checklist).toContain("Mixed files that require partial/hunk staging:");
+    expect(checklist).toContain("Group 2 Stage Candidate Review - 2026-06-03");
+    expect(checklist).toContain("Do not whole-file stage `AppShell.tsx`, `HomeDashboard.tsx`, or `watch.ts`");
+    expect(checklist).toContain("Whole-file stage `LeftPanel.tsx` only if its diff is still limited");
+    expect(checklist).toContain("Keep Drive access user-selected");
 
     expect(checklist).toContain("Group 3 - Android YouTube Share Save Loop");
     expect(checklist).toContain("android/app/src/main/java/com/lucita81/youtubedailymindmap/NativeShareIntentPlugin.java");
     expect(checklist).toContain("src/lib/native/nativeShareIntent.ts");
     expect(checklist).toContain("src/lib/share/");
+    expect(checklist).toContain("Group 3 Stage Candidate Review - 2026-06-03");
+    expect(checklist).toContain("Do not stage daily/weekly review display surfaces for this group");
 
     expect(checklist).toContain("Group 4 - Daily And Weekly Review Surfaces");
     expect(checklist).toContain("src/lib/review/buildDailyReview.ts");
     expect(checklist).toContain("src/lib/review/buildWeeklyReport.ts");
     expect(checklist).toContain("src/lib/review/memorableItems.ts");
+    expect(checklist).toContain("Group 4 Stage Candidate Review - 2026-06-03");
 
     expect(checklist).toContain("Group 5 - Mobile, Foldable, And Loading Polish");
     expect(checklist).toContain("src/components/import/ImportLoadingOverlay.tsx");
+    expect(checklist).toContain("Group 5 Stage Candidate Review - 2026-06-03");
 
     expect(checklist).toContain("Group 6 - Android And Capacitor Packaging Guardrails");
     expect(checklist).toContain("capacitor.config.ts");
+    expect(checklist).toContain("Group 6 Stage Candidate Review - 2026-06-03");
   });
 
   it("keeps the exact Group 1 stage include and exclude sets visible", () => {
@@ -132,6 +314,165 @@ describe("pre-commit change groups checklist", () => {
     for (const file of groupOneStageFiles) {
       expect(command).toContain(file);
     }
+  });
+
+  it("keeps the exact Group 2 whole-file include set visible", () => {
+    const checklist = readPreCommitGroups();
+
+    for (const file of groupTwoWholeFiles) {
+      expect(checklist).toContain(`- \`${file}\``);
+    }
+  });
+
+  it("marks mixed Group 2 files for partial staging only", () => {
+    const checklist = readPreCommitGroups();
+
+    for (const file of groupTwoMixedFiles) {
+      expect(checklist).toContain(`- \`${file}\``);
+    }
+
+    expect(checklist).toContain("include only `WatchHistoryImportSummary`");
+    expect(checklist).toContain("include only import-summary application flow");
+    expect(checklist).toContain("include only the import-summary pass-through hunk");
+    expect(checklist).toContain("include only `latestImportSummary` and `ImportSummaryCard` rendering");
+  });
+
+  it("keeps the Group 2 mixed-file hunk plan specific enough for partial staging", () => {
+    const checklist = readPreCommitGroups();
+
+    expect(checklist).toContain("Group 2 mixed hunk plan:");
+
+    for (const include of groupTwoMixedHunkIncludes) {
+      expect(checklist).toContain(include);
+    }
+
+    for (const excluded of groupTwoMixedHunkExcludes) {
+      expect(checklist).toContain(excluded);
+    }
+
+    expect(checklist).toContain("Do not use `git add` on mixed files");
+    expect(checklist).toContain("stage it manually with a temporary patch");
+    expect(checklist).toContain(
+      "git diff --cached -- src/types/watch.ts src/components/layout/AppShell.tsx src/components/layout/LeftPanel.tsx src/components/layout/HomeDashboard.tsx"
+    );
+  });
+
+  it("keeps Group 2 exclusions and native verification visible", () => {
+    const checklist = readPreCommitGroups();
+
+    for (const excluded of groupTwoExcludedPatterns) {
+      expect(checklist).toContain(excluded);
+    }
+
+    expect(checklist).toContain("npx cap sync android");
+    expect(checklist).toContain("android/gradlew assembleDebug");
+    expect(checklist).toContain("invalid ZIP rejection");
+    expect(checklist).toContain("valid fixture completion");
+    expect(checklist).toContain("duplicate fixture import");
+    expect(checklist).toContain("large-file progress visibility");
+    expect(checklist).toContain("do not introduce broad Drive search or raw Takeout server upload");
+  });
+
+  it("keeps the exact Group 3 whole-file include set visible", () => {
+    const checklist = readPreCommitGroups();
+
+    for (const file of groupThreeWholeFiles) {
+      expect(checklist).toContain(`- \`${file}\``);
+    }
+  });
+
+  it("keeps the Group 3 mixed-file hunk plan specific enough for partial staging", () => {
+    const checklist = readPreCommitGroups();
+
+    expect(checklist).toContain("Mixed files that require partial/hunk staging:");
+
+    for (const file of groupThreeMixedFiles) {
+      expect(checklist).toContain(`- \`${file}\``);
+    }
+
+    for (const include of groupThreeMixedHunkIncludes) {
+      expect(checklist).toContain(include);
+    }
+
+    expect(checklist).toContain("Exclude: passing `onVideoMemorySave` into `DetailPanel`");
+    expect(checklist).toContain("Exclude: settings safe-area bottom-padding hunks");
+  });
+
+  it("keeps Group 3 exclusions and native share verification visible", () => {
+    const checklist = readPreCommitGroups();
+
+    for (const excluded of groupThreeExcludedPatterns) {
+      expect(checklist).toContain(excluded);
+    }
+
+    expect(checklist).toContain("YouTube app share chooser visibility");
+    expect(checklist).toContain("cold-start pending share");
+    expect(checklist).toContain("warm-app `onNewIntent`");
+    expect(checklist).toContain("same-day duplicate handling");
+    expect(checklist).toContain("non-YouTube share rejection");
+    expect(checklist).toContain("shared-memory tag/note persistence");
+    expect(checklist).toContain("do not upload shared URLs, notes, or video titles to a server");
+    expect(checklist).toContain("Do not claim watch duration");
+  });
+
+  it("keeps the exact Group 4 review-surface include set visible", () => {
+    const checklist = readPreCommitGroups();
+
+    for (const file of groupFourWholeFiles) {
+      expect(checklist).toContain(`- \`${file}\``);
+    }
+
+    expect(checklist).toContain("Mixed files that require partial/hunk staging:");
+    expect(checklist).toContain("src/components/layout/AppShell.tsx");
+  });
+
+  it("keeps the Group 4 partial-staging boundary specific", () => {
+    const checklist = readPreCommitGroups();
+
+    for (const include of groupFourHunkIncludes) {
+      expect(checklist).toContain(include);
+    }
+
+    for (const excluded of groupFourExcludedPatterns) {
+      expect(checklist).toContain(excluded);
+    }
+
+    expect(checklist).toContain("Do not add AI summaries, automatic AI calls");
+    expect(checklist).toContain("npx cap sync android");
+    expect(checklist).toContain("android/gradlew assembleDebug");
+  });
+
+  it("keeps the Group 5 mobile-layout hunk plan specific enough for partial staging", () => {
+    const checklist = readPreCommitGroups();
+
+    expect(checklist).toContain("Current whole-file candidates:");
+    expect(checklist).toContain("- `src/tests/mobileSettingsLayout.test.ts`");
+
+    for (const include of groupFiveHunkIncludes) {
+      expect(checklist).toContain(include);
+    }
+
+    for (const excluded of groupFiveExcludedPatterns) {
+      expect(checklist).toContain(excluded);
+    }
+
+    expect(checklist).toContain("fixed bottom nav");
+  });
+
+  it("keeps the Group 6 Capacitor privacy guardrail plan specific", () => {
+    const checklist = readPreCommitGroups();
+
+    for (const file of groupSixWholeFiles) {
+      expect(checklist).toContain(`- \`${file}\``);
+    }
+
+    expect(checklist).toContain('loggingBehavior: "none"');
+    expect(checklist).toContain("native bridge logging disabled");
+    expect(checklist).toContain("Do not add new native plugins");
+    expect(checklist).toContain("npx cap sync android");
+    expect(checklist).toContain("android/gradlew assembleDebug");
+    expect(checklist).toContain("android/gradlew assembleRelease");
+    expect(checklist).toContain("logcat");
   });
 
   it("keeps the Group 1 commit message focused on harness work", () => {
