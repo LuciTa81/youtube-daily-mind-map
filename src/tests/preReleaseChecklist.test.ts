@@ -41,6 +41,7 @@ describe("pre-release change summary checklist", () => {
     expect(checklist).toContain("## Android Release Privacy Smoke Result - 2026-06-03");
     expect(checklist).toContain("## Android Smoke Checklist Coverage - 2026-06-03");
     expect(checklist).toContain("## Android WebView Thumbnail Smoke Result - 2026-06-03");
+    expect(checklist).toContain("## Android Release WebView Thumbnail Smoke Result - 2026-06-03");
     expect(checklist).toContain("## Current Remaining Risks");
     expect(checklist).toContain("## Go / No-go Notes");
   });
@@ -142,6 +143,17 @@ describe("pre-release change summary checklist", () => {
     expect(checklist).toContain("Timeline video thumbnail areas fell back to the local grey placeholder");
     expect(checklist).toContain("sample_related_count=0");
     expect(checklist).toContain("yt_or_404_count=0");
+    expect(checklist).toContain("Android Release WebView Thumbnail Smoke Result - 2026-06-03");
+    expect(checklist).toContain("Build commit: `518e7087fddab6dbf7d4209450c384edfa9f0a8a`");
+    expect(checklist).toContain("app-release-smoke-signed.apk");
+    expect(checklist).toContain("verified with APK Signature Scheme v2/v3");
+    expect(checklist).toContain("no `DEBUGGABLE` flag");
+    expect(checklist).toContain("home_sample_related_count=0");
+    expect(checklist).toContain("home_yt_or_404_count=0");
+    expect(checklist).toContain("timeline_sample_related_count=0");
+    expect(checklist).toContain("timeline_yt_or_404_count=0");
+    expect(checklist).toContain("final_sample_related_count=0");
+    expect(checklist).toContain("final_yt_or_404_count=0");
   });
 
   it("keeps privacy and product-boundary reminders visible", () => {
@@ -165,8 +177,8 @@ describe("pre-release change summary checklist", () => {
     expect(checklist).toContain("Release APK native import logcat silence, invalid ZIP rejection visibility");
     expect(checklist).toContain("valid fixture completion, duplicate-summary visibility, and YouTube share behavior passed");
     expect(checklist).toContain("standard phone and additional vendor/device coverage still need review");
-    expect(checklist).toContain("Debug APK WebView thumbnail smoke passed on the Samsung SM-F966N");
-    expect(checklist).toContain("release APK WebView thumbnail smoke still needs a repeat pass");
+    expect(checklist).toContain("Debug and locally smoke-signed release APK WebView thumbnail smoke passed on the Samsung SM-F966N");
+    expect(checklist).toContain("Play Store-signed release and standard phone coverage still need repeat passes");
     expect(checklist).toContain("standard phone layout and long Korean copy still need review");
   });
 });

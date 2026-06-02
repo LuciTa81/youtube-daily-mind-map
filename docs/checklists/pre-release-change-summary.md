@@ -159,7 +159,35 @@ Remaining device-specific risks:
 
 - This was a debug APK smoke on one Samsung foldable device only.
 - The device already had local records, so this confirms WebView thumbnail fallback and logcat silence during Timeline render rather than a completely fresh sample-data-only run.
-- Release APK WebView thumbnail smoke should be repeated before sharing a release candidate.
+- A Play Store-signed release candidate and a standard non-foldable Android phone still need repeat coverage before broad sharing.
+
+## Android Release WebView Thumbnail Smoke Result - 2026-06-03
+
+Device: Samsung SM-F966N foldable device, Android 16.
+APK: release APK signed locally for smoke with the Android debug keystore from `android/app/build/outputs/apk/release/app-release-smoke-signed.apk`, size 3,627,051 bytes.
+Build commit: `518e7087fddab6dbf7d4209450c384edfa9f0a8a`.
+
+- [x] `npm run verify` passed before Android sync.
+- [x] `npx cap sync android` copied the latest `out` bundle into Android assets.
+- [x] `android/gradlew assembleRelease` passed.
+- [x] `app-release-unsigned.apk` was zipaligned, signed for local smoke, and verified with APK Signature Scheme v2/v3.
+- [x] Signed release APK installed on the real device with `adb install -r`.
+- [x] `dumpsys package` showed no `DEBUGGABLE` flag.
+- [x] App launched on the real device and Home rendered.
+- [x] Timeline tab rendered video cards in Android WebView.
+- [x] Timeline video thumbnail areas fell back to the local grey placeholder instead of requesting synthetic sample thumbnails.
+- [x] Filtered logcat after Home render found `home_sample_related_count=0`.
+- [x] Filtered logcat after Home render found `home_yt_or_404_count=0`.
+- [x] Filtered logcat after Timeline render found `timeline_sample_related_count=0`.
+- [x] Filtered logcat after Timeline render found `timeline_yt_or_404_count=0`.
+- [x] Final filtered logcat after relaunch and Timeline render found `final_sample_related_count=0`.
+- [x] Final filtered logcat after relaunch and Timeline render found `final_yt_or_404_count=0`.
+
+Remaining device-specific risks:
+
+- This was a locally smoke-signed release APK, not a Play Store signed artifact.
+- This was one Samsung foldable device only; standard non-foldable Android coverage is still pending.
+- The device already had local records, so this confirms WebView thumbnail fallback and logcat silence during Timeline render rather than a completely fresh sample-data-only run.
 
 ## Current Remaining Risks
 
@@ -167,7 +195,7 @@ Remaining device-specific risks:
 - Android Drive duplicate re-import passed with the small synthetic watch-history fixture, but large real duplicate archives still need performance/storage verification.
 - The 1.62 GiB real Takeout structure scan found a localized Korean watch-history candidate, but Android full Drive copy/parsing/loading UI remains unverified because that real ZIP was not user-selected from Drive in the smoke run.
 - Release APK native import logcat silence, invalid ZIP rejection visibility, valid fixture completion, duplicate-summary visibility, and YouTube share behavior passed on the Samsung SM-F966N; standard phone and additional vendor/device coverage still need review before public release.
-- Debug APK WebView thumbnail smoke passed on the Samsung SM-F966N with no synthetic sample thumbnail requests or 404 logs, but release APK WebView thumbnail smoke still needs a repeat pass before sharing a release candidate.
+- Debug and locally smoke-signed release APK WebView thumbnail smoke passed on the Samsung SM-F966N with no synthetic sample thumbnail requests or 404 logs, but Play Store-signed release and standard phone coverage still need repeat passes before broad sharing.
 - Storage fields for video memory are currently lightweight `WatchItem` fields, not a versioned migration.
 - UI copy and layout passed a foldable smoke path, but standard phone layout and long Korean copy still need review before public sharing.
 - The working tree may include multiple feature groups; release notes should separate them before commit or deploy.
