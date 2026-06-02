@@ -1,3 +1,5 @@
+export type VideoMemoryTag = "remember" | "review" | "saved";
+
 export type WatchItem = {
   id: string;
   title: string;
@@ -7,6 +9,9 @@ export type WatchItem = {
   watchedAt: string;
   rawDateText?: string;
   source: "takeout-html" | "takeout-json" | "manual" | "sample";
+  memoryTag?: VideoMemoryTag;
+  memoryNote?: string;
+  memoryUpdatedAt?: string;
 };
 
 export type WatchHistoryImportSummary = {

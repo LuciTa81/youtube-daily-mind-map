@@ -8,6 +8,7 @@ import { WatchTimeline } from "@/components/timeline/WatchTimeline";
 import { classifyItems } from "@/lib/classify/classify";
 import {
   filterItemsByDateRange,
+  getDateKeyForItem,
   getDateRangeForSelection,
   getQuickDateOptions,
   getRelativeDateKey
@@ -21,12 +22,17 @@ import { buildDailyReview } from "@/lib/review/buildDailyReview";
 import { buildWeeklyReport } from "@/lib/review/buildWeeklyReport";
 import { indexedDbReviewNoteRepository } from "@/lib/storage/reviewNoteRepository";
 import { indexedDbWatchHistoryRepository } from "@/lib/storage/watchHistoryRepository";
+import { addNativeShareIntentListener, consumePendingNativeShareIntent } from "@/lib/native/nativeShareIntent";
+import { saveSharedYouTubeVideo } from "@/lib/share/sharedYouTubeVideo";
+import { applyVideoMemoryDraft, type VideoMemoryDraft } from "@/lib/share/videoMemory";
+import { SharedMemoryPrompt } from "@/components/share/SharedMemoryPrompt";
 import type { ParsedWatchHistory } from "@/lib/import/parseTakeout";
 import type { MindMapBuildOptions, MindMapNode, MindMapViewMode } from "@/types/mindmap";
 import type {
   ClassifiedWatchItem,
   DateRangeMode,
   DateSettings,
+  VideoMemoryTag,
   WatchHistoryImportSummary,
   WatchItem
 } from "@/types/watch";
@@ -366,6 +372,9 @@ export function AppShell() {
   const [selectedTimelineNode, setSelectedTimelineNode] = useState<MindMapNode>();
   const [reviewNote, setReviewNote] = useState("");
   const [loadedReviewNoteKey, setLoadedReviewNoteKey] = useState("");
+  const [sharedMemoryItemId, setSharedMemoryItemId] = useState<string>();
+  const [sharedMemoryTag, setSharedMemoryTag] = useState<VideoMemoryTag>("remember");
+  const [sharedMemoryNote, setSharedMemoryNote] = useState("");
   const watchItems = dataViewMode === "saved" ? savedWatchItems : sampleWatchItems;
 
   useEffect(() => {
@@ -385,6 +394,62 @@ export function AppShell() {
     window.addEventListener("youtubeMindMap:goHome", handleGoHome);
     return () => window.removeEventListener("youtubeMindMap:goHome", handleGoHome);
   }, []);
+
+  useEffect(() => {
+    const handleSharedYouTube = (detail: Parameters<typeof saveSharedYouTubeVideo>[1]) => {
+      void (async () => {
+        const result = saveSharedYouTubeVideo(savedWatchItems, detail, dateSettings);
+
+        if (!result) {
+          setImportNote("공유된 내용에서 YouTube 링크를 찾지 못했습니다.");
+          return;
+        }
+
+        let persisted = true;
+        try {
+          await indexedDbWatchHistoryRepository.save(result.items);
+        } catch {
+          persisted = false;
+        }
+
+        const targetItem = result.duplicateItem ?? result.item;
+        setSavedWatchItems(result.items);
+        setSharedMemoryItemId(targetItem.id);
+        setSharedMemoryTag(targetItem.memoryTag ?? "remember");
+        setSharedMemoryNote(targetItem.memoryNote ?? "");
+        setDataViewMode("saved");
+        setActiveSourceName("YouTube 공유 저장");
+        setSelectedDateKey(getDateKeyForItem(targetItem, dateSettings));
+        setRangeMode("day");
+        setCanvasMode("review");
+        setMobilePanel("none");
+        setSearchQuery("");
+        setCategoryFilter("");
+        setChannelQuery("");
+        setLowConfidenceOnly(false);
+        setSelectedTimelineNode(undefined);
+        setExpandedGroupIds(new Set());
+        setCollapsedBranchIds(new Set());
+        setImportNote(
+          result.added
+            ? `공유한 영상을 오늘의 기록에 저장했습니다. 저장된 기록 ${result.items.length.toLocaleString("ko-KR")}개${
+                persisted ? "" : " · 저장소 오류로 이번 화면에만 반영"
+              }`
+            : `이미 같은 날짜에 저장된 영상입니다. 저장된 기록 ${result.items.length.toLocaleString("ko-KR")}개`
+        );
+      })();
+    };
+
+    void consumePendingNativeShareIntent()
+      .then((detail) => {
+        if (detail) {
+          handleSharedYouTube(detail);
+        }
+      })
+      .catch(() => undefined);
+
+    return addNativeShareIntentListener(handleSharedYouTube);
+  }, [dateSettings, savedWatchItems]);
 
   useEffect(() => {
     let cancelled = false;
@@ -627,6 +692,10 @@ export function AppShell() {
     () => selectedTimelineNode ?? findNode(displayRoot, selectedNodeId) ?? displayRoot,
     [displayRoot, selectedNodeId, selectedTimelineNode]
   );
+  const sharedMemoryItem = useMemo(
+    () => savedWatchItems.find((item) => item.id === sharedMemoryItemId),
+    [savedWatchItems, sharedMemoryItemId]
+  );
   const handleRangeModeChange = useCallback((mode: DateRangeMode) => {
     setRangeMode(mode);
     setSelectedTimelineNode(undefined);
@@ -828,6 +897,66 @@ export function AppShell() {
 
   const closeMobilePanel = useCallback(() => {
     setMobilePanel("none");
+  }, []);
+
+  const handleVideoMemorySave = useCallback(
+    async (itemId: string, draft: VideoMemoryDraft) => {
+      const updatedAt = new Date().toISOString();
+      const nextItems = applyVideoMemoryDraft(savedWatchItems, itemId, draft, updatedAt);
+
+      if (!nextItems) {
+        return;
+      }
+
+      const updatedItem = nextItems.find((item) => item.id === itemId);
+      let persisted = true;
+      try {
+        await indexedDbWatchHistoryRepository.save(nextItems);
+      } catch {
+        persisted = false;
+      }
+
+      setSavedWatchItems(nextItems);
+      setSelectedTimelineNode((current) => {
+        const currentItem = current?.meta?.item as ClassifiedWatchItem | undefined;
+        if (!currentItem || currentItem.id !== itemId || !updatedItem) {
+          return current;
+        }
+
+        return createTimelineVideoNode(
+          {
+            ...currentItem,
+            memoryTag: updatedItem.memoryTag,
+            memoryNote: updatedItem.memoryNote,
+            memoryUpdatedAt: updatedItem.memoryUpdatedAt
+          },
+          dateSettings
+        );
+      });
+      setImportNote(
+        `영상 메모를 저장했습니다. 저장된 기록 ${nextItems.length.toLocaleString("ko-KR")}개${
+          persisted ? "" : " · 저장소 오류로 이번 화면에만 반영"
+        }`
+      );
+    },
+    [dateSettings, savedWatchItems]
+  );
+
+  const handleSharedMemorySave = useCallback(async () => {
+    if (!sharedMemoryItem) {
+      setSharedMemoryItemId(undefined);
+      return;
+    }
+
+    await handleVideoMemorySave(sharedMemoryItem.id, {
+      tag: sharedMemoryTag,
+      note: sharedMemoryNote
+    });
+    setSharedMemoryItemId(undefined);
+  }, [handleVideoMemorySave, sharedMemoryItem, sharedMemoryNote, sharedMemoryTag]);
+
+  const handleSharedMemoryDismiss = useCallback(() => {
+    setSharedMemoryItemId(undefined);
   }, []);
 
   const leftPanelProps = {
@@ -1044,6 +1173,18 @@ export function AppShell() {
             />
           </section>
         </div>
+      ) : null}
+
+      {sharedMemoryItem ? (
+        <SharedMemoryPrompt
+          item={sharedMemoryItem}
+          tag={sharedMemoryTag}
+          note={sharedMemoryNote}
+          onTagChange={setSharedMemoryTag}
+          onNoteChange={setSharedMemoryNote}
+          onSave={handleSharedMemorySave}
+          onDismiss={handleSharedMemoryDismiss}
+        />
       ) : null}
 
       <nav className="app-bottom-nav fixed inset-x-0 bottom-0 z-40 mx-auto grid max-w-2xl grid-cols-5 gap-1 rounded-t-lg border-t border-slate-200 bg-white/95 p-2 shadow-[0_-10px_30px_rgba(15,23,42,0.08)] backdrop-blur">
