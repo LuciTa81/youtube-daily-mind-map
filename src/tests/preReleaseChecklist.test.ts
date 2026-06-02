@@ -40,6 +40,7 @@ describe("pre-release change summary checklist", () => {
     expect(checklist).toContain("## Android Smoke Test Result - 2026-06-02");
     expect(checklist).toContain("## Android Release Privacy Smoke Result - 2026-06-03");
     expect(checklist).toContain("## Android Smoke Checklist Coverage - 2026-06-03");
+    expect(checklist).toContain("## Android WebView Thumbnail Smoke Result - 2026-06-03");
     expect(checklist).toContain("## Current Remaining Risks");
     expect(checklist).toContain("## Go / No-go Notes");
   });
@@ -136,6 +137,11 @@ describe("pre-release change summary checklist", () => {
     expect(checklist).toContain("기억할 영상");
     expect(checklist).toContain("메모 저장");
     expect(checklist).toContain("`adb logcat -d -s NativeShareIntent NativeShareIntentPlugin ShareIntent` produced no output");
+    expect(checklist).toContain("Android WebView Thumbnail Smoke Result - 2026-06-03");
+    expect(checklist).toContain("Build commit: `7390e6d436d6b6101e0b44dd91d2a19a1ea8cc01`");
+    expect(checklist).toContain("Timeline video thumbnail areas fell back to the local grey placeholder");
+    expect(checklist).toContain("sample_related_count=0");
+    expect(checklist).toContain("yt_or_404_count=0");
   });
 
   it("keeps privacy and product-boundary reminders visible", () => {
@@ -159,6 +165,8 @@ describe("pre-release change summary checklist", () => {
     expect(checklist).toContain("Release APK native import logcat silence, invalid ZIP rejection visibility");
     expect(checklist).toContain("valid fixture completion, duplicate-summary visibility, and YouTube share behavior passed");
     expect(checklist).toContain("standard phone and additional vendor/device coverage still need review");
+    expect(checklist).toContain("Debug APK WebView thumbnail smoke passed on the Samsung SM-F966N");
+    expect(checklist).toContain("release APK WebView thumbnail smoke still needs a repeat pass");
     expect(checklist).toContain("standard phone layout and long Korean copy still need review");
   });
 });

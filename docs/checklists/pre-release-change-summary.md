@@ -139,12 +139,35 @@ This matrix maps the existing smoke results to `docs/checklists/android-smoke-te
 | Local data and deletion | Pass | Clear-data flow passed after seeding one shared test record; records returned to sample data. | Storage migration tests are still separate future work. |
 | Layout smoke | Partial | Foldable home/settings/timeline/report surfaces rendered and settings destructive action had room above bottom nav. | Standard phone layout and long Korean copy pass still need review. |
 
+## Android WebView Thumbnail Smoke Result - 2026-06-03
+
+Device: Samsung SM-F966N foldable device, Android 16.
+APK: debug APK installed from `android/app/build/outputs/apk/debug/app-debug.apk`, size 4,806,931 bytes.
+Build commit: `7390e6d436d6b6101e0b44dd91d2a19a1ea8cc01`.
+
+- [x] `npm run verify` passed before Android sync.
+- [x] `npx cap sync android` copied the latest `out` bundle into Android assets.
+- [x] `android/gradlew assembleDebug` passed.
+- [x] Debug APK installed on the real device with `adb install -r`.
+- [x] App launched on the real device and Home rendered.
+- [x] Timeline tab rendered video cards in Android WebView.
+- [x] Timeline video thumbnail areas fell back to the local grey placeholder instead of requesting synthetic sample thumbnails.
+- [x] Filtered logcat after Timeline render found `sample_related_count=0`.
+- [x] Filtered logcat after Timeline render found `yt_or_404_count=0`.
+
+Remaining device-specific risks:
+
+- This was a debug APK smoke on one Samsung foldable device only.
+- The device already had local records, so this confirms WebView thumbnail fallback and logcat silence during Timeline render rather than a completely fresh sample-data-only run.
+- Release APK WebView thumbnail smoke should be repeated before sharing a release candidate.
+
 ## Current Remaining Risks
 
 - Drive file selection may behave differently across Android vendors and file providers; direct `file://` and MediaStore `content://` upload attempts did not produce a selectable Drive file, while the Google Drive app's own upload flow did.
 - Android Drive duplicate re-import passed with the small synthetic watch-history fixture, but large real duplicate archives still need performance/storage verification.
 - The 1.62 GiB real Takeout structure scan found a localized Korean watch-history candidate, but Android full Drive copy/parsing/loading UI remains unverified because that real ZIP was not user-selected from Drive in the smoke run.
 - Release APK native import logcat silence, invalid ZIP rejection visibility, valid fixture completion, duplicate-summary visibility, and YouTube share behavior passed on the Samsung SM-F966N; standard phone and additional vendor/device coverage still need review before public release.
+- Debug APK WebView thumbnail smoke passed on the Samsung SM-F966N with no synthetic sample thumbnail requests or 404 logs, but release APK WebView thumbnail smoke still needs a repeat pass before sharing a release candidate.
 - Storage fields for video memory are currently lightweight `WatchItem` fields, not a versioned migration.
 - UI copy and layout passed a foldable smoke path, but standard phone layout and long Korean copy still need review before public sharing.
 - The working tree may include multiple feature groups; release notes should separate them before commit or deploy.
