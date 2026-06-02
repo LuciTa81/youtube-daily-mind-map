@@ -3,13 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
-    "build": "next build",
-    "android:sync": "npm run build && cap sync android",
-    "android:debug": "npm run android:sync && cd android && gradlew assembleDebug",
-    "lint": "next lint",
-    "test": "vitest run",
-    "test:watch": "vitest"
+    "dev": "node ./node_modules/next/dist/bin/next dev",
+    "build": "node ./node_modules/next/dist/bin/next build",
+    "android:sync": "node ./node_modules/next/dist/bin/next build && node ./node_modules/@capacitor/cli/bin/capacitor sync android",
+    "android:debug": "node ./node_modules/next/dist/bin/next build && node ./node_modules/@capacitor/cli/bin/capacitor sync android && cd android && gradlew assembleDebug",
+    "typecheck": "node ./node_modules/typescript/bin/tsc --noEmit",
+    "lint": "node ./node_modules/eslint/bin/eslint.js . --max-warnings=0",
+    "test": "node ./node_modules/vitest/vitest.mjs run",
+    "test:watch": "node ./node_modules/vitest/vitest.mjs",
+    "smoke:large-takeout": "node scripts/smoke-large-takeout.mjs",
+    "verify": "node ./node_modules/typescript/bin/tsc --noEmit && node ./node_modules/eslint/bin/eslint.js . --max-warnings=0 && node ./node_modules/vitest/vitest.mjs run && node ./node_modules/next/dist/bin/next build"
   },
   "dependencies": {
     "@capacitor/android": "^8.3.4",
