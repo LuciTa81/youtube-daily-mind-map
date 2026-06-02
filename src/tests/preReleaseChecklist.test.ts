@@ -43,6 +43,7 @@ describe("pre-release change summary checklist", () => {
     expect(checklist).toContain("## Android WebView Thumbnail Smoke Result - 2026-06-03");
     expect(checklist).toContain("## Android Release WebView Thumbnail Smoke Result - 2026-06-03");
     expect(checklist).toContain("## GitHub Actions APK Emulator Clean Install Smoke Result - 2026-06-03");
+    expect(checklist).toContain("## GitHub Actions APK Emulator Clean Install Smoke Result - 2026-06-03 (cbe4b9a)");
     expect(checklist).toContain("## Current Remaining Risks");
     expect(checklist).toContain("## Go / No-go Notes");
   });
@@ -172,6 +173,19 @@ describe("pre-release change summary checklist", () => {
     expect(checklist).toContain("Clean AVD `codex_clean_api36` was launched with `-wipe-data`");
     expect(checklist).toContain("Launcher resolved to `com.lucita81.youtubedailymindmap/.MainActivity`");
     expect(checklist).toContain("Home screen rendered in the emulator screenshot");
+    expect(checklist).toContain("Build commit: `cbe4b9a04bfb6bf339f9b5d09115c3c02f4be7d5`");
+    expect(checklist).toContain("Build Android APK` run `26848958376`");
+    expect(checklist).toContain("artifact id `7370249841`");
+    expect(checklist).toContain("size 4,635,778 bytes");
+    expect(checklist).toContain("Artifact ZIP downloaded from GitHub Actions; size 4,249,047 bytes");
+    expect(checklist).toContain("Installed package was `com.lucita81.youtubedailymindmap`");
+    expect(checklist).toContain("versionCode=1");
+    expect(checklist).toContain("versionName=1.0");
+    expect(checklist).toContain("Initial screenshot showed the Android splash screen");
+    expect(checklist).toContain("codex-cbe4b9a-emulator-clean-install-launch-after-wait.png");
+    expect(checklist).toContain("`uiautomator dump` included `YouTube Daily Mind Map` after launch");
+    expect(checklist).toContain("no emulator remained connected");
+    expect(checklist).toContain("did not expose every visible Korean WebView text node");
   });
 
   it("keeps privacy and product-boundary reminders visible", () => {
@@ -189,6 +203,7 @@ describe("pre-release change summary checklist", () => {
     expect(checklist).toContain("Valid small fixture ZIP");
     expect(checklist).toContain("completed and reported import counts in debug and release smoke");
     expect(checklist).toContain("GitHub Actions debug APK clean-installed and launched on an Android 16 x86_64 emulator");
+    expect(checklist).toContain("GitHub Actions debug APK clean-installed and launched on an Android 16 emulator for commits `440856a` and `cbe4b9a`");
     expect(checklist).toContain("Drive import, YouTube share, duplicate import, deletion, and layout flows were not repeated there");
     expect(checklist).toContain("Android Drive duplicate re-import passed with the small synthetic watch-history fixture");
     expect(checklist).toContain("large real duplicate archives still need performance/storage verification");
