@@ -1027,6 +1027,13 @@ export function AppShell() {
   const activeRangeDescription =
     (canvasMode === "weekly" ? weeklyDateRange?.label : dateRange?.label) ?? "날짜 범위를 계산하는 중";
 
+  const defaultBottomPaddingClass = "pb-24";
+  const settingsBottomPaddingClass =
+    "pb-[calc(9rem+env(safe-area-inset-bottom,0px)+var(--native-safe-area-bottom,0px))]";
+  const mainContentClassName = `flex-1 px-4 py-4 md:px-6 ${
+    canvasMode === "settings" ? settingsBottomPaddingClass : defaultBottomPaddingClass
+  }`;
+
   return (
     <div className="min-h-screen bg-[#eef4ff] text-slate-950">
       <div className="mx-auto flex min-h-screen max-w-6xl flex-col">
@@ -1064,7 +1071,7 @@ export function AppShell() {
           {importNote ? <p className="mt-3 text-xs leading-relaxed text-sky-50">{importNote}</p> : null}
         </header>
 
-        <main className="flex-1 px-4 py-4 pb-24 md:px-6">
+        <main className={mainContentClassName}>
           {canvasMode === "review" ? (
             <HomeDashboard
               dateLabel={selectedRangeLabel}
