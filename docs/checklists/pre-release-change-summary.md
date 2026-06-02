@@ -251,13 +251,49 @@ Remaining emulator-specific risks:
 - `uiautomator dump` did not expose every visible Korean WebView text node, so the Home render evidence depends on the screenshot plus resumed-activity state.
 - A real standard non-foldable Android phone still needs smoke before broad sharing.
 
+## GitHub Actions APK Emulator Clean Install Smoke Result - 2026-06-03 (a2e2d01)
+
+Device: Android Emulator `codex_clean_api36`, model `sdk_gphone64_x86_64`, Android 16, API 36.
+APK: GitHub Actions artifact `youtube-daily-mind-map-debug-apk` from `Build Android APK` run `26849752484`, artifact id `7370563146`, extracted as `app-debug.apk`, size 4,635,778 bytes.
+Build commit: `a2e2d010a14d51885ab85a8dbcaee3c872e6a8ca`.
+
+- [x] Artifact ZIP downloaded from GitHub Actions; size 4,249,049 bytes.
+- [x] `app-debug.apk` was extracted from the artifact.
+- [x] `apksigner verify` passed.
+- [x] APK Signature Scheme v2 verified true.
+- [x] APK signer was `C=US, O=Android, CN=Android Debug`.
+- [x] `aapt dump badging` found package `com.lucita81.youtubedailymindmap`.
+- [x] `aapt dump badging` found application label `YouTube Daily Mind Map`.
+- [x] `aapt dump badging` found `sdkVersion:'24'` and `targetSdkVersion:'36'`.
+- [x] Clean AVD `codex_clean_api36` was launched with `-wipe-data`.
+- [x] The first two emulator boot attempts did not attach to ADB, so emulator/qemu processes and stale AVD locks were cleaned before retrying.
+- [x] A headless emulator retry reached `emulator-5582` in `device` state.
+- [x] Emulator boot completed on model `sdk_gphone64_x86_64`, Android 16, API 36.
+- [x] APK clean installed on the emulator with `adb install`.
+- [x] Installed package path was under `/data/app/.../com.lucita81.youtubedailymindmap.../base.apk`.
+- [x] Installed APK reported `versionCode=1`, `versionName=1.0`, `minSdk=24`, and `targetSdk=36`.
+- [x] Launcher resolved to `com.lucita81.youtubedailymindmap/.MainActivity`.
+- [x] App launched and `.MainActivity` became the resumed activity.
+- [x] Initial screenshot was captured at `C:\Users\IML4\AppData\Local\Temp\codex-a2e2d01-emulator-clean-install-launch-initial.png`.
+- [x] Home screen screenshot was captured at `C:\Users\IML4\AppData\Local\Temp\codex-a2e2d01-emulator-clean-install-launch-after-wait.png`.
+- [x] `uiautomator dump` included `YouTube Daily Mind Map` after launch.
+- [x] Emulator was shut down after smoke testing and no emulator remained connected.
+
+Remaining emulator-specific risks:
+
+- This was a GitHub Actions debug artifact, not a release or Play Store signed artifact.
+- This smoke confirms clean install and first-screen launch only; Drive import, YouTube share, duplicate import, deletion, and layout flows were not repeated on the emulator.
+- Emulator boot was flaky in this run; the successful smoke required process cleanup, ADB restart, and a headless retry.
+- `uiautomator dump` did not expose every visible Korean WebView text node, so the Home render evidence depends on the screenshot plus resumed-activity state.
+- A real standard non-foldable Android phone still needs smoke before broad sharing.
+
 ## Current Remaining Risks
 
 - Drive file selection may behave differently across Android vendors and file providers; direct `file://` and MediaStore `content://` upload attempts did not produce a selectable Drive file, while the Google Drive app's own upload flow did.
 - Android Drive duplicate re-import passed with the small synthetic watch-history fixture, but large real duplicate archives still need performance/storage verification.
 - The 1.62 GiB real Takeout structure scan found a localized Korean watch-history candidate, but Android full Drive copy/parsing/loading UI remains unverified because that real ZIP was not user-selected from Drive in the smoke run.
 - Release APK native import logcat silence, invalid ZIP rejection visibility, valid fixture completion, duplicate-summary visibility, and YouTube share behavior passed on the Samsung SM-F966N; standard phone and additional vendor/device coverage still need review before public release.
-- GitHub Actions debug APK clean-installed and launched on an Android 16 emulator for commits `440856a` and `cbe4b9a`, but Drive import, YouTube share, duplicate import, deletion, and layout flows were not repeated there.
+- GitHub Actions debug APK clean-installed and launched on an Android 16 emulator for commits `440856a`, `cbe4b9a`, and `a2e2d01`, but Drive import, YouTube share, duplicate import, deletion, and layout flows were not repeated there.
 - Debug and locally smoke-signed release APK WebView thumbnail smoke passed on the Samsung SM-F966N with no synthetic sample thumbnail requests or 404 logs, but Play Store-signed release and real standard phone coverage still need repeat passes before broad sharing.
 - Storage fields for video memory are currently lightweight `WatchItem` fields, not a versioned migration.
 - UI copy and layout passed a foldable smoke path, but standard phone layout and long Korean copy still need review before public sharing.

@@ -44,6 +44,7 @@ describe("pre-release change summary checklist", () => {
     expect(checklist).toContain("## Android Release WebView Thumbnail Smoke Result - 2026-06-03");
     expect(checklist).toContain("## GitHub Actions APK Emulator Clean Install Smoke Result - 2026-06-03");
     expect(checklist).toContain("## GitHub Actions APK Emulator Clean Install Smoke Result - 2026-06-03 (cbe4b9a)");
+    expect(checklist).toContain("## GitHub Actions APK Emulator Clean Install Smoke Result - 2026-06-03 (a2e2d01)");
     expect(checklist).toContain("## Current Remaining Risks");
     expect(checklist).toContain("## Go / No-go Notes");
   });
@@ -186,6 +187,18 @@ describe("pre-release change summary checklist", () => {
     expect(checklist).toContain("`uiautomator dump` included `YouTube Daily Mind Map` after launch");
     expect(checklist).toContain("no emulator remained connected");
     expect(checklist).toContain("did not expose every visible Korean WebView text node");
+    expect(checklist).toContain("Build commit: `a2e2d010a14d51885ab85a8dbcaee3c872e6a8ca`");
+    expect(checklist).toContain("Build Android APK` run `26849752484`");
+    expect(checklist).toContain("artifact id `7370563146`");
+    expect(checklist).toContain("Artifact ZIP downloaded from GitHub Actions; size 4,249,049 bytes");
+    expect(checklist).toContain("first two emulator boot attempts did not attach to ADB");
+    expect(checklist).toContain("stale AVD locks were cleaned before retrying");
+    expect(checklist).toContain("headless emulator retry reached `emulator-5582`");
+    expect(checklist).toContain("Installed package path was under `/data/app/.../com.lucita81.youtubedailymindmap.../base.apk`");
+    expect(checklist).toContain("codex-a2e2d01-emulator-clean-install-launch-initial.png");
+    expect(checklist).toContain("codex-a2e2d01-emulator-clean-install-launch-after-wait.png");
+    expect(checklist).toContain("Emulator boot was flaky in this run");
+    expect(checklist).toContain("process cleanup, ADB restart, and a headless retry");
   });
 
   it("keeps privacy and product-boundary reminders visible", () => {
@@ -203,7 +216,7 @@ describe("pre-release change summary checklist", () => {
     expect(checklist).toContain("Valid small fixture ZIP");
     expect(checklist).toContain("completed and reported import counts in debug and release smoke");
     expect(checklist).toContain("GitHub Actions debug APK clean-installed and launched on an Android 16 x86_64 emulator");
-    expect(checklist).toContain("GitHub Actions debug APK clean-installed and launched on an Android 16 emulator for commits `440856a` and `cbe4b9a`");
+    expect(checklist).toContain("GitHub Actions debug APK clean-installed and launched on an Android 16 emulator for commits `440856a`, `cbe4b9a`, and `a2e2d01`");
     expect(checklist).toContain("Drive import, YouTube share, duplicate import, deletion, and layout flows were not repeated there");
     expect(checklist).toContain("Android Drive duplicate re-import passed with the small synthetic watch-history fixture");
     expect(checklist).toContain("large real duplicate archives still need performance/storage verification");
