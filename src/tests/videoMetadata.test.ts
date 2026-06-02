@@ -16,4 +16,10 @@ describe("video metadata utilities", () => {
       "https://i.ytimg.com/vi/abc123/hqdefault.jpg"
     );
   });
+
+  it("keeps synthetic sample ids for identity without requesting remote thumbnails", () => {
+    expect(extractYouTubeVideoId("https://www.youtube.com/watch?v=sample044")).toBe("sample044");
+    expect(getYouTubeThumbnailUrl("https://www.youtube.com/watch?v=sample044")).toBeUndefined();
+    expect(getYouTubeThumbnailUrl("https://youtu.be/sample035")).toBeUndefined();
+  });
 });

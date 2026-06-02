@@ -5,6 +5,8 @@ export type VideoMetadata = {
   thumbnailUrl?: string;
 };
 
+const syntheticSampleVideoIdPattern = /^sample\d+$/i;
+
 function safeUrl(value: string): URL | undefined {
   try {
     return new URL(value);
@@ -45,7 +47,11 @@ export function extractYouTubeVideoId(url?: string): string | undefined {
 
 export function getYouTubeThumbnailUrl(url?: string): string | undefined {
   const videoId = extractYouTubeVideoId(url);
-  return videoId ? `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg` : undefined;
+  if (!videoId || syntheticSampleVideoIdPattern.test(videoId)) {
+    return undefined;
+  }
+
+  return `https://i.ytimg.com/vi/${videoId}/hqdefault.jpg`;
 }
 
 export function getVideoMetadata(item: WatchItem): VideoMetadata {
