@@ -34,7 +34,7 @@ Use the lowest level that proves the change.
 5. Full web verification: `npm run verify`
 6. Capacitor sync: `npx cap sync android`
 7. Android debug build: `android/gradlew assembleDebug`
-8. Real-device smoke test for native file import, share intent, and loading UI.
+8. Real-device smoke test for native file import, share intent, deletion, loading UI, and release logcat privacy using `docs/checklists/android-smoke-test.md`.
 
 ## Quality Gates To Add Later
 

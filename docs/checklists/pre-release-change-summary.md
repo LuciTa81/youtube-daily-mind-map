@@ -41,16 +41,16 @@ Use this document before sharing an APK, pushing production web changes, or aski
 
 ## Verification Checklist
 
-- [ ] `npm run verify`
-- [ ] `npx cap sync android`, if Android assets, Capacitor config, or native bridge behavior changed
-- [ ] `android/gradlew assembleDebug`, if Android release or native code changed
-- [ ] `android/gradlew assembleRelease`, before sharing an APK or Play Store candidate
-- [ ] Release APK logcat smoke confirms native import debug logs are silent when the app is not debuggable
-- [ ] Real Android device smoke test, if native import, share intent, loading UI, or APK packaging changed
+- [x] `npm run verify`
+- [x] `npx cap sync android`, if Android assets, Capacitor config, or native bridge behavior changed
+- [x] `android/gradlew assembleDebug`, if Android release or native code changed
+- [x] `android/gradlew assembleRelease`, before sharing an APK or Play Store candidate
+- [x] Release APK logcat smoke confirms native import debug logs are silent when the app is not debuggable
+- [x] Real Android device smoke test, if native import, share intent, loading UI, or APK packaging changed
 - [x] Takeout ZIP import smoke test with a normal archive through Android Drive picker
 - [x] Large Takeout structure smoke test with a 1GB+ archive or the closest available archive
 - [x] YouTube share intent smoke test from the YouTube app
-- [ ] Local deletion/clear-data flow smoke test
+- [x] Local deletion/clear-data flow smoke test
 
 ## Android Smoke Test Result - 2026-06-02
 
@@ -122,16 +122,31 @@ Device: Samsung SM-F966N foldable device, release APK signed locally for smoke w
 - [x] The release app rendered `오늘 1개`, `03:27 · 기타 Me at the zoo 채널 없음`, the `기억할 영상` prompt, and the `메모 저장` action after the share returned.
 - [x] `adb logcat -d -s NativeShareIntent NativeShareIntentPlugin ShareIntent` produced no output during the release YouTube share smoke.
 
+## Android Smoke Checklist Coverage - 2026-06-03
+
+This matrix maps the existing smoke results to `docs/checklists/android-smoke-test.md` so release gaps are easy to see.
+
+| Checklist area | Status | Evidence | Remaining gap |
+| --- | --- | --- | --- |
+| Preconditions | Pass | Debug build, release build, APK install, real device, and non-private fixtures were recorded in the 2026-06-02 and 2026-06-03 smoke sections. | Record the exact build commit in the next smoke result block. |
+| Privacy guardrails | Pass | Release APK was not debuggable, and filtered native import/share logcat produced no output during invalid ZIP, valid ZIP, duplicate import, and YouTube share smoke. | Repeat for the final signed release or Play Store candidate. |
+| Device matrix | Partial | Samsung SM-F966N foldable device covered foldable and Drive-provider behavior. | Standard non-foldable Android phone still needs smoke before broad sharing. |
+| Invalid or missing watch-history ZIP | Pass | Known 56.83 kB Drive ZIP returned a visible error in debug and refreshed release smoke, with saved records unchanged. | Keep this case in every release smoke because it previously regressed. |
+| Valid small fixture ZIP | Pass | Drive-hosted `takeout-codex-normal-20260602.zip` completed and reported import counts in debug and release smoke. | None for small fixtures. |
+| Duplicate fixture re-import | Pass | Re-import reported duplicate counts and no additional records for the same fixture. | Large real duplicate archive still needs performance/storage verification. |
+| Large archive smoke | Partial | 1.62 GiB user Takeout archive structure scan found a localized Korean watch-history candidate without reading contents. | Full Android Drive copy/parsing/loading UI was not executed because the real archive was not user-selected from Drive in that smoke run. |
+| YouTube share intent | Pass | Debug and release smoke saved the public `Me at the zoo` video through the YouTube app share flow. | Android resolver discoverability should be checked on more devices. |
+| Local data and deletion | Pass | Clear-data flow passed after seeding one shared test record; records returned to sample data. | Storage migration tests are still separate future work. |
+| Layout smoke | Partial | Foldable home/settings/timeline/report surfaces rendered and settings destructive action had room above bottom nav. | Standard phone layout and long Korean copy pass still need review. |
+
 ## Current Remaining Risks
 
 - Drive file selection may behave differently across Android vendors and file providers; direct `file://` and MediaStore `content://` upload attempts did not produce a selectable Drive file, while the Google Drive app's own upload flow did.
-- Android Drive invalid-ZIP/native rejection handling passed real-device smoke with the 56.83 kB Drive ZIP, and normal completion passed with a small synthetic watch-history fixture.
 - Android Drive duplicate re-import passed with the small synthetic watch-history fixture, but large real duplicate archives still need performance/storage verification.
-- The 1.62 GiB real Takeout structure scan now finds a localized Korean watch-history candidate, but Android full Drive copy/parsing remains unverified because that real ZIP was not selectable in Drive.
-- Release APK native import logcat silence, known invalid Drive ZIP rejection visibility, and small valid-archive completion/duplicate-summary visibility passed with the refreshed locally signed release smoke; large real duplicate archives still need performance/storage verification.
-- Release APK YouTube share intent behavior passed real-device smoke on the Samsung SM-F966N, but broader Android/vendor chooser discoverability still needs review before public release.
+- The 1.62 GiB real Takeout structure scan found a localized Korean watch-history candidate, but Android full Drive copy/parsing/loading UI remains unverified because that real ZIP was not user-selected from Drive in the smoke run.
+- Release APK native import logcat silence, invalid ZIP rejection visibility, valid fixture completion, duplicate-summary visibility, and YouTube share behavior passed on the Samsung SM-F966N; standard phone and additional vendor/device coverage still need review before public release.
 - Storage fields for video memory are currently lightweight `WatchItem` fields, not a versioned migration.
-- UI copy and layout still need real phone and foldable-device review before public sharing.
+- UI copy and layout passed a foldable smoke path, but standard phone layout and long Korean copy still need review before public sharing.
 - The working tree may include multiple feature groups; release notes should separate them before commit or deploy.
 
 ## Go / No-go Notes

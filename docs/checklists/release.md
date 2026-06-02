@@ -33,6 +33,7 @@ Use this before sharing an APK, publishing a Play Store build, or pushing produc
 - [ ] App launches on a real Android device.
 - [ ] Takeout import flow opens.
 - [ ] Large-file import progress screen is readable.
+- [ ] Android real-device smoke follows `docs/checklists/android-smoke-test.md` for import, share intent, deletion, layout, and release logcat privacy checks.
 - [ ] Release APK native import logcat output does not include Drive file names, local cache paths, watched titles, URLs, or native import timing messages.
 - [ ] Timeline and report screens render.
 - [ ] User can clear or replace imported data.

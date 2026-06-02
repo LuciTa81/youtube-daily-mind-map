@@ -39,6 +39,7 @@ describe("pre-release change summary checklist", () => {
     expect(checklist).toContain("## Verification Checklist");
     expect(checklist).toContain("## Android Smoke Test Result - 2026-06-02");
     expect(checklist).toContain("## Android Release Privacy Smoke Result - 2026-06-03");
+    expect(checklist).toContain("## Android Smoke Checklist Coverage - 2026-06-03");
     expect(checklist).toContain("## Current Remaining Risks");
     expect(checklist).toContain("## Go / No-go Notes");
   });
@@ -146,16 +147,19 @@ describe("pre-release change summary checklist", () => {
     expect(checklist).toContain("without ADR");
     expect(checklist).toContain("rebuilt debug APK");
     expect(checklist).toContain("visible UI error within about 5 seconds");
-    expect(checklist).toContain("invalid-ZIP/native rejection handling passed real-device smoke");
-    expect(checklist).toContain("normal completion passed with a small synthetic watch-history fixture");
+    expect(checklist).toContain("Android Smoke Checklist Coverage - 2026-06-03");
+    expect(checklist).toContain("Invalid or missing watch-history ZIP");
+    expect(checklist).toContain("Known 56.83 kB Drive ZIP returned a visible error");
+    expect(checklist).toContain("Valid small fixture ZIP");
+    expect(checklist).toContain("completed and reported import counts in debug and release smoke");
     expect(checklist).toContain("Android Drive duplicate re-import passed with the small synthetic watch-history fixture");
     expect(checklist).toContain("large real duplicate archives still need performance/storage verification");
     expect(checklist).toContain("localized Korean watch-history candidate");
-    expect(checklist).toContain("Android full Drive copy/parsing remains unverified");
-    expect(checklist).toContain("Release APK native import logcat silence, known invalid Drive ZIP rejection visibility");
-    expect(checklist).toContain("small valid-archive completion/duplicate-summary visibility passed");
-    expect(checklist).toContain("Release APK YouTube share intent behavior passed real-device smoke");
-    expect(checklist).toContain("broader Android/vendor chooser discoverability still needs review");
+    expect(checklist).toContain("Android full Drive copy/parsing/loading UI remains unverified");
+    expect(checklist).toContain("Release APK native import logcat silence, invalid ZIP rejection visibility");
+    expect(checklist).toContain("valid fixture completion, duplicate-summary visibility, and YouTube share behavior passed");
+    expect(checklist).toContain("standard phone and additional vendor/device coverage still need review");
+    expect(checklist).toContain("standard phone layout and long Korean copy still need review");
   });
 });
 
