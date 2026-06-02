@@ -2,6 +2,7 @@ import { addDays, format } from "date-fns";
 import { ko } from "date-fns/locale";
 import { formatInTimeZone, toZonedTime } from "date-fns-tz";
 import { summarizeDay, type DaySummary } from "@/lib/analytics/summarizeDay";
+import { buildMarkedMemoryItems, buildMemorableItems } from "@/lib/review/memorableItems";
 import type { DateRange } from "@/types/mindmap";
 import type { ClassifiedWatchItem, DateSettings } from "@/types/watch";
 
@@ -26,6 +27,7 @@ export type WeeklyReport = {
   dailyCounts: WeeklyDaySummary[];
   categoryTrends: WeeklyCategoryTrend[];
   topChannels: Array<{ channelName: string; count: number }>;
+  markedMemoryItems: ClassifiedWatchItem[];
   memorableItems: ClassifiedWatchItem[];
   mostActiveDay?: WeeklyDaySummary;
 };
@@ -126,18 +128,6 @@ function buildInsight(summary: DaySummary, mostActiveDay?: WeeklyDaySummary): st
   return `${activeDayText} 기록이 있었고, ${topCategory}와 ${topChannel} 흐름이 눈에 띕니다.`;
 }
 
-function buildMemorableItems(items: ClassifiedWatchItem[]): ClassifiedWatchItem[] {
-  return [...items]
-    .sort((a, b) => {
-      const confidenceDiff = a.confidence - b.confidence;
-      if (confidenceDiff !== 0) {
-        return confidenceDiff;
-      }
-      return new Date(b.watchedAt).getTime() - new Date(a.watchedAt).getTime();
-    })
-    .slice(0, 6);
-}
-
 export function buildWeeklyReport(
   items: ClassifiedWatchItem[],
   settings: DateSettings,
@@ -155,7 +145,8 @@ export function buildWeeklyReport(
     dailyCounts,
     categoryTrends: buildCategoryTrends(summary, dailyCountsByCategory),
     topChannels: summary.channelCounts.slice(0, 5),
-    memorableItems: buildMemorableItems(items),
+    markedMemoryItems: buildMarkedMemoryItems(items, 6),
+    memorableItems: buildMemorableItems(items, 6),
     mostActiveDay: mostActiveDay && mostActiveDay.count > 0 ? mostActiveDay : undefined
   };
 }

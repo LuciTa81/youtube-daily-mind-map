@@ -1170,6 +1170,7 @@ export function AppShell() {
               showIntro={false}
               node={selectedNode}
               dateSettings={dateSettings}
+              onVideoMemorySave={dataViewMode === "saved" ? handleVideoMemorySave : undefined}
             />
           </section>
         </div>

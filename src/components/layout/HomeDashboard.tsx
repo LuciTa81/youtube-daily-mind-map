@@ -5,6 +5,7 @@ import { ImportSummaryCard } from "@/components/import/ImportSummaryCard";
 import type { DaySummary } from "@/lib/analytics/summarizeDay";
 import type { QuickDateOption } from "@/lib/date/dateKeys";
 import type { DailyReview } from "@/lib/review/buildDailyReview";
+import { getVideoMemorySummary } from "@/lib/share/videoMemory";
 import { getVideoMetadata } from "@/lib/youtube/videoMetadata";
 import type { ClassifiedWatchItem, DateRangeMode, DateSettings, WatchHistoryImportSummary } from "@/types/watch";
 
@@ -76,6 +77,7 @@ function VideoRow({
   onSelect: () => void;
 }) {
   const metadata = getVideoMetadata(item);
+  const memorySummary = getVideoMemorySummary(item);
 
   return (
     <button
@@ -102,6 +104,11 @@ function VideoRow({
         </div>
         <div className="mt-1 line-clamp-2 text-sm font-semibold leading-snug text-slate-950">{item.title}</div>
         <div className="mt-2 truncate text-xs text-slate-500">{item.channelName ?? "채널 없음"}</div>
+        {memorySummary ? (
+          <div className="mt-2 line-clamp-1 rounded-full bg-sky-50 px-2 py-1 text-[11px] font-bold text-sky-700">
+            {memorySummary}
+          </div>
+        ) : null}
       </div>
     </button>
   );
@@ -128,7 +135,11 @@ export function HomeDashboard({
   onItemSelect
 }: HomeDashboardProps) {
   const categoryTotal = Math.max(1, summary.totalCount);
-  const memorableItems = review.memorableItems.slice(0, 4);
+  const markedMemoryItems = review.markedMemoryItems.slice(0, 3);
+  const markedMemoryItemIds = new Set(markedMemoryItems.map((item) => item.id));
+  const memorableItems = review.memorableItems
+    .filter((item) => !markedMemoryItemIds.has(item.id))
+    .slice(0, 4);
 
   return (
     <div className="space-y-4">
@@ -205,6 +216,32 @@ export function HomeDashboard({
           <StatBlock label="집중 시간대" value={summary.topTimeBlock?.name ?? "없음"} />
         </div>
       </section>
+
+      {markedMemoryItems.length > 0 ? (
+        <section className="rounded-lg border border-sky-100 bg-sky-50/70 p-4 shadow-sm">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h3 className="text-base font-bold text-slate-950">오늘 남긴 영상</h3>
+              <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                직접 기억하거나 복습하려고 표시한 영상입니다.
+              </p>
+            </div>
+            <button type="button" className="shrink-0 text-xs font-bold text-sky-700" onClick={onOpenTimeline}>
+              타임라인
+            </button>
+          </div>
+          <div className="mt-3 space-y-3">
+            {markedMemoryItems.map((item) => (
+              <VideoRow
+                key={item.id}
+                item={item}
+                dateSettings={dateSettings}
+                onSelect={() => onItemSelect(item)}
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       <section className="grid grid-cols-2 gap-3">
         <ActionButton

@@ -1,6 +1,7 @@
 "use client";
 
 import { NodeDetailRenderer } from "@/components/mindmap/NodeDetailRenderer";
+import type { VideoMemoryDraft } from "@/lib/share/videoMemory";
 import type { MindMapNode } from "@/types/mindmap";
 import type { DateSettings } from "@/types/watch";
 
@@ -9,13 +10,15 @@ type DetailPanelProps = {
   showIntro?: boolean;
   node?: MindMapNode;
   dateSettings: DateSettings;
+  onVideoMemorySave?: (itemId: string, draft: VideoMemoryDraft) => void | Promise<void>;
 };
 
 export function DetailPanel({
   className = "hidden shrink-0 overflow-y-auto border-slate-200 bg-slate-50 2xl:order-3 2xl:block 2xl:h-full 2xl:w-80 2xl:border-l 2xl:p-5",
   showIntro = true,
   node,
-  dateSettings
+  dateSettings,
+  onVideoMemorySave
 }: DetailPanelProps) {
   return (
     <aside className={className}>
@@ -26,7 +29,7 @@ export function DetailPanel({
         </div>
       ) : null}
       {node ? (
-        <NodeDetailRenderer node={node} dateSettings={dateSettings} />
+        <NodeDetailRenderer node={node} dateSettings={dateSettings} onVideoMemorySave={onVideoMemorySave} />
       ) : (
         <div className="rounded-lg border border-slate-200 bg-white p-4 text-sm text-slate-500">
           선택된 노드가 없습니다.

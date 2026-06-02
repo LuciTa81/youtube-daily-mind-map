@@ -1,15 +1,22 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { formatInTimeZone } from "date-fns-tz";
 import type { DaySummary } from "@/lib/analytics/summarizeDay";
 import type { TimeBlock } from "@/lib/date/timeBlocks";
+import {
+  getVideoMemorySummary,
+  VIDEO_MEMORY_TAG_OPTIONS,
+  type VideoMemoryDraft
+} from "@/lib/share/videoMemory";
 import { getVideoMetadata } from "@/lib/youtube/videoMetadata";
 import type { MindMapNode } from "@/types/mindmap";
-import type { ClassifiedWatchItem, DateSettings } from "@/types/watch";
+import type { ClassifiedWatchItem, DateSettings, VideoMemoryTag } from "@/types/watch";
 
 type NodeDetailRendererProps = {
   node: MindMapNode;
   dateSettings: DateSettings;
+  onVideoMemorySave?: (itemId: string, draft: VideoMemoryDraft) => void | Promise<void>;
 };
 
 function getItems(node: MindMapNode): ClassifiedWatchItem[] {
@@ -29,6 +36,113 @@ function getSummary(node: MindMapNode): DaySummary | undefined {
 
 function formatWatchedAt(item: ClassifiedWatchItem, timezone: string): string {
   return formatInTimeZone(new Date(item.watchedAt), timezone, "yyyy-MM-dd HH:mm");
+}
+
+function VideoMemorySummary({ item }: { item: ClassifiedWatchItem }) {
+  const summary = getVideoMemorySummary(item);
+
+  if (!summary) {
+    return null;
+  }
+
+  return (
+    <div className="mt-2 rounded-md bg-sky-50 px-2 py-1 text-[11px] font-bold leading-relaxed text-sky-700">
+      {summary}
+    </div>
+  );
+}
+
+function VideoMemoryEditor({
+  item,
+  onSave
+}: {
+  item: ClassifiedWatchItem;
+  onSave?: (itemId: string, draft: VideoMemoryDraft) => void | Promise<void>;
+}) {
+  const [tag, setTag] = useState<VideoMemoryTag>(item.memoryTag ?? "remember");
+  const [note, setNote] = useState(item.memoryNote ?? "");
+  const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    setTag(item.memoryTag ?? "remember");
+    setNote(item.memoryNote ?? "");
+  }, [item.id, item.memoryNote, item.memoryTag]);
+
+  const canEdit = Boolean(onSave);
+
+  return (
+    <section className="rounded-lg border border-slate-200 bg-white p-4">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h4 className="text-sm font-bold text-slate-950">영상 메모</h4>
+          <p className="mt-1 text-xs leading-relaxed text-slate-500">
+            이 영상을 왜 남겼는지 짧게 적어두면 하루 회고에서 다시 찾기 쉽습니다.
+          </p>
+        </div>
+        {item.memoryUpdatedAt ? (
+          <span className="shrink-0 rounded-full bg-slate-100 px-2 py-1 text-[11px] font-semibold text-slate-500">
+            저장됨
+          </span>
+        ) : null}
+      </div>
+
+      <div className="mt-3 grid grid-cols-3 gap-2">
+        {VIDEO_MEMORY_TAG_OPTIONS.map((option) => {
+          const selected = option.value === tag;
+          return (
+            <button
+              key={option.value}
+              type="button"
+              disabled={!canEdit || isSaving}
+              className={`rounded-lg border px-2 py-2 text-left text-xs transition disabled:cursor-not-allowed disabled:opacity-60 ${
+                selected
+                  ? "border-slate-950 bg-slate-950 text-white"
+                  : "border-slate-200 bg-white text-slate-700"
+              }`}
+              onClick={() => setTag(option.value)}
+            >
+              <div className="font-black">{option.label}</div>
+            </button>
+          );
+        })}
+      </div>
+
+      <textarea
+        className="mt-3 min-h-24 w-full resize-none rounded-lg border border-slate-200 bg-slate-50 p-3 text-sm leading-relaxed text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-slate-400 disabled:cursor-not-allowed disabled:opacity-60"
+        value={note}
+        disabled={!canEdit || isSaving}
+        onChange={(event) => setNote(event.target.value)}
+        placeholder="나중에 떠올릴 한 줄 메모"
+      />
+
+      {canEdit ? (
+        <button
+          type="button"
+          className="mt-3 w-full rounded-lg bg-sky-500 px-4 py-2.5 text-sm font-black text-white transition hover:bg-sky-600 disabled:cursor-not-allowed disabled:bg-slate-300"
+          disabled={isSaving}
+          onClick={() => {
+            void (async () => {
+              if (!onSave) {
+                return;
+              }
+              setIsSaving(true);
+              try {
+                await onSave(item.id, { tag, note });
+              } finally {
+                setIsSaving(false);
+              }
+            })();
+          }}
+        >
+          {isSaving ? "저장 중" : "메모 저장"}
+        </button>
+      ) : (
+        <p className="mt-3 rounded-lg bg-slate-50 p-3 text-xs leading-relaxed text-slate-500">
+          저장된 기록에서 선택한 영상만 메모를 수정할 수 있습니다.
+        </p>
+      )}
+    </section>
+  );
 }
 
 function countChannels(items: ClassifiedWatchItem[]): Array<{ name: string; count: number }> {
@@ -75,6 +189,7 @@ function VideoList({ items, timezone }: { items: ClassifiedWatchItem[]; timezone
             <div className="mt-1 text-xs text-slate-500">
               {item.channelName ?? "채널 없음"} · {item.category}
             </div>
+            <VideoMemorySummary item={item} />
           </div>
         </div>
         );
@@ -152,7 +267,7 @@ function RootDetail({ node }: { node: MindMapNode }) {
   );
 }
 
-export function NodeDetailRenderer({ node, dateSettings }: NodeDetailRendererProps) {
+export function NodeDetailRenderer({ node, dateSettings, onVideoMemorySave }: NodeDetailRendererProps) {
   const items = getItems(node);
   const item = getItem(node);
 
@@ -286,6 +401,7 @@ export function NodeDetailRenderer({ node, dateSettings }: NodeDetailRendererPro
             </a>
           ) : null}
         </div>
+        <VideoMemoryEditor item={item} onSave={onVideoMemorySave} />
       </div>
     );
   }

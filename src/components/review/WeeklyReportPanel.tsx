@@ -1,6 +1,7 @@
 "use client";
 
 import { formatInTimeZone } from "date-fns-tz";
+import { getVideoMemorySummary } from "@/lib/share/videoMemory";
 import { getVideoMetadata } from "@/lib/youtube/videoMetadata";
 import type { WeeklyReport } from "@/lib/review/buildWeeklyReport";
 import type { ClassifiedWatchItem, DateSettings } from "@/types/watch";
@@ -28,6 +29,7 @@ function ReportVideoCard({
   onSelect: () => void;
 }) {
   const metadata = getVideoMetadata(item);
+  const memorySummary = getVideoMemorySummary(item);
 
   return (
     <button
@@ -56,6 +58,11 @@ function ReportVideoCard({
           {item.title}
         </div>
         <div className="mt-2 truncate text-xs text-slate-500">{item.channelName ?? "채널 없음"}</div>
+        {memorySummary ? (
+          <div className="mt-2 line-clamp-1 rounded-full bg-sky-50 px-2 py-1 text-[11px] font-bold text-sky-700">
+            {memorySummary}
+          </div>
+        ) : null}
       </div>
     </button>
   );
@@ -70,6 +77,9 @@ export function WeeklyReportPanel({
   onItemSelect
 }: WeeklyReportPanelProps) {
   const maxDailyCount = Math.max(1, ...report.dailyCounts.map((day) => day.count));
+  const markedMemoryItems = report.markedMemoryItems.slice(0, 5);
+  const markedMemoryItemIds = new Set(markedMemoryItems.map((item) => item.id));
+  const memorableItems = report.memorableItems.filter((item) => !markedMemoryItemIds.has(item.id));
 
   return (
     <div className="h-full overflow-y-auto rounded-lg border border-slate-200 bg-white">
@@ -167,6 +177,25 @@ export function WeeklyReportPanel({
             />
           </div>
 
+          {markedMemoryItems.length > 0 ? (
+            <div className="rounded-lg border border-sky-100 bg-sky-50/70 p-4">
+              <h3 className="text-sm font-semibold text-slate-900">이번 주 남긴 영상</h3>
+              <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                직접 기억하거나 복습하려고 표시한 영상을 주간 단위로 모았습니다.
+              </p>
+              <div className="mt-3 space-y-3">
+                {markedMemoryItems.map((item) => (
+                  <ReportVideoCard
+                    key={item.id}
+                    item={item}
+                    dateSettings={dateSettings}
+                    onSelect={() => onItemSelect(item)}
+                  />
+                ))}
+              </div>
+            </div>
+          ) : null}
+
           <div className="rounded-lg border border-slate-200 bg-white p-4">
             <h3 className="text-sm font-semibold text-slate-900">자주 본 채널</h3>
             <div className="mt-3 space-y-2">
@@ -189,8 +218,8 @@ export function WeeklyReportPanel({
               이번 주 기록 중 다시 볼 만한 후보를 모았습니다.
             </p>
             <div className="mt-3 space-y-3">
-              {report.memorableItems.length > 0 ? (
-                report.memorableItems.map((item) => (
+              {memorableItems.length > 0 ? (
+                memorableItems.map((item) => (
                   <ReportVideoCard
                     key={item.id}
                     item={item}

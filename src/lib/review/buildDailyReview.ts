@@ -1,5 +1,6 @@
 import type { DaySummary } from "@/lib/analytics/summarizeDay";
 import { getTimeBlockForItem } from "@/lib/date/timeBlocks";
+import { buildMarkedMemoryItems, buildMemorableItems } from "@/lib/review/memorableItems";
 import type { ClassifiedWatchItem, DateSettings } from "@/types/watch";
 
 export type ReviewTimeBlock = {
@@ -14,6 +15,7 @@ export type DailyReview = {
   insight: string;
   focusKeywords: string[];
   timeBlocks: ReviewTimeBlock[];
+  markedMemoryItems: ClassifiedWatchItem[];
   memorableItems: ClassifiedWatchItem[];
 };
 
@@ -92,18 +94,6 @@ function buildTimeBlocks(items: ClassifiedWatchItem[], settings: DateSettings): 
     .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name));
 }
 
-function buildMemorableItems(items: ClassifiedWatchItem[]): ClassifiedWatchItem[] {
-  return [...items]
-    .sort((a, b) => {
-      const confidenceDiff = a.confidence - b.confidence;
-      if (confidenceDiff !== 0) {
-        return confidenceDiff;
-      }
-      return new Date(b.watchedAt).getTime() - new Date(a.watchedAt).getTime();
-    })
-    .slice(0, 5);
-}
-
 export function buildDailyReview(
   items: ClassifiedWatchItem[],
   summary: DaySummary,
@@ -114,6 +104,7 @@ export function buildDailyReview(
     insight: buildInsight(summary),
     focusKeywords: buildFocusKeywords(summary),
     timeBlocks: buildTimeBlocks(items, settings),
-    memorableItems: buildMemorableItems(items)
+    markedMemoryItems: buildMarkedMemoryItems(items, 5),
+    memorableItems: buildMemorableItems(items, 5)
   };
 }

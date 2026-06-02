@@ -2,6 +2,7 @@
 
 import { formatInTimeZone } from "date-fns-tz";
 import { getTimeBlockForItem, TIME_BLOCKS, type TimeBlock } from "@/lib/date/timeBlocks";
+import { getVideoMemorySummary } from "@/lib/share/videoMemory";
 import { getVideoMetadata } from "@/lib/youtube/videoMetadata";
 import type { ClassifiedWatchItem, DateSettings } from "@/types/watch";
 
@@ -91,6 +92,7 @@ function TimelineCard({
 }) {
   const metadata = getVideoMetadata(item);
   const timeBlock = getTimeBlockForItem(item, dateSettings);
+  const memorySummary = getVideoMemorySummary(item);
 
   return (
     <button
@@ -126,6 +128,11 @@ function TimelineCard({
           <div className="mt-2 text-xs text-slate-500">
             {item.channelName ?? "채널 없음"} · {item.category}
           </div>
+          {memorySummary ? (
+            <div className="mt-2 line-clamp-1 rounded-full bg-sky-50 px-2 py-1 text-[11px] font-bold text-sky-700">
+              {memorySummary}
+            </div>
+          ) : null}
         </div>
       </div>
     </button>
