@@ -45,6 +45,7 @@ describe("pre-release change summary checklist", () => {
     expect(checklist).toContain("## GitHub Actions APK Emulator Clean Install Smoke Result - 2026-06-03");
     expect(checklist).toContain("## GitHub Actions APK Emulator Clean Install Smoke Result - 2026-06-03 (cbe4b9a)");
     expect(checklist).toContain("## GitHub Actions APK Emulator Clean Install Smoke Result - 2026-06-03 (a2e2d01)");
+    expect(checklist).toContain("## GitHub Actions APK Emulator Clean Install Smoke Result - 2026-06-03 (0d327d1)");
     expect(checklist).toContain("## Current Remaining Risks");
     expect(checklist).toContain("## Go / No-go Notes");
   });
@@ -199,6 +200,16 @@ describe("pre-release change summary checklist", () => {
     expect(checklist).toContain("codex-a2e2d01-emulator-clean-install-launch-after-wait.png");
     expect(checklist).toContain("Emulator boot was flaky in this run");
     expect(checklist).toContain("process cleanup, ADB restart, and a headless retry");
+    expect(checklist).toContain("Build commit: `0d327d160eeb70340e09473cc9badc1e29007be9`");
+    expect(checklist).toContain("Build Android APK` run `26851258504`");
+    expect(checklist).toContain("artifact id `7371154328`");
+    expect(checklist).toContain("Artifact ZIP downloaded from GitHub Actions; size 4,249,037 bytes");
+    expect(checklist).toContain("Emulator boot completed on model `sdk_gphone64_x86_64`, Android 16, API 36, with physical size `1080x1920`");
+    expect(checklist).toContain("Current focus was `com.lucita81.youtubedailymindmap/com.lucita81.youtubedailymindmap.MainActivity`");
+    expect(checklist).toContain("codex-0d327d1-emulator-clean-install-launch-after-wait-pulled.png");
+    expect(checklist).toContain("Home screen rendered with the header, summary cards, `가져오기` button, and bottom navigation visible");
+    expect(checklist).toContain("filtered recent logcat showed no `FATAL EXCEPTION`, `AndroidRuntime`, or app death lines");
+    expect(checklist).toContain("The first `uiautomator dump` returned `null root node`");
   });
 
   it("keeps privacy and product-boundary reminders visible", () => {
@@ -216,7 +227,7 @@ describe("pre-release change summary checklist", () => {
     expect(checklist).toContain("Valid small fixture ZIP");
     expect(checklist).toContain("completed and reported import counts in debug and release smoke");
     expect(checklist).toContain("GitHub Actions debug APK clean-installed and launched on an Android 16 x86_64 emulator");
-    expect(checklist).toContain("GitHub Actions debug APK clean-installed and launched on an Android 16 emulator for commits `440856a`, `cbe4b9a`, and `a2e2d01`");
+    expect(checklist).toContain("GitHub Actions debug APK clean-installed and launched on an Android 16 emulator for commits `440856a`, `cbe4b9a`, `a2e2d01`, and `0d327d1`");
     expect(checklist).toContain("Drive import, YouTube share, duplicate import, deletion, and layout flows were not repeated there");
     expect(checklist).toContain("Android Drive duplicate re-import passed with the small synthetic watch-history fixture");
     expect(checklist).toContain("large real duplicate archives still need performance/storage verification");
