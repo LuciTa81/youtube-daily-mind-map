@@ -54,6 +54,8 @@ describe("pre-release change summary checklist", () => {
     expect(checklist).toContain("## GitHub Actions APK Emulator Clean Install Smoke Result - 2026-06-03 (bf8880a)");
     expect(checklist).toContain("## GitHub Actions APK Artifact Verification Result - 2026-06-03 (68c8ef3)");
     expect(checklist).toContain("## GitHub Actions APK Emulator Clean Install Smoke Result - 2026-06-03 (68c8ef3)");
+    expect(checklist).toContain("## GitHub Actions APK Artifact Verification Result - 2026-06-03 (20b6b3c)");
+    expect(checklist).toContain("## GitHub Actions APK Emulator Clean Install Smoke Result - 2026-06-03 (20b6b3c)");
     expect(checklist).toContain("## Current Remaining Risks");
     expect(checklist).toContain("## Go / No-go Notes");
   });
@@ -297,6 +299,21 @@ describe("pre-release change summary checklist", () => {
     expect(checklist).toContain("codex-68c8ef3-emulator-clean-install-launch-after-wait.png");
     expect(checklist).toContain("size 280,243 bytes");
     expect(checklist).toContain("codex-68c8ef3-emulator-window.xml");
+    expect(checklist).toContain("Build commit: `20b6b3c95cd150d09d4d2265ac6c376707b29898`");
+    expect(checklist).toContain("Build Android APK` run `26857727829`");
+    expect(checklist).toContain("artifact id `7373647675`");
+    expect(checklist).toContain("Artifact ZIP downloaded from GitHub Actions; size 4,249,042 bytes");
+    expect(checklist).toContain("e7bebb0f0f3125ffc12d16b50025ff7712afcb3e981ea5c77ff01b3416adddd8");
+    expect(checklist).toContain("app-debug.apk`, size 4,635,774 bytes");
+    expect(checklist).toContain("a0cdfa57f1e7aab2009289bb6e791a1890a23bb6fd8b8c615137ce457cc825c6");
+    expect(checklist).toContain("`Build Android APK` completed successfully for commit `20b6b3c`");
+    expect(checklist).toContain("The first emulator start attempt created an emulator crash dump and did not attach to ADB");
+    expect(checklist).toContain("Clean AVD `codex_clean_api36` was relaunched with `-wipe-data`, `-no-window`, and `-gpu swiftshader_indirect`");
+    expect(checklist).toContain("Launch output reported `Status: ok`, `LaunchState: COLD`, `TotalTime: 7735`, and `WaitTime: 7807`");
+    expect(checklist).toContain("App process was alive after launch with pid `2731`");
+    expect(checklist).toContain("codex-20b6b3c-emulator-clean-install-launch-after-wait.png");
+    expect(checklist).toContain("size 279,172 bytes");
+    expect(checklist).toContain("codex-20b6b3c-emulator-window.xml");
   });
 
   it("keeps privacy and product-boundary reminders visible", () => {
@@ -314,9 +331,10 @@ describe("pre-release change summary checklist", () => {
     expect(checklist).toContain("Valid small fixture ZIP");
     expect(checklist).toContain("completed and reported import counts in debug and release smoke");
     expect(checklist).toContain("GitHub Actions debug APK clean-installed and launched on an Android 16 x86_64 emulator");
-    expect(checklist).toContain("GitHub Actions debug APK clean-installed and launched on an Android 16 emulator for commits `440856a`, `cbe4b9a`, `a2e2d01`, `0d327d1`, `b2b5bf8`, `7ec33e2`, `1768952`, `205656e`, `8a086cb`, `bf8880a`, and `68c8ef3`");
+    expect(checklist).toContain("GitHub Actions debug APK clean-installed and launched on an Android 16 emulator for commits `440856a`, `cbe4b9a`, `a2e2d01`, `0d327d1`, `b2b5bf8`, `7ec33e2`, `1768952`, `205656e`, `8a086cb`, `bf8880a`, `68c8ef3`, and `20b6b3c`");
     expect(checklist).toContain("Drive import, YouTube share, duplicate import, deletion, and layout flows were not repeated there");
     expect(checklist).toContain("install and launch were repeated in the follow-up emulator smoke");
+    expect(checklist).toContain("emulator boot stability should continue to be watched");
     expect(checklist).toContain("Android Drive duplicate re-import passed with the small synthetic watch-history fixture");
     expect(checklist).toContain("large real duplicate archives still need performance/storage verification");
     expect(checklist).toContain("localized Korean watch-history candidate");
