@@ -5,8 +5,8 @@ import { describe, expect, it } from "vitest";
 const workflowPolicies = [
   {
     name: "quality.yml",
-    requiredActions: ["actions/checkout@v6", "actions/setup-node@v6"],
-    deprecatedActions: ["actions/checkout@v4", "actions/setup-node@v4"]
+    requiredActions: ["actions/checkout@v6", "actions/setup-node@v6", "actions/upload-artifact@v7"],
+    deprecatedActions: ["actions/checkout@v4", "actions/setup-node@v4", "actions/upload-artifact@v4"]
   },
   {
     name: "android-apk.yml",
@@ -54,5 +54,11 @@ describe("GitHub Actions runtime policy", () => {
     expect(workflow).toContain("node scripts/serve-static-out.mjs &");
     expect(workflow).toContain("curl -fsS http://127.0.0.1:3001");
     expect(workflow).toContain("npm run smoke:import-surface");
+    expect(workflow).toContain("Upload import surface smoke evidence");
+    expect(workflow).toContain("if: always()");
+    expect(workflow).toContain("name: import-surface-smoke");
+    expect(workflow).toContain("path: .codex/import-surface-smoke/");
+    expect(workflow).toContain("if-no-files-found: ignore");
+    expect(workflow).toContain("retention-days: 7");
   });
 });
