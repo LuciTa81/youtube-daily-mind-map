@@ -21,8 +21,18 @@ import { mergeWatchItems, type WatchHistoryMergeResult } from "@/lib/history/mer
 import { buildDailyReview } from "@/lib/review/buildDailyReview";
 import { buildWeeklyReport } from "@/lib/review/buildWeeklyReport";
 import { indexedDbReviewNoteRepository } from "@/lib/storage/reviewNoteRepository";
+import {
+  DEFAULT_USER_SETTINGS,
+  localUserSettingsRepository,
+  type UserSettings
+} from "@/lib/storage/userSettingsRepository";
 import { indexedDbWatchHistoryRepository } from "@/lib/storage/watchHistoryRepository";
-import { addNativeShareIntentListener, consumePendingNativeShareIntent } from "@/lib/native/nativeShareIntent";
+import {
+  addNativeShareIntentListener,
+  completeNativeQuickShare,
+  consumePendingNativeShareIntent
+} from "@/lib/native/nativeShareIntent";
+import { getQuickShareCompletionMessage, shouldCompleteQuickShare } from "@/lib/share/quickShareSave";
 import { saveSharedYouTubeVideo } from "@/lib/share/sharedYouTubeVideo";
 import { applyVideoMemoryDraft, type VideoMemoryDraft } from "@/lib/share/videoMemory";
 import { SharedMemoryPrompt } from "@/components/share/SharedMemoryPrompt";
@@ -375,6 +385,8 @@ export function AppShell() {
   const [sharedMemoryItemId, setSharedMemoryItemId] = useState<string>();
   const [sharedMemoryTag, setSharedMemoryTag] = useState<VideoMemoryTag>("remember");
   const [sharedMemoryNote, setSharedMemoryNote] = useState("");
+  const [userSettings, setUserSettings] = useState<UserSettings>(DEFAULT_USER_SETTINGS);
+  const [isUserSettingsReady, setIsUserSettingsReady] = useState(false);
   const watchItems = dataViewMode === "saved" ? savedWatchItems : sampleWatchItems;
 
   useEffect(() => {
@@ -396,6 +408,37 @@ export function AppShell() {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+
+    async function loadUserSettings() {
+      try {
+        const storedSettings = await localUserSettingsRepository.load();
+        if (!cancelled) {
+          setUserSettings(storedSettings);
+        }
+      } catch {
+        if (!cancelled) {
+          setUserSettings(DEFAULT_USER_SETTINGS);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsUserSettingsReady(true);
+        }
+      }
+    }
+
+    void loadUserSettings();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isUserSettingsReady) {
+      return () => undefined;
+    }
+
     const handleSharedYouTube = (detail: Parameters<typeof saveSharedYouTubeVideo>[1]) => {
       void (async () => {
         const result = saveSharedYouTubeVideo(savedWatchItems, detail, dateSettings);
@@ -413,10 +456,21 @@ export function AppShell() {
         }
 
         const targetItem = result.duplicateItem ?? result.item;
+        const shouldQuickComplete = shouldCompleteQuickShare({
+          quickShareSaveEnabled: userSettings.quickShareSaveEnabled,
+          persisted
+        });
+
         setSavedWatchItems(result.items);
-        setSharedMemoryItemId(targetItem.id);
-        setSharedMemoryTag(targetItem.memoryTag ?? "remember");
-        setSharedMemoryNote(targetItem.memoryNote ?? "");
+        if (shouldQuickComplete) {
+          setSharedMemoryItemId(undefined);
+          setSharedMemoryTag("remember");
+          setSharedMemoryNote("");
+        } else {
+          setSharedMemoryItemId(targetItem.id);
+          setSharedMemoryTag(targetItem.memoryTag ?? "remember");
+          setSharedMemoryNote(targetItem.memoryNote ?? "");
+        }
         setDataViewMode("saved");
         setActiveSourceName("YouTube 공유 저장");
         setSelectedDateKey(getDateKeyForItem(targetItem, dateSettings));
@@ -437,6 +491,9 @@ export function AppShell() {
               }`
             : `이미 같은 날짜에 저장된 영상입니다. 저장된 기록 ${result.items.length.toLocaleString("ko-KR")}개`
         );
+        if (shouldQuickComplete) {
+          void completeNativeQuickShare(getQuickShareCompletionMessage(result.added)).catch(() => undefined);
+        }
       })();
     };
 
@@ -449,7 +506,7 @@ export function AppShell() {
       .catch(() => undefined);
 
     return addNativeShareIntentListener(handleSharedYouTube);
-  }, [dateSettings, savedWatchItems]);
+  }, [dateSettings, isUserSettingsReady, savedWatchItems, userSettings.quickShareSaveEnabled]);
 
   useEffect(() => {
     let cancelled = false;
@@ -959,6 +1016,17 @@ export function AppShell() {
     setSharedMemoryItemId(undefined);
   }, []);
 
+  const handleQuickShareSaveEnabledChange = useCallback((enabled: boolean) => {
+    const nextSettings: UserSettings = {
+      quickShareSaveEnabled: enabled
+    };
+
+    setUserSettings(nextSettings);
+    void localUserSettingsRepository.save(nextSettings).catch(() => {
+      setImportNote("빠른 저장 모드 설정을 저장하지 못했습니다. 이번 화면에서는 변경이 반영됩니다.");
+    });
+  }, []);
+
   const leftPanelProps = {
     dates: quickDateOptions,
     activeSourceName,
@@ -994,7 +1062,9 @@ export function AppShell() {
     expandVideosByDefault,
     onExpandVideosByDefaultChange: setExpandVideosByDefault,
     onExpandAll: handleExpandAll,
-    onCollapseAll: handleCollapseAll
+    onCollapseAll: handleCollapseAll,
+    quickShareSaveEnabled: userSettings.quickShareSaveEnabled,
+    onQuickShareSaveEnabledChange: handleQuickShareSaveEnabledChange
   };
 
   const getAppNavButtonClass = (isActive: boolean) =>

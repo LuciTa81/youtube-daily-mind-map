@@ -1,0 +1,74 @@
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { describe, expect, it } from "vitest";
+import { getQuickShareCompletionMessage, shouldCompleteQuickShare } from "@/lib/share/quickShareSave";
+
+const appShellPath = join(process.cwd(), "src", "components", "layout", "AppShell.tsx");
+const nativeShareWrapperPath = join(process.cwd(), "src", "lib", "native", "nativeShareIntent.ts");
+const nativeSharePluginPath = join(
+  process.cwd(),
+  "android",
+  "app",
+  "src",
+  "main",
+  "java",
+  "com",
+  "lucita81",
+  "youtubedailymindmap",
+  "NativeShareIntentPlugin.java"
+);
+
+function readSource(path: string): string {
+  return readFileSync(path, "utf8");
+}
+
+describe("quick share completion", () => {
+  it("only completes quick share when the setting is enabled and the record persisted", () => {
+    expect(shouldCompleteQuickShare({ quickShareSaveEnabled: true, persisted: true })).toBe(true);
+    expect(shouldCompleteQuickShare({ quickShareSaveEnabled: true, persisted: false })).toBe(false);
+    expect(shouldCompleteQuickShare({ quickShareSaveEnabled: false, persisted: true })).toBe(false);
+    expect(shouldCompleteQuickShare({ quickShareSaveEnabled: false, persisted: false })).toBe(false);
+  });
+
+  it("uses short completion messages without watch-duration claims", () => {
+    expect(getQuickShareCompletionMessage(true)).toBe("오늘 기록에 저장했어요");
+    expect(getQuickShareCompletionMessage(false)).toBe("이미 오늘 기록에 저장돼 있어요");
+    expect(getQuickShareCompletionMessage(true)).not.toContain("시청 시간");
+    expect(getQuickShareCompletionMessage(true)).not.toContain("사용 시간");
+  });
+
+  it("waits for stored settings before consuming pending Android shares", () => {
+    const appShell = readSource(appShellPath);
+
+    expect(appShell).toContain("const [isUserSettingsReady, setIsUserSettingsReady] = useState(false)");
+    expect(appShell).toContain("setIsUserSettingsReady(true)");
+    expect(appShell).toContain("if (!isUserSettingsReady)");
+    expect(appShell.indexOf("localUserSettingsRepository.load()")).toBeLessThan(
+      appShell.indexOf("consumePendingNativeShareIntent()")
+    );
+  });
+
+  it("skips the memory prompt only for successful quick-share completion", () => {
+    const appShell = readSource(appShellPath);
+
+    expect(appShell).toContain("shouldCompleteQuickShare({");
+    expect(appShell).toContain("quickShareSaveEnabled: userSettings.quickShareSaveEnabled");
+    expect(appShell).toContain("persisted");
+    expect(appShell).toContain("if (shouldQuickComplete)");
+    expect(appShell).toContain("setSharedMemoryItemId(undefined)");
+    expect(appShell).toContain("completeNativeQuickShare(getQuickShareCompletionMessage(result.added))");
+  });
+
+  it("wraps native quick-share completion behind the typed native bridge", () => {
+    const wrapper = readSource(nativeShareWrapperPath);
+    const plugin = readSource(nativeSharePluginPath);
+
+    expect(wrapper).toContain("completeQuickShare: (options: { message: string }) => Promise<void>");
+    expect(wrapper).toContain("export async function completeNativeQuickShare(message: string)");
+    expect(wrapper).toContain("NativeShareIntent.completeQuickShare({ message })");
+    expect(plugin).toContain("public void completeQuickShare(PluginCall call)");
+    expect(plugin).toContain("Toast.makeText(activity, message, Toast.LENGTH_SHORT).show()");
+    expect(plugin).toContain("activity.moveTaskToBack(true)");
+    expect(plugin).not.toContain("Log.");
+  });
+});

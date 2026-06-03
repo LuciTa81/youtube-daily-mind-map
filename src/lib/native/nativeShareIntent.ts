@@ -14,6 +14,7 @@ type NativeShareIntentResult = NativeShareIntentDetail & {
 
 type NativeShareIntentPlugin = {
   consumePendingShare: () => Promise<NativeShareIntentResult>;
+  completeQuickShare: (options: { message: string }) => Promise<void>;
   addListener: (
     eventName: typeof NATIVE_SHARE_RECEIVED_EVENT_NAME,
     listenerFunc: (detail: NativeShareIntentDetail) => void
@@ -37,6 +38,14 @@ export async function consumePendingNativeShareIntent(): Promise<NativeShareInte
   }
 
   return result;
+}
+
+export async function completeNativeQuickShare(message: string): Promise<void> {
+  if (!isNativeShareIntentAvailable()) {
+    return;
+  }
+
+  await NativeShareIntent.completeQuickShare({ message });
 }
 
 export function addNativeShareIntentListener(

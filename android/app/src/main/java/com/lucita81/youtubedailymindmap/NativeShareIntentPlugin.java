@@ -1,6 +1,8 @@
 package com.lucita81.youtubedailymindmap;
 
+import android.app.Activity;
 import android.content.Intent;
+import android.widget.Toast;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
@@ -15,6 +17,7 @@ import java.util.TimeZone;
 public class NativeShareIntentPlugin extends Plugin {
     private static NativeShareIntentPlugin instance;
     private static JSObject pendingShare;
+    private static final String DEFAULT_QUICK_SHARE_COMPLETE_MESSAGE = "오늘 기록에 저장했어요";
 
     @Override
     public void load() {
@@ -41,6 +44,23 @@ public class NativeShareIntentPlugin extends Plugin {
             result.put("action", share.getString("action"));
         }
         call.resolve(result);
+    }
+
+    @PluginMethod
+    public void completeQuickShare(PluginCall call) {
+        String message = call.getString("message", DEFAULT_QUICK_SHARE_COMPLETE_MESSAGE);
+        Activity activity = getActivity();
+
+        if (activity == null) {
+            call.resolve();
+            return;
+        }
+
+        activity.runOnUiThread(() -> {
+            Toast.makeText(activity, message, Toast.LENGTH_SHORT).show();
+            activity.moveTaskToBack(true);
+            call.resolve();
+        });
     }
 
     public static void handleShareIntent(Intent intent) {

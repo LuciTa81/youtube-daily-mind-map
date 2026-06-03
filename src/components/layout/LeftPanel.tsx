@@ -54,6 +54,8 @@ type LeftPanelProps = {
   onExpandVideosByDefaultChange: (value: boolean) => void;
   onExpandAll: () => void;
   onCollapseAll: () => void;
+  quickShareSaveEnabled: boolean;
+  onQuickShareSaveEnabledChange: (enabled: boolean) => void;
 };
 
 function SettingsGroupHeader({ title, description }: { title: string; description: string }) {
@@ -61,6 +63,44 @@ function SettingsGroupHeader({ title, description }: { title: string; descriptio
     <div>
       <h2 className="text-base font-black text-slate-950">{title}</h2>
       <p className="mt-1 text-sm leading-relaxed text-slate-500">{description}</p>
+    </div>
+  );
+}
+
+function QuickShareSettingsPanel({
+  enabled,
+  onEnabledChange
+}: {
+  enabled: boolean;
+  onEnabledChange: (enabled: boolean) => void;
+}) {
+  return (
+    <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h3 className="text-sm font-black text-slate-950">빠른 저장 모드</h3>
+          <p className="mt-1 text-sm leading-relaxed text-slate-500">
+            YouTube 공유 영상을 먼저 저장하고, 나중에 홈이나 타임라인에서 메모를 보완하는 실험 기능입니다.
+          </p>
+          <p className="mt-2 text-xs font-semibold leading-relaxed text-slate-500">
+            AI 요약은 자동 실행하지 않습니다. 실제 공유 후 자동 복귀 동작은 Android 연결 단계에서 따로 검증합니다.
+          </p>
+        </div>
+        <label className="relative inline-flex h-11 w-16 shrink-0 cursor-pointer items-center">
+          <input
+            type="checkbox"
+            className="peer sr-only"
+            checked={enabled}
+            aria-label="빠른 저장 모드"
+            onChange={(event) => onEnabledChange(event.target.checked)}
+          />
+          <span className="h-8 w-14 rounded-full bg-slate-200 transition peer-checked:bg-sky-500" />
+          <span className="absolute left-1 top-1.5 h-6 w-6 rounded-full bg-white shadow-sm transition peer-checked:translate-x-6" />
+        </label>
+      </div>
+      <div className="mt-3 rounded-lg bg-slate-50 px-3 py-2 text-xs font-bold text-slate-600">
+        현재 상태: {enabled ? "켜짐" : "꺼짐"}
+      </div>
     </div>
   );
 }
@@ -104,7 +144,9 @@ export function LeftPanel({
   expandVideosByDefault,
   onExpandVideosByDefaultChange,
   onExpandAll,
-  onCollapseAll
+  onCollapseAll,
+  quickShareSaveEnabled,
+  onQuickShareSaveEnabledChange
 }: LeftPanelProps) {
   const importPanel = (
     <WatchHistoryImportPanel
@@ -174,6 +216,17 @@ export function LeftPanel({
               description="Takeout 파일을 불러오고, Drive 원본 ZIP 정리까지 처리합니다."
             />
             {importPanel}
+          </section>
+
+          <section className="space-y-3">
+            <SettingsGroupHeader
+              title="YouTube 공유 저장"
+              description="공유로 남긴 영상을 오늘의 기억으로 저장하는 방식을 정합니다."
+            />
+            <QuickShareSettingsPanel
+              enabled={quickShareSaveEnabled}
+              onEnabledChange={onQuickShareSaveEnabledChange}
+            />
           </section>
 
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">

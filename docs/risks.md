@@ -5,6 +5,7 @@
 | Risk | Severity | Mitigation |
 | --- | --- | --- |
 | Takeout import is too slow for daily use. | High | Treat Takeout as weekly/monthly reconciliation. Build daily loop around YouTube share save. |
+| Share save flow interrupts YouTube viewing. | Medium | Offer an optional quick share save mode that saves locally, shows a lightweight confirmation, and returns to the previous app when Android permits it. |
 | Mind map UI is unfamiliar on mobile. | Medium | Make timeline and report the primary surfaces. Keep mind map as a supporting view. |
 | Users do not pay for visualization alone. | High | Paid value should come from weekly/monthly reports, AI insights, export, search, and memory retention. |
 | YouTube Recap competes with the core novelty. | Medium | Differentiate with daily/weekly persistence, notes, search, and local archive. |
