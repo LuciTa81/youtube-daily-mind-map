@@ -119,4 +119,79 @@ describe("NativeDriveFilePlugin source guards", () => {
     expect(source).not.toContain("Log.e(TAG, \"");
     expect(source).not.toContain("+ uri");
   });
+
+  it("keeps the Android screen awake only while native Takeout import is active", () => {
+    const source = readNativeDriveFilePlugin();
+    const importStartIndex = source.indexOf("private void importTakeoutZip(");
+    const keepAwakeIndex = source.indexOf("keepScreenOnDuringImport();", importStartIndex);
+    const finallyIndex = source.indexOf("} finally {", importStartIndex);
+    const allowSleepIndex = source.indexOf("allowScreenSleepAfterImport();", finallyIndex);
+
+    expect(source).toContain("import android.view.WindowManager;");
+    expect(source).toContain("private void keepScreenOnDuringImport()");
+    expect(source).toContain("private void allowScreenSleepAfterImport()");
+    expect(source).toContain("activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);");
+    expect(source).toContain("activity.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);");
+    expect(importStartIndex).toBeGreaterThan(0);
+    expect(keepAwakeIndex).toBeGreaterThan(importStartIndex);
+    expect(finallyIndex).toBeGreaterThan(keepAwakeIndex);
+    expect(allowSleepIndex).toBeGreaterThan(finallyIndex);
+  });
+
+  it("keeps native Takeout import cancellation wired through the Drive stream and parser loops", () => {
+    const source = readNativeDriveFilePlugin();
+    const cancelMethodIndex = source.indexOf("public void cancelTakeoutImport(PluginCall call)");
+    const importStartIndex = source.indexOf("private void importTakeoutZip(");
+    const copyLoopIndex = source.indexOf("while ((read = inputStream.read(buffer)) != -1)");
+    const jsonLoopIndex = source.indexOf("while (reader.hasNext())");
+    const htmlLoopIndex = source.indexOf("for (int index = 0; index < blocks.size(); index += 1)");
+    const limitedStreamIndex = source.indexOf("private class LimitedInputStream extends InputStream");
+
+    expect(source).toContain("import java.util.concurrent.atomic.AtomicBoolean;");
+    expect(source).toContain("private static final String IMPORT_CANCELLED_MESSAGE");
+    expect(source).toContain("private final AtomicBoolean importInProgress = new AtomicBoolean(false);");
+    expect(source).toContain("private final AtomicBoolean cancelImportRequested = new AtomicBoolean(false);");
+    expect(source).toContain("private InputStream activeDriveInputStream;");
+    expect(cancelMethodIndex).toBeGreaterThan(0);
+    expect(source).toContain('emitImportProgress("cancelled"');
+    expect(source).toContain("cancelImportRequested.set(true);");
+    expect(source).toContain("closeActiveDriveInputStream();");
+    expect(source).toContain("private void throwIfImportCancelled() throws ImportCancelledException");
+    expect(source).toContain("private synchronized void setActiveDriveInputStream(InputStream inputStream)");
+    expect(source).toContain("private synchronized void clearActiveDriveInputStream(InputStream inputStream)");
+    expect(source).toContain("private static class ImportCancelledException extends IOException");
+    expect(source).toContain("} catch (ImportCancelledException error) {");
+    expect(source).toContain("rejectOnMainThread(call, IMPORT_CANCELLED_MESSAGE, error);");
+    expect(source.indexOf("throwIfImportCancelled();", importStartIndex)).toBeGreaterThan(importStartIndex);
+    expect(source.indexOf("throwIfImportCancelled();", copyLoopIndex)).toBeGreaterThan(copyLoopIndex);
+    expect(source.indexOf("throwIfImportCancelled();", jsonLoopIndex)).toBeGreaterThan(jsonLoopIndex);
+    expect(source.indexOf("throwIfImportCancelled();", htmlLoopIndex)).toBeGreaterThan(htmlLoopIndex);
+    expect(source.indexOf("throwIfImportCancelled();", limitedStreamIndex)).toBeGreaterThan(limitedStreamIndex);
+  });
+
+  it("checks cache storage before copying a Drive Takeout ZIP", () => {
+    const source = readNativeDriveFilePlugin();
+    const copyMethodIndex = source.indexOf("private File copyDriveZipToCache(");
+    const storageGuardCallIndex = source.indexOf("assertEnoughCacheSpaceForDriveCopy(size, cacheDir);", copyMethodIndex);
+    const tempFileCreateIndex = source.indexOf('File.createTempFile("takeout-import-", ".zip", cacheDir)', copyMethodIndex);
+
+    expect(source).toContain("import android.os.StatFs;");
+    expect(source).toContain("MIN_CACHE_FREE_SPACE_AFTER_COPY_BYTES");
+    expect(source).toContain("INSUFFICIENT_CACHE_SPACE_MESSAGE_PREFIX");
+    expect(source).toContain("private void assertEnoughCacheSpaceForDriveCopy(long size, File cacheDir) throws IOException");
+    expect(source).toContain("private long getAvailableCacheBytes(File cacheDir)");
+    expect(source).toContain("new StatFs(cacheDir.getPath())");
+    expect(source).toContain("private long getRequiredCacheBytesForDriveCopy(long size)");
+    expect(source).toContain("Long.MAX_VALUE - size < MIN_CACHE_FREE_SPACE_AFTER_COPY_BYTES");
+    expect(source).toContain("formatBytesForMessage(availableBytes)");
+    expect(source).toContain("throw new InsufficientCacheSpaceException(");
+    expect(source).toContain("private static class InsufficientCacheSpaceException extends IOException");
+    expect(source).toContain("} catch (InsufficientCacheSpaceException error) {");
+    expect(source).toContain('emitImportProgress("error", 0, error.getMessage()');
+    expect(source).toContain("rejectOnMainThread(call, error.getMessage(), error);");
+    expect(source).toContain("기기 저장공간이 부족해서 Takeout ZIP을 가져올 수 없습니다.");
+    expect(copyMethodIndex).toBeGreaterThan(0);
+    expect(storageGuardCallIndex).toBeGreaterThan(copyMethodIndex);
+    expect(tempFileCreateIndex).toBeGreaterThan(storageGuardCallIndex);
+  });
 });

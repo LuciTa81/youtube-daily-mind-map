@@ -45,4 +45,18 @@ describe("WatchHistoryImportPanel native import error visibility", () => {
     expect(source).toContain('phase: "complete"');
     expect(source).toContain("completedSuccessfully = true;");
   });
+
+  it("keeps native Drive import cancellation wired to the loading overlay", () => {
+    const source = readImportPanel();
+
+    expect(source).toContain("cancelNativeDriveTakeoutZipImport");
+    expect(source).toContain("NATIVE_DRIVE_IMPORT_CANCELLED_MESSAGE");
+    expect(source).toContain("const [isCancellingNativeImport, setIsCancellingNativeImport]");
+    expect(source).toContain("async function handleCancelNativeImport()");
+    expect(source).toContain('phase: "cancelled"');
+    expect(source).toContain("await cancelNativeDriveTakeoutZipImport()");
+    expect(source).toContain("setNativeImportOutcome({ kind: \"cancelled\", message: NATIVE_DRIVE_IMPORT_CANCELLED_MESSAGE });");
+    expect(source).toContain("onCancel={");
+    expect(source).toContain("isCancelling={isCancellingNativeImport}");
+  });
 });

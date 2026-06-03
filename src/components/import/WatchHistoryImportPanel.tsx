@@ -4,8 +4,10 @@ import { useRef, useState } from "react";
 import { WATCH_HISTORY_MISSING_TAKEOUT_MESSAGE, type ParsedWatchHistory } from "@/lib/import/parseTakeout";
 import { TakeoutFileWatchHistorySource } from "@/lib/import/watchHistorySources";
 import {
+  cancelNativeDriveTakeoutZipImport,
   importNativeDriveTakeoutZipWithProgressTimeout,
   isNativeDriveFilePickerAvailable,
+  NATIVE_DRIVE_IMPORT_CANCELLED_MESSAGE,
   type NativeDriveImportProgress
 } from "@/lib/native/nativeDriveFile";
 import type { WatchHistoryImportSummary, WatchItem } from "@/types/watch";
@@ -82,6 +84,7 @@ export function WatchHistoryImportPanel({
   const [importSummary, setImportSummary] = useState<WatchHistoryImportSummary>();
   const [isSelectingFile, setIsSelectingFile] = useState(false);
   const [isReading, setIsReading] = useState(false);
+  const [isCancellingNativeImport, setIsCancellingNativeImport] = useState(false);
   const [nativeProgress, setNativeProgress] = useState<NativeDriveImportProgress | undefined>();
   const [nativeImportOutcome, setNativeImportOutcome] = useState<NativeImportOutcome>();
   const visibleImportSummary = importSummary ?? latestImportSummary;
@@ -90,6 +93,7 @@ export function WatchHistoryImportPanel({
     setNativeProgress(undefined);
     setIsSelectingFile(false);
     setIsReading(false);
+    setIsCancellingNativeImport(false);
   }
 
   function handleGoHomeAfterImport() {
@@ -104,6 +108,7 @@ export function WatchHistoryImportPanel({
     setStatusMessage("Google Drive에서 Takeout ZIP을 선택해 주세요.");
     setIsSelectingFile(true);
     setIsReading(false);
+    setIsCancellingNativeImport(false);
     setNativeProgress(undefined);
 
     let completedSuccessfully = false;
@@ -147,6 +152,12 @@ export function WatchHistoryImportPanel({
       completedSuccessfully = true;
     } catch (error) {
       const message = getImportErrorMessage(error);
+      if (message === NATIVE_DRIVE_IMPORT_CANCELLED_MESSAGE) {
+        setStatusMessage(NATIVE_DRIVE_IMPORT_CANCELLED_MESSAGE);
+        setNativeImportOutcome({ kind: "cancelled", message: NATIVE_DRIVE_IMPORT_CANCELLED_MESSAGE });
+        return;
+      }
+
       if (message.includes("취소")) {
         setStatusMessage("파일 선택을 취소했습니다.");
         setNativeImportOutcome({ kind: "cancelled", message: "파일 선택을 취소했습니다." });
@@ -159,6 +170,41 @@ export function WatchHistoryImportPanel({
       if (!completedSuccessfully) {
         closeImportOverlay();
       }
+    }
+  }
+
+  async function handleCancelNativeImport() {
+    if (isCancellingNativeImport) {
+      return;
+    }
+
+    setIsCancellingNativeImport(true);
+    setStatusMessage(NATIVE_DRIVE_IMPORT_CANCELLED_MESSAGE);
+    setNativeProgress((current) =>
+      current
+        ? {
+            ...current,
+            phase: "cancelled",
+            message: NATIVE_DRIVE_IMPORT_CANCELLED_MESSAGE
+          }
+        : {
+            phase: "cancelled",
+            percent: 0,
+            message: NATIVE_DRIVE_IMPORT_CANCELLED_MESSAGE
+          }
+    );
+
+    try {
+      const result = await cancelNativeDriveTakeoutZipImport();
+      if (!result.cancelled) {
+        setStatusMessage("진행 중인 가져오기가 없습니다.");
+        setIsCancellingNativeImport(false);
+      }
+    } catch (error) {
+      const message = getImportErrorMessage(error);
+      setStatusMessage(message);
+      setErrorMessage(message);
+      setIsCancellingNativeImport(false);
     }
   }
 
@@ -201,6 +247,14 @@ export function WatchHistoryImportPanel({
         statusMessage={statusMessage}
         isNativeDriveImport={isNativeDrivePicker}
         onGoHome={handleGoHomeAfterImport}
+        onCancel={
+          isNativeDrivePicker && isReading && nativeProgress?.phase !== "finalizing" && nativeProgress?.phase !== "complete"
+            ? () => {
+                void handleCancelNativeImport();
+              }
+            : undefined
+        }
+        isCancelling={isCancellingNativeImport}
       />
 
       <section className="space-y-3 rounded-lg border border-slate-200 bg-white p-4">

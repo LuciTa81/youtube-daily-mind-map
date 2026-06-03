@@ -10,6 +10,7 @@ type NativeParsedTakeoutZipResult = ParsedWatchHistory & {
 
 type NativeDriveFilePlugin = {
   pickTakeoutZip: () => Promise<NativeParsedTakeoutZipResult>;
+  cancelTakeoutImport: () => Promise<{ cancelled: boolean }>;
   addListener: (
     eventName: "nativeDriveImportProgress",
     listenerFunc: (progress: NativeDriveImportProgress) => void
@@ -21,7 +22,7 @@ type NativeDriveProgressHandle = {
 };
 
 export type NativeDriveImportProgress = {
-  phase: "opening" | "copying" | "scanning" | "reading" | "parsing" | "finalizing" | "complete" | "error";
+  phase: "opening" | "copying" | "scanning" | "reading" | "parsing" | "finalizing" | "complete" | "cancelled" | "error";
   percent: number;
   message: string;
   fileName?: string;
@@ -54,6 +55,7 @@ type NativeDriveImportRunnerDependencies = {
 export const NATIVE_DRIVE_IMPORT_STALE_TIMEOUT_MS = 60_000;
 export const NATIVE_DRIVE_IMPORT_LARGE_FILE_BYTES = 1_000 * 1024 * 1024;
 export const NATIVE_DRIVE_IMPORT_LARGE_FILE_STALE_TIMEOUT_MS = 20 * 60_000;
+export const NATIVE_DRIVE_IMPORT_CANCELLED_MESSAGE = "가져오기를 취소했습니다.";
 export const NATIVE_DRIVE_IMPORT_STALE_MESSAGE =
   "Drive ZIP을 읽는 중 진행이 멈췄습니다. 네트워크 상태를 확인한 뒤 같은 파일을 다시 선택해주세요.";
 
@@ -115,6 +117,10 @@ export async function importNativeDriveTakeoutZip(): Promise<NativeDriveTakeoutI
   };
 }
 
+export function cancelNativeDriveTakeoutZipImport(): Promise<{ cancelled: boolean }> {
+  return NativeDriveFile.cancelTakeoutImport();
+}
+
 export async function runNativeDriveTakeoutZipImportWithProgressTimeout(
   dependencies: NativeDriveImportRunnerDependencies,
   options?: NativeDriveImportRunnerOptions
@@ -134,7 +140,7 @@ export async function runNativeDriveTakeoutZipImportWithProgressTimeout(
 
   function scheduleStaleTimer(progress: NativeDriveImportProgress) {
     clearStaleTimer();
-    if (progress.phase === "complete" || progress.phase === "error") {
+    if (progress.phase === "complete" || progress.phase === "cancelled" || progress.phase === "error") {
       return;
     }
 

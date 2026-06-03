@@ -10,6 +10,7 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Handler;
 import android.os.Looper;
+import android.os.StatFs;
 import android.os.SystemClock;
 import android.provider.DocumentsContract;
 import android.provider.OpenableColumns;
@@ -17,6 +18,7 @@ import android.text.TextUtils;
 import android.util.JsonReader;
 import android.util.JsonToken;
 import android.util.Log;
+import android.view.WindowManager;
 import androidx.activity.result.ActivityResult;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
@@ -44,6 +46,7 @@ import java.util.Locale;
 import java.util.TimeZone;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
@@ -68,10 +71,16 @@ public class NativeDriveFilePlugin extends Plugin {
     };
     private static final long MAX_HISTORY_ENTRY_UNCOMPRESSED_BYTES = 512L * 1024L * 1024L;
     private static final long MAX_HTML_HISTORY_ENTRY_BYTES = 96L * 1024L * 1024L;
+    private static final long MIN_CACHE_FREE_SPACE_AFTER_COPY_BYTES = 128L * 1024L * 1024L;
     private static final int HTML_PARSE_PROGRESS_ITEM_INTERVAL = 250;
     private static final long HTML_PARSE_PROGRESS_TIME_INTERVAL_MS = 700L;
+    private static final String IMPORT_CANCELLED_MESSAGE = "가져오기를 취소했습니다.";
+    private static final String INSUFFICIENT_CACHE_SPACE_MESSAGE_PREFIX = "기기 저장공간이 부족해서 Takeout ZIP을 가져올 수 없습니다.";
     private final ExecutorService importExecutor = Executors.newSingleThreadExecutor();
     private final Handler mainHandler = new Handler(Looper.getMainLooper());
+    private final AtomicBoolean importInProgress = new AtomicBoolean(false);
+    private final AtomicBoolean cancelImportRequested = new AtomicBoolean(false);
+    private InputStream activeDriveInputStream;
 
     @PluginMethod
     public void pickTakeoutZip(PluginCall call) {
@@ -84,6 +93,20 @@ public class NativeDriveFilePlugin extends Plugin {
         applyLastDriveUri(intent);
 
         startActivityForResult(call, intent, "handlePickTakeoutZip");
+    }
+
+    @PluginMethod
+    public void cancelTakeoutImport(PluginCall call) {
+        boolean cancelled = importInProgress.get();
+        if (cancelled) {
+            cancelImportRequested.set(true);
+            closeActiveDriveInputStream();
+            emitImportProgress("cancelled", 0, IMPORT_CANCELLED_MESSAGE, "takeout.zip", 0L, 0L, 0, 0);
+        }
+
+        JSObject response = new JSObject();
+        response.put("cancelled", cancelled);
+        call.resolve(response);
     }
 
     @ActivityCallback
@@ -128,13 +151,18 @@ public class NativeDriveFilePlugin extends Plugin {
     }
 
     private void importTakeoutZip(PluginCall call, ContentResolver resolver, Uri uri, String fileName, String mimeType, long size) {
+        importInProgress.set(true);
+        cancelImportRequested.set(false);
+        keepScreenOnDuringImport();
         try {
             logImportInfo("Starting native Takeout import: size=" + size);
             emitImportProgress("opening", 0, "Drive ZIP을 준비하는 중입니다.", fileName, 0L, size, 0, 0);
             rememberLastDriveUri(uri);
+            throwIfImportCancelled();
             File localZipFile = copyDriveZipToCache(resolver, uri, fileName, size);
             ParsedHistory parsedHistory;
             try {
+                throwIfImportCancelled();
                 parsedHistory = parseTakeoutZip(localZipFile, fileName, size);
             } finally {
                 if (!localZipFile.delete()) {
@@ -164,12 +192,76 @@ public class NativeDriveFilePlugin extends Plugin {
                 parsedHistory.items.length()
             );
             resolveOnMainThread(call, response);
+        } catch (ImportCancelledException error) {
+            logImportInfo("Native Takeout import cancelled");
+            emitImportProgress("cancelled", 0, IMPORT_CANCELLED_MESSAGE, fileName, 0L, size, 0, 0);
+            rejectOnMainThread(call, IMPORT_CANCELLED_MESSAGE, error);
+        } catch (InsufficientCacheSpaceException error) {
+            logImportWarning("Native Takeout import rejected: insufficient cache space", error);
+            emitImportProgress("error", 0, error.getMessage(), fileName, 0L, size, 0, 0);
+            rejectOnMainThread(call, error.getMessage(), error);
         } catch (IOException error) {
             logImportError("Failed to read Drive ZIP", error);
             rejectOnMainThread(call, "Drive ZIP을 읽지 못했습니다. 네트워크 상태나 Drive 파일 접근 권한을 확인해주세요.", error);
         } catch (IllegalArgumentException error) {
             logImportError("Failed to parse Takeout ZIP", error);
             rejectOnMainThread(call, error.getMessage(), error);
+        } finally {
+            importInProgress.set(false);
+            cancelImportRequested.set(false);
+            closeActiveDriveInputStream();
+            allowScreenSleepAfterImport();
+        }
+    }
+
+    private void keepScreenOnDuringImport() {
+        mainHandler.post(() -> {
+            Activity activity = getActivity();
+            if (activity != null) {
+                activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            }
+        });
+    }
+
+    private void allowScreenSleepAfterImport() {
+        mainHandler.post(() -> {
+            Activity activity = getActivity();
+            if (activity != null) {
+                activity.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+            }
+        });
+    }
+
+    private void throwIfImportCancelled() throws ImportCancelledException {
+        if (cancelImportRequested.get()) {
+            throw new ImportCancelledException();
+        }
+    }
+
+    private synchronized void setActiveDriveInputStream(InputStream inputStream) {
+        activeDriveInputStream = inputStream;
+    }
+
+    private synchronized void clearActiveDriveInputStream(InputStream inputStream) {
+        if (activeDriveInputStream == inputStream) {
+            activeDriveInputStream = null;
+        }
+    }
+
+    private void closeActiveDriveInputStream() {
+        InputStream inputStream;
+        synchronized (this) {
+            inputStream = activeDriveInputStream;
+        }
+
+        if (inputStream == null) {
+            return;
+        }
+
+        try {
+            inputStream.close();
+        } catch (IOException ignored) {
+            // Closing the active Drive stream is best-effort cancellation.
         }
     }
 
@@ -220,7 +312,10 @@ public class NativeDriveFilePlugin extends Plugin {
     }
 
     private File copyDriveZipToCache(ContentResolver resolver, Uri uri, String fileName, long size) throws IOException {
-        File tempFile = File.createTempFile("takeout-import-", ".zip", getContext().getCacheDir());
+        throwIfImportCancelled();
+        File cacheDir = getContext().getCacheDir();
+        assertEnoughCacheSpaceForDriveCopy(size, cacheDir);
+        File tempFile = File.createTempFile("takeout-import-", ".zip", cacheDir);
         long copyStartedAtMs = SystemClock.elapsedRealtime();
         String providerLabel = getSafeProviderLabel(uri);
         logImportInfo("Native Drive copy started: provider=" + providerLabel + ", totalBytes=" + size);
@@ -236,13 +331,16 @@ public class NativeDriveFilePlugin extends Plugin {
         );
         long openInputStreamStartedAtMs = SystemClock.elapsedRealtime();
         logImportInfo("Native Drive openInputStream starting: provider=" + providerLabel + ", elapsedMs=0");
+        throwIfImportCancelled();
         InputStream driveInputStream = resolver.openInputStream(uri);
         long openInputStreamElapsedMs = elapsedSince(openInputStreamStartedAtMs);
         logImportInfo("Native Drive openInputStream completed: provider=" + providerLabel + ", elapsedMs=" + openInputStreamElapsedMs);
         if (driveInputStream == null) {
             throw new IOException("Input stream is null");
         }
+        setActiveDriveInputStream(driveInputStream);
 
+        throwIfImportCancelled();
         emitImportProgress(
             "copying",
             getCopyPercent(0L, size),
@@ -266,6 +364,7 @@ public class NativeDriveFilePlugin extends Plugin {
                 logImportInfo("Native Drive first byte wait started: provider=" + providerLabel);
 
                 while ((read = inputStream.read(buffer)) != -1) {
+                    throwIfImportCancelled();
                     if (!firstReadLogged) {
                         firstReadLogged = true;
                         logImportInfo(
@@ -323,10 +422,49 @@ public class NativeDriveFilePlugin extends Plugin {
             if (!tempFile.delete()) {
                 logImportWarning("Failed to delete incomplete temporary Takeout ZIP from cache");
             }
+            if (cancelImportRequested.get()) {
+                throw new ImportCancelledException();
+            }
             throw error;
+        } finally {
+            clearActiveDriveInputStream(driveInputStream);
         }
 
         return tempFile;
+    }
+
+    private void assertEnoughCacheSpaceForDriveCopy(long size, File cacheDir) throws IOException {
+        if (size <= 0L) {
+            return;
+        }
+
+        long availableBytes = getAvailableCacheBytes(cacheDir);
+        long requiredBytes = getRequiredCacheBytesForDriveCopy(size);
+        if (availableBytes >= requiredBytes) {
+            return;
+        }
+
+        throw new InsufficientCacheSpaceException(
+            INSUFFICIENT_CACHE_SPACE_MESSAGE_PREFIX +
+            " Drive 파일은 " +
+            formatBytesForMessage(size) +
+            "이고, 앱 캐시는 " +
+            formatBytesForMessage(availableBytes) +
+            "만 사용할 수 있습니다. 불필요한 파일을 정리한 뒤 다시 시도해주세요."
+        );
+    }
+
+    private long getAvailableCacheBytes(File cacheDir) {
+        StatFs statFs = new StatFs(cacheDir.getPath());
+        return statFs.getAvailableBytes();
+    }
+
+    private long getRequiredCacheBytesForDriveCopy(long size) {
+        if (Long.MAX_VALUE - size < MIN_CACHE_FREE_SPACE_AFTER_COPY_BYTES) {
+            return Long.MAX_VALUE;
+        }
+
+        return size + MIN_CACHE_FREE_SPACE_AFTER_COPY_BYTES;
     }
 
     private long elapsedSince(long startedAtMs) {
@@ -380,6 +518,7 @@ public class NativeDriveFilePlugin extends Plugin {
     }
 
     private ParsedHistory parseTakeoutZip(File zipFile, String fileName, long size) throws IOException {
+        throwIfImportCancelled();
         try (ZipFile zip = new ZipFile(zipFile)) {
             List<ZipCandidate> candidates = getZipCandidates(zip);
             int archiveEntryCount = getArchiveEntryCount(zip);
@@ -397,6 +536,7 @@ public class NativeDriveFilePlugin extends Plugin {
             );
 
             for (ZipCandidate candidate : candidates) {
+                throwIfImportCancelled();
                 ZipEntry entry = candidate.entry;
                 if (entry.isDirectory()) {
                     continue;
@@ -422,12 +562,15 @@ public class NativeDriveFilePlugin extends Plugin {
                             return parsedHistory;
                         }
                     }
+                } catch (ImportCancelledException error) {
+                    throw error;
                 } catch (Exception error) {
                     lastError = error.getMessage() != null ? error.getMessage() : entryName + " 파일을 읽지 못했습니다.";
                 }
             }
 
             for (ZipCandidate candidate : getFallbackZipCandidates(zip)) {
+                throwIfImportCancelled();
                 String entryName = candidate.entry.getName();
                 try {
                     try (InputStream entryStream = zip.getInputStream(candidate.entry)) {
@@ -438,6 +581,8 @@ public class NativeDriveFilePlugin extends Plugin {
                             return parsedHistory;
                         }
                     }
+                } catch (ImportCancelledException error) {
+                    throw error;
                 } catch (Exception error) {
                     lastError = error.getMessage() != null ? error.getMessage() : entryName + " 파일을 읽지 못했습니다.";
                 }
@@ -507,6 +652,7 @@ public class NativeDriveFilePlugin extends Plugin {
         long totalBytes,
         int archiveEntryCount
     ) throws IOException {
+        throwIfImportCancelled();
         String lowerName = normalizeFileName(entryName);
         long entryReadLimitBytes = getHistoryEntryReadLimitBytes(lowerName);
         assertHistoryEntryWithinReadLimit(entry, entryName, entryReadLimitBytes);
@@ -552,6 +698,7 @@ public class NativeDriveFilePlugin extends Plugin {
 
         reader.beginArray();
         while (reader.hasNext()) {
+            throwIfImportCancelled();
             TakeoutJsonEntry entry = readJsonEntry(reader);
             JSObject item = parseJsonEntry(entry, index);
             if (item != null) {
@@ -688,7 +835,7 @@ public class NativeDriveFilePlugin extends Plugin {
         return item;
     }
 
-    private ParsedHistory parseHtmlHistory(String content, String fileName, long totalBytes, int archiveEntryCount) {
+    private ParsedHistory parseHtmlHistory(String content, String fileName, long totalBytes, int archiveEntryCount) throws IOException {
         List<String> blocks = splitHtmlIntoHistoryBlocks(content);
         JSONArray items = new JSONArray();
         int skippedCount = 0;
@@ -696,6 +843,7 @@ public class NativeDriveFilePlugin extends Plugin {
         long lastEmitTimeMs = 0L;
 
         for (int index = 0; index < blocks.size(); index += 1) {
+            throwIfImportCancelled();
             JSObject item = parseHtmlBlock(blocks.get(index), index);
             if (item != null) {
                 items.put(item);
@@ -1108,6 +1256,7 @@ public class NativeDriveFilePlugin extends Plugin {
         byte[] buffer = new byte[8192];
         int read;
         while ((read = inputStream.read(buffer)) != -1) {
+            throwIfImportCancelled();
             if (outputStream.size() + read > maxBytes) {
                 throw new IOException(
                     "Takeout 시청 기록 파일이 너무 큽니다. " +
@@ -1234,6 +1383,18 @@ public class NativeDriveFilePlugin extends Plugin {
         }
     }
 
+    private static class ImportCancelledException extends IOException {
+        ImportCancelledException() {
+            super(IMPORT_CANCELLED_MESSAGE);
+        }
+    }
+
+    private static class InsufficientCacheSpaceException extends IOException {
+        InsufficientCacheSpaceException(String message) {
+            super(message);
+        }
+    }
+
     private class LimitedInputStream extends InputStream {
         private final InputStream delegate;
         private final long maxBytes;
@@ -1265,6 +1426,7 @@ public class NativeDriveFilePlugin extends Plugin {
         }
 
         private void trackBytesRead(long count) throws IOException {
+            throwIfImportCancelled();
             bytesRead += count;
             if (bytesRead > maxBytes) {
                 throw new IOException(

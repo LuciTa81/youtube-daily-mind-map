@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   getNativeDriveImportStaleTimeoutMs,
+  NATIVE_DRIVE_IMPORT_CANCELLED_MESSAGE,
   NATIVE_DRIVE_IMPORT_LARGE_FILE_STALE_TIMEOUT_MS,
   NATIVE_DRIVE_IMPORT_STALE_MESSAGE,
   runNativeDriveTakeoutZipImportWithProgressTimeout,
@@ -205,6 +206,49 @@ describe("native Drive Takeout import watchdog", () => {
     expect(completed.items).toHaveLength(1);
     expect(onProgress).toHaveBeenCalledWith(expect.objectContaining({ phase: "parsing", percent: 82 }));
     expect(onProgress).toHaveBeenCalledWith(expect.objectContaining({ phase: "complete", percent: 100 }));
+    expect(remove).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not turn a cancelled native import into a stale timeout error", async () => {
+    vi.useFakeTimers();
+    const remove = vi.fn(async () => undefined);
+    let listener: ((progress: NativeDriveImportProgress) => void) | undefined;
+    const onProgress = vi.fn();
+    const result = normalNativeResult();
+
+    const cancelledThenSettledImport = runNativeDriveTakeoutZipImportWithProgressTimeout(
+      {
+        addProgressListener: async (progressListener) => {
+          listener = progressListener;
+          return { remove };
+        },
+        importTakeoutZip: () => {
+          listener?.({
+            phase: "cancelled",
+            percent: 12,
+            message: NATIVE_DRIVE_IMPORT_CANCELLED_MESSAGE,
+            fileName: "takeout.zip",
+            totalBytes: 56_832
+          });
+
+          return new Promise<NativeDriveTakeoutImportResult>((resolve) => {
+            setTimeout(() => resolve(result), 2_000);
+          });
+        }
+      },
+      { onProgress, staleTimeoutMs: 1_000 }
+    );
+
+    await vi.advanceTimersByTimeAsync(2_000);
+
+    await expect(cancelledThenSettledImport).resolves.toBe(result);
+    expect(onProgress).toHaveBeenCalledWith(
+      expect.objectContaining({
+        phase: "cancelled",
+        message: NATIVE_DRIVE_IMPORT_CANCELLED_MESSAGE
+      })
+    );
+    expect(onProgress).not.toHaveBeenCalledWith(expect.objectContaining({ phase: "error" }));
     expect(remove).toHaveBeenCalledTimes(1);
   });
 

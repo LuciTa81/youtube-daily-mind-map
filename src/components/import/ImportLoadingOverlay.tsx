@@ -9,6 +9,8 @@ type ImportLoadingOverlayProps = {
   statusMessage?: string;
   isNativeDriveImport: boolean;
   onGoHome?: () => void;
+  onCancel?: () => void;
+  isCancelling?: boolean;
 };
 
 type ProgressKeyframe = {
@@ -143,6 +145,11 @@ const DRIVE_COPY_LINES: Array<LoadingLine & PhaseCopyLine> = [
     note: "1GB가 넘는 ZIP은 몇 분 정도 걸릴 수 있습니다. 화면을 끄지 말고 기다려 주세요."
   }
 ];
+
+const CANCELLATION_CLEANUP_LINE: PhaseCopyLine = {
+  title: "가져오기를 취소하는 중입니다.",
+  note: "Drive가 파일 넘기기를 정리하면 결과 화면으로 돌아갑니다."
+};
 
 function clamp(value: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, value));
@@ -449,7 +456,9 @@ export function ImportLoadingOverlay({
   progress,
   statusMessage,
   isNativeDriveImport,
-  onGoHome
+  onGoHome,
+  onCancel,
+  isCancelling = false
 }: ImportLoadingOverlayProps) {
   const progressRef = useRef<NativeDriveImportProgress | undefined>(progress);
   const transferSampleRef = useRef<{ bytesRead: number; timeMs: number } | undefined>(undefined);
@@ -550,10 +559,20 @@ export function ImportLoadingOverlay({
     };
   }, [open]);
 
-  const activeLine = useMemo(() => getDisplayLoadingLine(progress, elapsedMs), [elapsedMs, progress]);
-  const phaseLabel = getPhaseLabel(progress, isNativeDriveImport);
-  const detailLine = getDetailLine(progress, transferStats, elapsedMs);
-  const phaseSupportLine = getPhaseSupportLine(progress, elapsedMs);
+  const isCancellationCleanup = isCancelling || progress?.phase === "cancelled";
+  const activeLine = useMemo(
+    () => (isCancellationCleanup ? CANCELLATION_CLEANUP_LINE : getDisplayLoadingLine(progress, elapsedMs)),
+    [elapsedMs, isCancellationCleanup, progress]
+  );
+  const phaseLabel = isCancellationCleanup
+    ? "취소 요청됨 · 정리 중입니다."
+    : getPhaseLabel(progress, isNativeDriveImport);
+  const detailLine = isCancellationCleanup
+    ? `Drive 정리 중 · ${formatElapsed(elapsedMs)}`
+    : getDetailLine(progress, transferStats, elapsedMs);
+  const phaseSupportLine = isCancellationCleanup
+    ? `대용량 Drive 파일 정리 중 · ${formatElapsed(elapsedMs)}`
+    : getPhaseSupportLine(progress, elapsedMs);
   const isComplete = progress?.phase === "complete" && visualProgress >= 99;
   const nonCompleteProgressCap = progress?.phase === "finalizing" ? 99 : 98;
   const safeProgress = progress?.phase === "complete" ? visualProgress : Math.min(nonCompleteProgressCap, visualProgress);
@@ -561,7 +580,15 @@ export function ImportLoadingOverlay({
   const radius = 100;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (clamp(safeProgress, 0, 100) / 100) * circumference;
-  const shouldShowPatienceNote = elapsedMs > 12000 || (progress?.totalBytes ?? 0) > 700 * 1024 * 1024;
+  const shouldShowPatienceNote =
+    isCancellationCleanup || elapsedMs > 12000 || (progress?.totalBytes ?? 0) > 700 * 1024 * 1024;
+  const canCancelImport =
+    Boolean(onCancel) &&
+    !isCancellationCleanup &&
+    !isComplete &&
+    progress?.phase !== "finalizing" &&
+    progress?.phase !== "complete" &&
+    progress?.phase !== "cancelled";
 
   useEffect(() => {
     if (!isComplete) {
@@ -723,18 +750,26 @@ export function ImportLoadingOverlay({
 
         {phaseSupportLine && !isComplete ? (
           <div className="mt-3 w-full rounded-2xl border border-sky-100 bg-white/90 px-4 py-3 text-left shadow-sm">
-            <div className="text-xs font-bold text-sky-700">{getPhaseSupportTitle(progress)}</div>
+            <div className="text-xs font-bold text-sky-700">
+              {isCancellationCleanup ? "취소 정리 상태" : getPhaseSupportTitle(progress)}
+            </div>
             <div className="mt-1 text-xs leading-relaxed text-slate-600">{phaseSupportLine}</div>
             <div className="mt-2 text-[11px] leading-relaxed text-slate-400">
-              {progress?.phase === "finalizing"
-                ? "이 구간은 새 기록을 저장소와 화면에 반영하는 단계라 98% 근처에서 잠시 머무를 수 있습니다."
-                : "이 구간은 Drive가 ZIP을 앱에 넘겨주는 단계라 진행률이 잠시 같은 숫자에 머무를 수 있습니다."}
+              {isCancellationCleanup
+                ? "취소 요청은 전달됐습니다. Drive가 열어 둔 파일을 정리하는 동안 화면이 잠시 멈춘 것처럼 보일 수 있습니다."
+                : progress?.phase === "finalizing"
+                  ? "이 구간은 새 기록을 저장소와 화면에 반영하는 단계라 98% 근처에서 잠시 머무를 수 있습니다."
+                  : "이 구간은 Drive가 ZIP을 앱에 넘겨주는 단계라 진행률이 잠시 같은 숫자에 머무를 수 있습니다."}
             </div>
           </div>
         ) : null}
 
         <div className="mt-4 min-h-6 text-sm font-semibold text-sky-700">
-          {isComplete ? "완료되었습니다. 아래 버튼으로 홈으로 이동할 수 있습니다." : statusMessage || "조금만 더 기다려 주세요."}
+          {isComplete
+            ? "완료되었습니다. 아래 버튼으로 홈으로 이동할 수 있습니다."
+            : isCancellationCleanup
+              ? "취소 요청됨. 정리가 끝나면 가져오기 화면으로 돌아갑니다."
+              : statusMessage || "조금만 더 기다려 주세요."}
         </div>
 
         {isComplete && showCompletionAction ? (
@@ -749,8 +784,20 @@ export function ImportLoadingOverlay({
 
         {shouldShowPatienceNote && !isComplete ? (
           <div className="mt-6 w-full rounded-2xl bg-white/90 px-4 py-3 text-left text-xs leading-relaxed text-slate-500 shadow-sm ring-1 ring-slate-200">
-            대용량 Takeout은 Drive에서 앱으로 옮기는 단계가 오래 걸릴 수 있습니다. 진행률이 잠깐 머물러도 앱을 닫지 않으면 계속 처리됩니다.
+            {isCancellationCleanup
+              ? "대용량 Drive 파일은 취소 후에도 정리에 시간이 필요할 수 있습니다. 앱을 닫지 않으면 정리 후 자동으로 가져오기 화면으로 돌아갑니다."
+              : "대용량 Takeout은 Drive에서 앱으로 옮기는 단계가 오래 걸릴 수 있습니다. 진행률이 잠깐 머물러도 앱을 닫지 않으면 계속 처리됩니다."}
           </div>
+        ) : null}
+        {canCancelImport ? (
+          <button
+            type="button"
+            className="mt-5 min-h-12 rounded-2xl border border-rose-200 bg-white/95 px-7 text-sm font-bold text-rose-700 shadow-sm transition hover:bg-rose-50 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+            disabled={isCancelling}
+            onClick={onCancel}
+          >
+            {isCancelling ? "취소 요청 중" : "가져오기 취소"}
+          </button>
         ) : null}
       </div>
     </div>

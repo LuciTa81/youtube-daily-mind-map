@@ -55,4 +55,35 @@ describe("ImportLoadingOverlay source guards", () => {
     expect(source).toContain("return clamp(Math.max(fallbackProgress, progress.percent, 98), 98, 99);");
     expect(source).toContain('const nonCompleteProgressCap = progress?.phase === "finalizing" ? 99 : 98;');
   });
+
+  it("keeps a cancellable native import action out of finalizing and completed states", () => {
+    const source = readImportLoadingOverlay();
+
+    expect(source).toContain("onCancel?: () => void;");
+    expect(source).toContain("isCancelling?: boolean;");
+    expect(source).toContain("const canCancelImport =");
+    expect(source).toContain('progress?.phase !== "finalizing"');
+    expect(source).toContain('progress?.phase !== "complete"');
+    expect(source).toContain('progress?.phase !== "cancelled"');
+    expect(source).toContain("disabled={isCancelling}");
+    expect(source).toContain("onClick={onCancel}");
+    expect(source).toContain("가져오기 취소");
+    expect(source).toContain("취소 요청 중");
+  });
+
+  it("shows an explicit cleanup state after a native Drive import cancellation is requested", () => {
+    const source = readImportLoadingOverlay();
+
+    expect(source).toContain("const CANCELLATION_CLEANUP_LINE");
+    expect(source).toContain("가져오기를 취소하는 중입니다.");
+    expect(source).toContain("Drive가 파일 넘기기를 정리하면 결과 화면으로 돌아갑니다.");
+    expect(source).toContain('const isCancellationCleanup = isCancelling || progress?.phase === "cancelled";');
+    expect(source).toContain("취소 요청됨 · 정리 중입니다.");
+    expect(source).toContain("Drive 정리 중");
+    expect(source).toContain("취소 정리 상태");
+    expect(source).toContain("Drive가 열어 둔 파일을 정리하는 동안 화면이 잠시 멈춘 것처럼 보일 수 있습니다.");
+    expect(source).toContain("정리가 끝나면 가져오기 화면으로 돌아갑니다.");
+    expect(source).toContain("대용량 Drive 파일은 취소 후에도 정리에 시간이 필요할 수 있습니다.");
+    expect(source).toContain("!isCancellationCleanup");
+  });
 });
