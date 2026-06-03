@@ -52,6 +52,8 @@ describe("pre-release change summary checklist", () => {
     expect(checklist).toContain("## GitHub Actions APK Emulator Clean Install Smoke Result - 2026-06-03 (205656e)");
     expect(checklist).toContain("## GitHub Actions APK Emulator Clean Install Smoke Result - 2026-06-03 (8a086cb)");
     expect(checklist).toContain("## GitHub Actions APK Emulator Clean Install Smoke Result - 2026-06-03 (bf8880a)");
+    expect(checklist).toContain("## GitHub Actions APK Artifact Verification Result - 2026-06-03 (68c8ef3)");
+    expect(checklist).toContain("## GitHub Actions APK Emulator Clean Install Smoke Result - 2026-06-03 (68c8ef3)");
     expect(checklist).toContain("## Current Remaining Risks");
     expect(checklist).toContain("## Go / No-go Notes");
   });
@@ -276,6 +278,25 @@ describe("pre-release change summary checklist", () => {
     expect(checklist).toContain("codex-bf8880a-emulator-clean-install-launch-after-wait.png");
     expect(checklist).toContain("size 280,281 bytes");
     expect(checklist).toContain("codex-bf8880a-emulator-window.xml");
+    expect(checklist).toContain("Build commit: `68c8ef37ae0e6d8f46afbc9857fa85edc2f36f1d`");
+    expect(checklist).toContain("Build Android APK` run `26857188380`");
+    expect(checklist).toContain("artifact id `7373441909`");
+    expect(checklist).toContain("Artifact ZIP downloaded from GitHub Actions; size 4,249,038 bytes");
+    expect(checklist).toContain("0ad23e2890fe12e8deed83f63573699203e58ad0187e87cd75b924d7de8c991b");
+    expect(checklist).toContain("app-debug.apk`, size 4,635,774 bytes");
+    expect(checklist).toContain("f336ec50677b4f3470699dfe58309cd32c3c5b1f29297c8ac96a1094469beafe");
+    expect(checklist).toContain("`apksigner verify` passed after setting `JAVA_HOME` to the Android Studio JBR");
+    expect(checklist).toContain("`aapt dump badging` found launchable activity `com.lucita81.youtubedailymindmap.MainActivity`");
+    expect(checklist).toContain("`aapt dump badging` confirmed this artifact is debuggable");
+    expect(checklist).toContain("Clean AVD `codex_clean_api36` was launched with `-wipe-data`");
+    expect(checklist).toContain("Emulator boot completed on model `sdk_gphone64_x86_64`, Android 16, API 36, with physical size `1080x1920`");
+    expect(checklist).toContain("Installed package code path was under `/data/app/.../com.lucita81.youtubedailymindmap.../base.apk`");
+    expect(checklist).toContain("Installed package flags included `DEBUGGABLE`, as expected for the GitHub Actions debug artifact");
+    expect(checklist).toContain("Launch output reported `Status: ok`, `LaunchState: COLD`, `TotalTime: 9001`, and `WaitTime: 9164`");
+    expect(checklist).toContain("App process was alive after launch with pid `3054`");
+    expect(checklist).toContain("codex-68c8ef3-emulator-clean-install-launch-after-wait.png");
+    expect(checklist).toContain("size 280,243 bytes");
+    expect(checklist).toContain("codex-68c8ef3-emulator-window.xml");
   });
 
   it("keeps privacy and product-boundary reminders visible", () => {
@@ -293,8 +314,9 @@ describe("pre-release change summary checklist", () => {
     expect(checklist).toContain("Valid small fixture ZIP");
     expect(checklist).toContain("completed and reported import counts in debug and release smoke");
     expect(checklist).toContain("GitHub Actions debug APK clean-installed and launched on an Android 16 x86_64 emulator");
-    expect(checklist).toContain("GitHub Actions debug APK clean-installed and launched on an Android 16 emulator for commits `440856a`, `cbe4b9a`, `a2e2d01`, `0d327d1`, `b2b5bf8`, `7ec33e2`, `1768952`, `205656e`, `8a086cb`, and `bf8880a`");
+    expect(checklist).toContain("GitHub Actions debug APK clean-installed and launched on an Android 16 emulator for commits `440856a`, `cbe4b9a`, `a2e2d01`, `0d327d1`, `b2b5bf8`, `7ec33e2`, `1768952`, `205656e`, `8a086cb`, `bf8880a`, and `68c8ef3`");
     expect(checklist).toContain("Drive import, YouTube share, duplicate import, deletion, and layout flows were not repeated there");
+    expect(checklist).toContain("install and launch were repeated in the follow-up emulator smoke");
     expect(checklist).toContain("Android Drive duplicate re-import passed with the small synthetic watch-history fixture");
     expect(checklist).toContain("large real duplicate archives still need performance/storage verification");
     expect(checklist).toContain("localized Korean watch-history candidate");
