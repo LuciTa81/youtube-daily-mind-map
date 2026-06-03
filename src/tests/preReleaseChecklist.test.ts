@@ -76,6 +76,10 @@ describe("pre-release change summary checklist", () => {
     expect(checklist).toContain("Release APK logcat smoke confirms native import debug logs are silent when the app is not debuggable");
     expect(checklist).toContain("Real Android device smoke test");
     expect(checklist).toContain("[x] YouTube share intent smoke test from the YouTube app");
+
+    const releaseChecklist = readReleaseChecklist();
+    expect(releaseChecklist).toContain("GitHub Actions `Quality Gates` passed");
+    expect(releaseChecklist).toContain("`import-surface-smoke` artifact contains the 390px Import surface screenshot and JSON evidence");
   });
 
   it("keeps the latest Android smoke result and release blockers visible", () => {

@@ -24,6 +24,7 @@ Use this before sharing an APK, publishing a Play Store build, or pushing produc
 - [ ] `npm run lint`
 - [ ] `npm run test`
 - [ ] `npm run build`
+- [ ] GitHub Actions `Quality Gates` passed and the `import-surface-smoke` artifact contains the 390px Import surface screenshot and JSON evidence.
 - [ ] `npx cap sync android`, if Android assets changed
 - [ ] `android/gradlew assembleDebug`, if Android release or native code changed
 - [ ] `android/gradlew assembleRelease`, before sharing an APK or Play Store candidate
