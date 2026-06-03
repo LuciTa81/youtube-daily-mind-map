@@ -44,7 +44,7 @@ describe("quick share completion", () => {
     expect(appShell).toContain("setIsUserSettingsReady(true)");
     expect(appShell).toContain("if (!isUserSettingsReady)");
     expect(appShell.indexOf("localUserSettingsRepository.load()")).toBeLessThan(
-      appShell.indexOf("consumePendingNativeShareIntent()")
+      appShell.indexOf("drainPendingNativeShareIntents()")
     );
   });
 
@@ -55,6 +55,7 @@ describe("quick share completion", () => {
     expect(appShell).toContain("quickShareSaveEnabled: userSettings.quickShareSaveEnabled");
     expect(appShell).toContain("persisted");
     expect(appShell).toContain("if (shouldQuickComplete)");
+    expect(appShell).toContain("options.completeQuickShare");
     expect(appShell).toContain("setSharedMemoryItemId(undefined)");
     expect(appShell).toContain("completeNativeQuickShare(getQuickShareCompletionMessage(result.added))");
   });
@@ -77,9 +78,13 @@ describe("quick share completion", () => {
     const plugin = readSource(nativeSharePluginPath);
 
     expect(wrapper).toContain("completeQuickShare: (options: { message: string }) => Promise<void>");
+    expect(wrapper).toContain("drainPendingShares: () => Promise<NativeShareIntentDrainResult>");
+    expect(wrapper).toContain("ackPendingShares: (options: { ids: string[] }) => Promise<void>");
     expect(wrapper).toContain("export async function completeNativeQuickShare(message: string)");
     expect(wrapper).toContain("NativeShareIntent.completeQuickShare({ message })");
     expect(plugin).toContain("public void completeQuickShare(PluginCall call)");
+    expect(plugin).toContain("public void drainPendingShares(PluginCall call)");
+    expect(plugin).toContain("public void ackPendingShares(PluginCall call)");
     expect(plugin).toContain("Toast.makeText(activity, message, Toast.LENGTH_SHORT).show()");
     expect(plugin).toContain("activity.moveTaskToBack(true)");
     expect(plugin).not.toContain("Log.");

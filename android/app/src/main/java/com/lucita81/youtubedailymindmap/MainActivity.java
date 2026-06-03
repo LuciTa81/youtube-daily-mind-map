@@ -10,13 +10,13 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(NativeDriveFilePlugin.class);
         registerPlugin(NativeShareIntentPlugin.class);
         super.onCreate(savedInstanceState);
-        NativeShareIntentPlugin.handleShareIntent(getIntent());
+        NativeShareIntentPlugin.handleShareIntent(this, getIntent());
     }
 
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         setIntent(intent);
-        NativeShareIntentPlugin.handleShareIntent(intent);
+        NativeShareIntentPlugin.handleShareIntent(this, intent);
     }
 }

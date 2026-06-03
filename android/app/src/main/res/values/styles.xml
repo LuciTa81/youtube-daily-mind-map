@@ -36,4 +36,12 @@
         <item name="android:activityCloseEnterAnimation">@anim/quick_share_noop</item>
         <item name="android:activityCloseExitAnimation">@anim/quick_share_noop</item>
     </style>
+
+    <style name="AppTheme.ShareReceiver" parent="@android:style/Theme.Translucent.NoTitleBar">
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowDisablePreview">true</item>
+        <item name="android:backgroundDimEnabled">false</item>
+        <item name="android:windowAnimationStyle">@style/AppTheme.NoActionBarLaunch.Animation</item>
+    </style>
 </resources>

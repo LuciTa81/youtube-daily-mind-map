@@ -6,14 +6,19 @@ const NATIVE_SHARE_RECEIVED_EVENT_NAME = "shareReceived";
 
 export type NativeShareIntentDetail = SharedYouTubePayload & {
   action?: string;
+  pendingShareId?: string;
+  source?: string;
 };
 
-type NativeShareIntentResult = NativeShareIntentDetail & {
-  hasShare?: boolean;
+type NativeShareIntentDrainResult = {
+  shares?: NativeShareIntentDetail[];
 };
 
 type NativeShareIntentPlugin = {
-  consumePendingShare: () => Promise<NativeShareIntentResult>;
+  drainPendingShares: () => Promise<NativeShareIntentDrainResult>;
+  ackPendingShares: (options: { ids: string[] }) => Promise<void>;
+  clearPendingShares: () => Promise<void>;
+  setQuickShareSaveEnabled: (options: { enabled: boolean }) => Promise<void>;
   completeQuickShare: (options: { message: string }) => Promise<void>;
   addListener: (
     eventName: typeof NATIVE_SHARE_RECEIVED_EVENT_NAME,
@@ -27,17 +32,37 @@ function isNativeShareIntentAvailable(): boolean {
   return Capacitor.getPlatform() === "android";
 }
 
-export async function consumePendingNativeShareIntent(): Promise<NativeShareIntentDetail | undefined> {
+export async function drainPendingNativeShareIntents(): Promise<NativeShareIntentDetail[]> {
   if (!isNativeShareIntentAvailable()) {
-    return undefined;
+    return [];
   }
 
-  const result = await NativeShareIntent.consumePendingShare();
-  if (!result.hasShare) {
-    return undefined;
+  const result = await NativeShareIntent.drainPendingShares();
+  return Array.isArray(result.shares) ? result.shares : [];
+}
+
+export async function ackPendingNativeShareIntents(ids: string[]): Promise<void> {
+  if (!isNativeShareIntentAvailable() || ids.length === 0) {
+    return;
   }
 
-  return result;
+  await NativeShareIntent.ackPendingShares({ ids });
+}
+
+export async function clearNativePendingShareIntents(): Promise<void> {
+  if (!isNativeShareIntentAvailable()) {
+    return;
+  }
+
+  await NativeShareIntent.clearPendingShares();
+}
+
+export async function setNativeQuickShareSaveEnabled(enabled: boolean): Promise<void> {
+  if (!isNativeShareIntentAvailable()) {
+    return;
+  }
+
+  await NativeShareIntent.setQuickShareSaveEnabled({ enabled });
 }
 
 export async function completeNativeQuickShare(message: string): Promise<void> {
@@ -60,7 +85,6 @@ export function addNativeShareIntentListener(
     let handle: PluginListenerHandle | undefined;
 
     void NativeShareIntent.addListener(NATIVE_SHARE_RECEIVED_EVENT_NAME, (detail) => {
-      void NativeShareIntent.consumePendingShare().catch(() => undefined);
       callback(detail);
     }).then((listenerHandle) => {
       if (removed) {

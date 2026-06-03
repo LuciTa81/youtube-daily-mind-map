@@ -28,9 +28,13 @@ import {
 } from "@/lib/storage/userSettingsRepository";
 import { indexedDbWatchHistoryRepository } from "@/lib/storage/watchHistoryRepository";
 import {
+  ackPendingNativeShareIntents,
   addNativeShareIntentListener,
+  clearNativePendingShareIntents,
   completeNativeQuickShare,
-  consumePendingNativeShareIntent
+  drainPendingNativeShareIntents,
+  setNativeQuickShareSaveEnabled,
+  type NativeShareIntentDetail
 } from "@/lib/native/nativeShareIntent";
 import { getQuickShareCompletionMessage, shouldCompleteQuickShare } from "@/lib/share/quickShareSave";
 import { saveSharedYouTubeVideo } from "@/lib/share/sharedYouTubeVideo";
@@ -436,76 +440,113 @@ export function AppShell() {
 
   useEffect(() => {
     if (!isUserSettingsReady) {
+      return;
+    }
+
+    void setNativeQuickShareSaveEnabled(userSettings.quickShareSaveEnabled).catch(() => undefined);
+  }, [isUserSettingsReady, userSettings.quickShareSaveEnabled]);
+
+  useEffect(() => {
+    if (!isUserSettingsReady) {
       return () => undefined;
     }
 
-    const handleSharedYouTube = (detail: Parameters<typeof saveSharedYouTubeVideo>[1]) => {
-      void (async () => {
-        const result = saveSharedYouTubeVideo(savedWatchItems, detail, dateSettings);
+    const handleSharedYouTube = async (
+      detail: NativeShareIntentDetail,
+      options: { baseItems: WatchItem[]; completeQuickShare: boolean }
+    ): Promise<{ ackNativeQueue: boolean; items: WatchItem[] }> => {
+      const result = saveSharedYouTubeVideo(options.baseItems, detail, dateSettings);
 
-        if (!result) {
-          setImportNote("공유된 내용에서 YouTube 링크를 찾지 못했습니다.");
-          return;
-        }
+      if (!result) {
+        setImportNote("공유된 내용에서 YouTube 링크를 찾지 못했습니다.");
+        return { ackNativeQueue: true, items: options.baseItems };
+      }
 
-        let persisted = true;
-        try {
-          await indexedDbWatchHistoryRepository.save(result.items);
-        } catch {
-          persisted = false;
-        }
+      let persisted = true;
+      try {
+        await indexedDbWatchHistoryRepository.save(result.items);
+      } catch {
+        persisted = false;
+      }
 
-        const targetItem = result.duplicateItem ?? result.item;
-        const shouldQuickComplete = shouldCompleteQuickShare({
-          quickShareSaveEnabled: userSettings.quickShareSaveEnabled,
-          persisted
-        });
+      const targetItem = result.duplicateItem ?? result.item;
+      const shouldQuickComplete = shouldCompleteQuickShare({
+        quickShareSaveEnabled: userSettings.quickShareSaveEnabled,
+        persisted
+      });
 
-        setSavedWatchItems(result.items);
-        if (shouldQuickComplete) {
-          setSharedMemoryItemId(undefined);
-          setSharedMemoryTag("remember");
-          setSharedMemoryNote("");
-        } else {
-          setSharedMemoryItemId(targetItem.id);
-          setSharedMemoryTag(targetItem.memoryTag ?? "remember");
-          setSharedMemoryNote(targetItem.memoryNote ?? "");
-        }
-        setDataViewMode("saved");
-        setActiveSourceName("YouTube 공유 저장");
-        setSelectedDateKey(getDateKeyForItem(targetItem, dateSettings));
-        setRangeMode("day");
-        setCanvasMode("review");
-        setMobilePanel("none");
-        setSearchQuery("");
-        setCategoryFilter("");
-        setChannelQuery("");
-        setLowConfidenceOnly(false);
-        setSelectedTimelineNode(undefined);
-        setExpandedGroupIds(new Set());
-        setCollapsedBranchIds(new Set());
-        setImportNote(
-          result.added
-            ? `공유한 영상을 오늘의 기록에 저장했습니다. 저장된 기록 ${result.items.length.toLocaleString("ko-KR")}개${
-                persisted ? "" : " · 저장소 오류로 이번 화면에만 반영"
-              }`
-            : `이미 같은 날짜에 저장된 영상입니다. 저장된 기록 ${result.items.length.toLocaleString("ko-KR")}개`
-        );
-        if (shouldQuickComplete) {
-          void completeNativeQuickShare(getQuickShareCompletionMessage(result.added)).catch(() => undefined);
-        }
-      })();
+      setSavedWatchItems(result.items);
+      if (shouldQuickComplete) {
+        setSharedMemoryItemId(undefined);
+        setSharedMemoryTag("remember");
+        setSharedMemoryNote("");
+      } else {
+        setSharedMemoryItemId(targetItem.id);
+        setSharedMemoryTag(targetItem.memoryTag ?? "remember");
+        setSharedMemoryNote(targetItem.memoryNote ?? "");
+      }
+      setDataViewMode("saved");
+      setActiveSourceName("YouTube 공유 저장");
+      setSelectedDateKey(getDateKeyForItem(targetItem, dateSettings));
+      setRangeMode("day");
+      setCanvasMode("review");
+      setMobilePanel("none");
+      setSearchQuery("");
+      setCategoryFilter("");
+      setChannelQuery("");
+      setLowConfidenceOnly(false);
+      setSelectedTimelineNode(undefined);
+      setExpandedGroupIds(new Set());
+      setCollapsedBranchIds(new Set());
+      setImportNote(
+        result.added
+          ? `공유한 영상을 오늘의 기록에 저장했습니다. 저장된 기록 ${result.items.length.toLocaleString("ko-KR")}개${
+              persisted ? "" : " · 저장소 오류로 이번 화면에만 반영"
+            }`
+          : `이미 같은 날짜에 저장된 영상입니다. 저장된 기록 ${result.items.length.toLocaleString("ko-KR")}개`
+      );
+      if (shouldQuickComplete && options.completeQuickShare) {
+        void completeNativeQuickShare(getQuickShareCompletionMessage(result.added)).catch(() => undefined);
+      }
+
+      return { ackNativeQueue: persisted, items: result.items };
     };
 
-    void consumePendingNativeShareIntent()
-      .then((detail) => {
-        if (detail) {
-          handleSharedYouTube(detail);
+    void drainPendingNativeShareIntents()
+      .then(async (details) => {
+        let nextItems = savedWatchItems;
+        const handledPendingShareIds: string[] = [];
+
+        for (const detail of details) {
+          const outcome = await handleSharedYouTube(detail, {
+            baseItems: nextItems,
+            completeQuickShare: false
+          });
+          nextItems = outcome.items;
+
+          if (outcome.ackNativeQueue && detail.pendingShareId) {
+            handledPendingShareIds.push(detail.pendingShareId);
+          }
+        }
+
+        if (handledPendingShareIds.length > 0) {
+          await ackPendingNativeShareIntents(handledPendingShareIds);
         }
       })
       .catch(() => undefined);
 
-    return addNativeShareIntentListener(handleSharedYouTube);
+    return addNativeShareIntentListener((detail) => {
+      void handleSharedYouTube(detail, {
+        baseItems: savedWatchItems,
+        completeQuickShare: true
+      })
+        .then((outcome) => {
+          if (outcome.ackNativeQueue && detail.pendingShareId) {
+            void ackPendingNativeShareIntents([detail.pendingShareId]).catch(() => undefined);
+          }
+        })
+        .catch(() => undefined);
+    });
   }, [dateSettings, isUserSettingsReady, savedWatchItems, userSettings.quickShareSaveEnabled]);
 
   useEffect(() => {
@@ -873,6 +914,7 @@ export function AppShell() {
     }
 
     await indexedDbWatchHistoryRepository.clear();
+    await clearNativePendingShareIntents().catch(() => undefined);
     setSavedWatchItems([]);
     setDataViewMode("sample");
     setActiveSourceName("샘플 데이터");

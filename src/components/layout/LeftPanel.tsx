@@ -83,7 +83,7 @@ function QuickShareSettingsPanel({
             YouTube 공유 영상을 먼저 저장하고, 나중에 홈이나 타임라인에서 메모를 보완하는 실험 기능입니다.
           </p>
           <p className="mt-2 text-xs font-semibold leading-relaxed text-slate-500">
-            AI 요약은 자동 실행하지 않습니다. 실제 공유 후 자동 복귀 동작은 Android 연결 단계에서 따로 검증합니다.
+            AI 요약은 자동 실행하지 않습니다. 켜두면 공유 후 짧게 보관하고, 앱을 열 때 오늘 기록에 반영합니다.
           </p>
         </div>
         <label className="relative inline-flex h-11 w-16 shrink-0 cursor-pointer items-center">

@@ -4,4 +4,5 @@
     <string name="title_activity_main">YouTube Daily Mind Map</string>
     <string name="package_name">com.lucita81.youtubedailymindmap</string>
     <string name="custom_url_scheme">com.lucita81.youtubedailymindmap</string>
+    <string name="quick_share_queued_message">앱에 저장해둘게요</string>
 </resources>

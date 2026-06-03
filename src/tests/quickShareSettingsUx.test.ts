@@ -32,7 +32,8 @@ describe("quick share save settings UX", () => {
     expect(leftPanel).toContain("quickShareSaveEnabled");
     expect(leftPanel).toContain("onQuickShareSaveEnabledChange");
     expect(leftPanel).toContain("AI 요약은 자동 실행하지 않습니다");
-    expect(leftPanel).toContain("Android 연결 단계");
+    expect(leftPanel).toContain("공유 후 짧게 보관하고");
+    expect(leftPanel).toContain("앱을 열 때 오늘 기록에 반영합니다");
     expect(leftPanel).toContain('aria-label="빠른 저장 모드"');
     expect(leftPanel).toContain("h-11 w-16");
     expect(leftPanel).not.toContain("watch time");

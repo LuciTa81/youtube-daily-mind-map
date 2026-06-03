@@ -3,20 +3,18 @@ package com.lucita81.youtubedailymindmap;
 import android.app.Activity;
 import android.content.Intent;
 import android.widget.Toast;
+import com.getcapacitor.JSArray;
 import com.getcapacitor.JSObject;
 import com.getcapacitor.Plugin;
 import com.getcapacitor.PluginCall;
 import com.getcapacitor.PluginMethod;
 import com.getcapacitor.annotation.CapacitorPlugin;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Locale;
-import java.util.TimeZone;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 @CapacitorPlugin(name = "NativeShareIntent")
 public class NativeShareIntentPlugin extends Plugin {
     private static NativeShareIntentPlugin instance;
-    private static JSObject pendingShare;
     private static final String DEFAULT_QUICK_SHARE_COMPLETE_MESSAGE = "오늘 기록에 저장했어요";
 
     @Override
@@ -26,24 +24,29 @@ public class NativeShareIntentPlugin extends Plugin {
     }
 
     @PluginMethod
-    public void consumePendingShare(PluginCall call) {
-        JSObject share;
-        synchronized (NativeShareIntentPlugin.class) {
-            share = pendingShare;
-            pendingShare = null;
-        }
-
+    public void drainPendingShares(PluginCall call) {
         JSObject result = new JSObject();
-        if (share == null) {
-            result.put("hasShare", false);
-        } else {
-            result.put("hasShare", true);
-            result.put("text", share.getString("text"));
-            result.put("subject", share.getString("subject"));
-            result.put("receivedAt", share.getString("receivedAt"));
-            result.put("action", share.getString("action"));
-        }
+        result.put("shares", NativeShareIntentQueue.drain(getContext()));
         call.resolve(result);
+    }
+
+    @PluginMethod
+    public void ackPendingShares(PluginCall call) {
+        JSArray ids = call.getArray("ids", new JSArray());
+        NativeShareIntentQueue.acknowledge(getContext(), ids);
+        call.resolve();
+    }
+
+    @PluginMethod
+    public void clearPendingShares(PluginCall call) {
+        NativeShareIntentQueue.clear(getContext());
+        call.resolve();
+    }
+
+    @PluginMethod
+    public void setQuickShareSaveEnabled(PluginCall call) {
+        NativeShareIntentQueue.setQuickShareSaveEnabled(getContext(), call.getBoolean("enabled", false));
+        call.resolve();
     }
 
     @PluginMethod
@@ -63,14 +66,14 @@ public class NativeShareIntentPlugin extends Plugin {
         });
     }
 
-    public static void handleShareIntent(Intent intent) {
-        JSObject share = buildShareObject(intent);
-        if (share == null) {
+    public static void handleShareIntent(Activity activity, Intent intent) {
+        if (activity == null) {
             return;
         }
 
-        synchronized (NativeShareIntentPlugin.class) {
-            pendingShare = share;
+        JSONObject share = NativeShareIntentQueue.enqueue(activity, intent);
+        if (share == null) {
+            return;
         }
 
         if (instance != null) {
@@ -79,42 +82,26 @@ public class NativeShareIntentPlugin extends Plugin {
     }
 
     private void emitPendingShare() {
-        JSObject share;
-        synchronized (NativeShareIntentPlugin.class) {
-            share = pendingShare;
-        }
+        JSONArray shares = NativeShareIntentQueue.drain(getContext());
+        JSONObject share = shares.optJSONObject(0);
 
         if (share != null) {
-            notifyListeners("shareReceived", share);
+            notifyListeners("shareReceived", toShareEvent(share));
         }
     }
 
-    private static JSObject buildShareObject(Intent intent) {
-        if (intent == null || !Intent.ACTION_SEND.equals(intent.getAction())) {
-            return null;
-        }
-
-        String sharedText = intent.getStringExtra(Intent.EXTRA_TEXT);
-        String sharedSubject = intent.getStringExtra(Intent.EXTRA_SUBJECT);
-        if (isEmpty(sharedText) && isEmpty(sharedSubject)) {
-            return null;
-        }
-
-        JSObject object = new JSObject();
-        object.put("action", Intent.ACTION_SEND);
-        object.put("text", sharedText == null ? "" : sharedText);
-        object.put("subject", sharedSubject == null ? "" : sharedSubject);
-        object.put("receivedAt", isoNow());
-        return object;
+    private static JSObject toShareEvent(JSONObject share) {
+        JSObject result = new JSObject();
+        putShareFields(result, share);
+        return result;
     }
 
-    private static boolean isEmpty(String value) {
-        return value == null || value.trim().isEmpty();
-    }
-
-    private static String isoNow() {
-        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'", Locale.US);
-        format.setTimeZone(TimeZone.getTimeZone("UTC"));
-        return format.format(new Date());
+    private static void putShareFields(JSObject result, JSONObject share) {
+        result.put("pendingShareId", share.optString("pendingShareId"));
+        result.put("text", share.optString("text"));
+        result.put("subject", share.optString("subject"));
+        result.put("receivedAt", share.optString("receivedAt"));
+        result.put("action", share.optString("action"));
+        result.put("source", share.optString("source"));
     }
 }

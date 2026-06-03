@@ -83,6 +83,8 @@ Current and future implementations:
 - `SharedUrlImporter`: Android share intent from YouTube.
 - `ManualVideoImporter`: optional manual URL entry.
 
+Android quick-share receiver behavior uses a native pending-share queue rather than writing directly to WebView `IndexedDB`. The dedicated `ShareReceiverActivity` stores only a minimal app-private pending-share payload and exposes it through a typed native bridge. The web application layer then drains that queue and saves through the existing shared-video use case so normalization, deduplication, deletion, and report integration stay in one domain path.
+
 ## Insight Provider Contract
 
 AI behavior must be optional and replaceable.
@@ -108,3 +110,4 @@ Implementations:
 - Do not couple Google Drive access to Takeout parsing.
 - Do not couple AI insight generation to persistence. Generate, review, then persist.
 - Do not use broad Drive search as the default import path.
+- Do not let Android native share receivers write directly to WebView storage. Use the typed native bridge and shared-video save use case.

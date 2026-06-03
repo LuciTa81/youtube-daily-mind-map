@@ -18,6 +18,7 @@
 | Broad Google Drive permissions trigger verification burden. | High | Prefer Android file picker or `drive.file` with user-selected files. |
 | YouTube API storage policies create compliance burden. | Medium | Minimize API usage. Prefer user-provided Takeout and user-shared URLs. |
 | AI prompts leak sensitive records. | High | Require explicit opt-in, send minimal fields, cache results, provide deletion. |
+| Native share receiver queue retains personal URLs longer than intended. | Medium | Keep only a minimal app-private pending-share queue, add size and age caps, drain through the typed native bridge, acknowledge handled items, clear the queue on local personal-data deletion, and never log pending-share payloads. |
 
 ## Technical Risks
 
@@ -27,3 +28,4 @@
 | Duplicate records corrupt daily reports. | High | Stable event identity using video id/url plus watchedAt. Test repeated imports. |
 | Date grouping creates user confusion. | Medium | Use simple calendar-day default and label date ranges clearly. |
 | Storage schema changes break existing users. | Medium | Add versioned migration tests before release. |
+| Dedicated native share receiver bypasses web/domain save rules. | Medium | Use a native pending-share queue only as a handoff layer; drain through the typed native bridge and persist via the existing shared-video save use case, not direct WebView `IndexedDB` writes. |
