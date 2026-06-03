@@ -228,13 +228,13 @@ export function DriveTakeoutImportPanel({ onImported }: DriveTakeoutImportPanelP
           href={GOOGLE_TAKEOUT_YOUTUBE_DRIVE_URL}
           target="_blank"
           rel="noreferrer"
-          className="flex items-center justify-center rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+          className="touch-chip flex items-center justify-center rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
         >
           Drive로 Takeout 만들기
         </a>
         <button
           type="button"
-          className="rounded-md bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
+          className="touch-chip rounded-md bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-700 disabled:cursor-not-allowed disabled:opacity-50"
           disabled={!isPickerAvailable || isPicking}
           onClick={() => {
             void handlePickDriveFile();
@@ -324,7 +324,7 @@ export function DriveTakeoutImportPanel({ onImported }: DriveTakeoutImportPanelP
           </div>
           <button
             type="button"
-            className="w-full rounded-md border border-rose-200 bg-white px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
+            className="touch-chip w-full rounded-md border border-rose-200 bg-white px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
             disabled={isTrashing || cleanupTarget.capabilities?.canTrash === false}
             onClick={() => {
               void handleTrashDriveFile();

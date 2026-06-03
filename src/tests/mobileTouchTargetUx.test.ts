@@ -12,6 +12,13 @@ const watchHistoryImportPanelPath = join(
   "import",
   "WatchHistoryImportPanel.tsx"
 );
+const driveTakeoutImportPanelPath = join(
+  process.cwd(),
+  "src",
+  "components",
+  "import",
+  "DriveTakeoutImportPanel.tsx"
+);
 const homeDashboardPath = join(process.cwd(), "src", "components", "layout", "HomeDashboard.tsx");
 const watchTimelinePath = join(process.cwd(), "src", "components", "timeline", "WatchTimeline.tsx");
 
@@ -36,6 +43,7 @@ describe("mobile touch target UX", () => {
     const home = readSource(homeDashboardPath);
     const dateList = readSource(dateListPath);
     const importPanel = readSource(watchHistoryImportPanelPath);
+    const driveImportPanel = readSource(driveTakeoutImportPanelPath);
 
     expect(appShell).toContain("touch-chip shrink-0 rounded-full bg-white/15");
     expect(home).toContain("touch-chip shrink-0 rounded-full");
@@ -46,6 +54,9 @@ describe("mobile touch target UX", () => {
     expect(dateList).toContain("touch-chip rounded-md px-3 py-2 text-xs font-semibold");
     expect(importPanel).toContain("touch-chip flex w-full items-center justify-center");
     expect(importPanel).toContain("touch-chip rounded-md border border-slate-200");
+    expect(driveImportPanel).toContain("touch-chip flex items-center justify-center rounded-md");
+    expect(driveImportPanel).toContain("touch-chip rounded-md bg-slate-900");
+    expect(driveImportPanel).toContain("touch-chip w-full rounded-md border border-rose-200");
   });
 
   it("keeps timeline index controls 44px wide and offsets mobile cards accordingly", () => {
