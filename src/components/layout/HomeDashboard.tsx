@@ -155,10 +155,17 @@ export function HomeDashboard({
   onItemSelect
 }: HomeDashboardProps) {
   const categoryTotal = Math.max(1, summary.totalCount);
-  const markedMemoryItems = review.markedMemoryItems.slice(0, 3);
-  const markedMemoryItemIds = new Set(markedMemoryItems.map((item) => item.id));
+  const sharedMemoryItems = review.sharedMemoryItems.slice(0, 3);
+  const sharedMemoryItemIds = new Set(sharedMemoryItems.map((item) => item.id));
+  const markedMemoryItems = review.markedMemoryItems
+    .filter((item) => !sharedMemoryItemIds.has(item.id))
+    .slice(0, 3);
+  const highlightedMemoryItemIds = new Set([
+    ...sharedMemoryItems.map((item) => item.id),
+    ...markedMemoryItems.map((item) => item.id)
+  ]);
   const memorableItems = review.memorableItems
-    .filter((item) => !markedMemoryItemIds.has(item.id))
+    .filter((item) => !highlightedMemoryItemIds.has(item.id))
     .slice(0, 4);
   const reviewRangeGuide = getReviewRangeGuide(rangeMode);
 
@@ -250,6 +257,32 @@ export function HomeDashboard({
           <StatBlock label="집중 시간대" value={summary.topTimeBlock?.name ?? "없음"} />
         </div>
       </section>
+
+      {sharedMemoryItems.length > 0 ? (
+        <section className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <h3 className="text-base font-bold text-slate-950">직접 저장한 영상</h3>
+              <p className="mt-1 text-xs leading-relaxed text-slate-500">
+                YouTube 공유로 남긴 영상입니다. Takeout으로 보충된 기록과 구분해서 다시 볼 수 있습니다.
+              </p>
+            </div>
+            <button type="button" className="shrink-0 text-xs font-bold text-sky-700" onClick={onOpenTimeline}>
+              타임라인
+            </button>
+          </div>
+          <div className="mt-3 space-y-3">
+            {sharedMemoryItems.map((item) => (
+              <VideoRow
+                key={item.id}
+                item={item}
+                dateSettings={dateSettings}
+                onSelect={() => onItemSelect(item)}
+              />
+            ))}
+          </div>
+        </section>
+      ) : null}
 
       {markedMemoryItems.length > 0 ? (
         <section className="rounded-lg border border-sky-100 bg-sky-50/70 p-4 shadow-sm">

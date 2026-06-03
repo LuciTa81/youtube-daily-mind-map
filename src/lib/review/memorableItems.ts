@@ -16,6 +16,10 @@ function isUserMarkedRecallItem(item: ClassifiedWatchItem): boolean {
   return item.memoryTag === "remember" || item.memoryTag === "review";
 }
 
+function isSharedMemoryItem(item: ClassifiedWatchItem): boolean {
+  return item.source === "manual";
+}
+
 function byReviewPriority(a: ClassifiedWatchItem, b: ClassifiedWatchItem): number {
   const memoryPriorityDiff = getMemoryPriority(b) - getMemoryPriority(a);
   if (memoryPriorityDiff !== 0) {
@@ -42,4 +46,11 @@ export function buildMarkedMemoryItems(
   limit: number
 ): ClassifiedWatchItem[] {
   return items.filter(isUserMarkedRecallItem).sort(byReviewPriority).slice(0, limit);
+}
+
+export function buildSharedMemoryItems(
+  items: ClassifiedWatchItem[],
+  limit: number
+): ClassifiedWatchItem[] {
+  return items.filter(isSharedMemoryItem).sort(byReviewPriority).slice(0, limit);
 }

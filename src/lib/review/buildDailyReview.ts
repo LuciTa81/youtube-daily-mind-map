@@ -1,6 +1,6 @@
 import type { DaySummary } from "@/lib/analytics/summarizeDay";
 import { getTimeBlockForItem } from "@/lib/date/timeBlocks";
-import { buildMarkedMemoryItems, buildMemorableItems } from "@/lib/review/memorableItems";
+import { buildMarkedMemoryItems, buildMemorableItems, buildSharedMemoryItems } from "@/lib/review/memorableItems";
 import type { ClassifiedWatchItem, DateSettings } from "@/types/watch";
 
 export type ReviewTimeBlock = {
@@ -15,6 +15,7 @@ export type DailyReview = {
   insight: string;
   focusKeywords: string[];
   timeBlocks: ReviewTimeBlock[];
+  sharedMemoryItems: ClassifiedWatchItem[];
   markedMemoryItems: ClassifiedWatchItem[];
   memorableItems: ClassifiedWatchItem[];
 };
@@ -104,6 +105,7 @@ export function buildDailyReview(
     insight: buildInsight(summary),
     focusKeywords: buildFocusKeywords(summary),
     timeBlocks: buildTimeBlocks(items, settings),
+    sharedMemoryItems: buildSharedMemoryItems(items, 5),
     markedMemoryItems: buildMarkedMemoryItems(items, 5),
     memorableItems: buildMemorableItems(items, 5)
   };

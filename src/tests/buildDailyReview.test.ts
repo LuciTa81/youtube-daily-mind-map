@@ -71,4 +71,48 @@ describe("buildDailyReview", () => {
 
     expect(review.markedMemoryItems.map((memoryItem) => memoryItem.id)).toEqual(["remember", "review"]);
   });
+
+  it("separates manually shared videos from passive Takeout records", () => {
+    const items = [
+      item({
+        id: "shared-remember",
+        source: "manual",
+        memoryTag: "remember",
+        confidence: 0.95,
+        watchedAt: "2026-05-27T12:00:00.000Z"
+      }),
+      item({
+        id: "shared-saved",
+        source: "manual",
+        memoryTag: "saved",
+        confidence: 0.95,
+        watchedAt: "2026-05-27T11:00:00.000Z"
+      }),
+      item({
+        id: "shared-untagged",
+        source: "manual",
+        confidence: 0.95,
+        watchedAt: "2026-05-27T10:00:00.000Z"
+      }),
+      item({
+        id: "takeout",
+        source: "takeout-json",
+        memoryTag: "remember",
+        confidence: 0.95,
+        watchedAt: "2026-05-27T09:00:00.000Z"
+      })
+    ];
+    const summary = summarizeDay(items, settings);
+    const review = buildDailyReview(items, summary, settings);
+
+    expect(review.sharedMemoryItems.map((memoryItem) => memoryItem.id)).toEqual([
+      "shared-remember",
+      "shared-saved",
+      "shared-untagged"
+    ]);
+    expect(review.markedMemoryItems.map((memoryItem) => memoryItem.id)).toEqual([
+      "shared-remember",
+      "takeout"
+    ]);
+  });
 });
