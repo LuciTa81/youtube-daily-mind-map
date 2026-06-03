@@ -67,6 +67,26 @@ function ActionButton({
   );
 }
 
+function ShareMemoryPrompt({ onOpenSettings }: { onOpenSettings: () => void }) {
+  return (
+    <button
+      type="button"
+      className="mt-3 flex min-h-11 w-full items-center justify-between gap-3 rounded-lg border border-sky-100 bg-sky-50 px-3 py-2 text-left transition hover:border-sky-200 hover:bg-sky-100"
+      onClick={onOpenSettings}
+    >
+      <span className="min-w-0">
+        <span className="block text-xs font-bold text-sky-700">YouTube 공유 저장</span>
+        <span className="mt-0.5 block text-xs leading-snug text-slate-600">
+          공유한 영상은 Takeout을 기다리지 않고 오늘의 기억에 따로 모입니다.
+        </span>
+      </span>
+      <span className="shrink-0 rounded-full bg-white px-3 py-1 text-[11px] font-bold text-sky-700 shadow-sm">
+        공유 방법 보기
+      </span>
+    </button>
+  );
+}
+
 function VideoRow({
   item,
   dateSettings,
@@ -188,6 +208,8 @@ export function HomeDashboard({
             가져오기
           </button>
         </div>
+
+        {sharedMemoryItems.length === 0 ? <ShareMemoryPrompt onOpenSettings={onOpenSettings} /> : null}
 
         <div className="mt-4 flex gap-2 overflow-x-auto pb-1">
           {dates.map((date) => {
