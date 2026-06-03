@@ -1099,7 +1099,7 @@ export function AppShell() {
 
   const defaultBottomPaddingClass = "pb-24";
   const settingsBottomPaddingClass =
-    "pb-[calc(9rem+env(safe-area-inset-bottom,0px)+var(--native-safe-area-bottom,0px))]";
+    "pb-[calc(14rem+env(safe-area-inset-bottom,0px)+var(--native-safe-area-bottom,0px))]";
   const mainContentClassName = `flex-1 px-4 py-4 md:px-6 ${
     canvasMode === "settings" ? settingsBottomPaddingClass : defaultBottomPaddingClass
   }`;

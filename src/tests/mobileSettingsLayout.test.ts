@@ -19,6 +19,7 @@ describe("mobile settings layout", () => {
 
     expect(appShell).toContain('const defaultBottomPaddingClass = "pb-24"');
     expect(appShell).toContain("const settingsBottomPaddingClass");
+    expect(appShell).toContain("14rem+env(safe-area-inset-bottom,0px)+var(--native-safe-area-bottom,0px)");
     expect(appShell).toContain("env(safe-area-inset-bottom,0px)");
     expect(appShell).toContain("var(--native-safe-area-bottom,0px)");
     expect(appShell).toContain('canvasMode === "settings" ? settingsBottomPaddingClass : defaultBottomPaddingClass');
