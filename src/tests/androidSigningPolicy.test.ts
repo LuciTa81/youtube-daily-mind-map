@@ -113,7 +113,7 @@ describe("Android APK signing policy", () => {
     expect(workflow).toContain("SMOKE_DEBUG_KEYSTORE_PASSWORD");
     expect(workflow).toContain("SMOKE_DEBUG_KEY_ALIAS");
     expect(workflow).toContain("SMOKE_DEBUG_KEY_PASSWORD");
-    expect(workflow).toContain("actions/upload-artifact@v4");
+    expect(workflow).toContain("actions/upload-artifact@v7");
     expect(workflow).toContain("Remove smoke debug keystore");
     expect(workflow).toContain("rm -f android/app/smoke-debug.keystore");
   });
