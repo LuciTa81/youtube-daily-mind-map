@@ -212,6 +212,42 @@ const groupSixWholeFiles = [
   "src/tests/capacitorPrivacyConfig.test.ts",
 ];
 
+const currentWorkingTreeChangedFiles = [
+  "android/app/src/main/java/com/lucita81/youtubedailymindmap/NativeDriveFilePlugin.java",
+  "docs/checklists/pre-release-change-summary.md",
+  "src/components/import/ImportLoadingOverlay.tsx",
+  "src/components/import/WatchHistoryImportPanel.tsx",
+  "src/lib/native/nativeDriveFile.ts",
+  "src/tests/importLoadingOverlay.test.ts",
+  "src/tests/nativeDriveFile.test.ts",
+  "src/tests/nativeDriveFilePluginSource.test.ts",
+  "src/tests/preReleaseChecklist.test.ts",
+  "src/tests/watchHistoryImportPanelError.test.ts",
+];
+
+const currentGroupAStageFiles = [
+  "android/app/src/main/java/com/lucita81/youtubedailymindmap/NativeDriveFilePlugin.java",
+  "src/components/import/ImportLoadingOverlay.tsx",
+  "src/components/import/WatchHistoryImportPanel.tsx",
+  "src/lib/native/nativeDriveFile.ts",
+  "src/tests/importLoadingOverlay.test.ts",
+  "src/tests/nativeDriveFile.test.ts",
+  "src/tests/nativeDriveFilePluginSource.test.ts",
+  "src/tests/watchHistoryImportPanelError.test.ts",
+];
+
+const currentGroupBStageFiles = [
+  "docs/checklists/pre-release-change-summary.md",
+  "src/tests/preReleaseChecklist.test.ts",
+];
+
+const currentAuditBoundaryNotes = [
+  "Do not add broad Drive search.",
+  "Do not upload raw Takeout files or watch-history-derived records to a server.",
+  "Do not add AI calls, payments, ads, analytics, cross-device sync, or non-YouTube data sources.",
+  "Do not commit raw Takeout filenames, email addresses, video titles, URLs, raw logs, screenshots, APKs, or signing output.",
+];
+
 function readPreCommitGroups(): string {
   return readFileSync(preCommitGroupsPath, "utf8");
 }
@@ -228,6 +264,72 @@ describe("pre-commit change groups checklist", () => {
     expect(checklist).toContain("## Do Not Commit");
     expect(checklist).toContain("## Verification Before Commit");
     expect(checklist).toContain("## Suggested Commit Order");
+  });
+
+  it("keeps the current narrow working-tree audit visible", () => {
+    const checklist = readPreCommitGroups();
+
+    expect(checklist).toContain("## Current Working Tree Audit - 2026-06-03");
+    expect(checklist).toContain(
+      "Snapshot source: `git diff --name-only` after the debug and release large Drive cancellation cleanup UI smoke."
+    );
+    expect(checklist).toContain("ADR: not required.");
+    expect(checklist).toContain("user-selected Drive import path");
+    expect(checklist).toContain("It does not add broad Drive search");
+
+    for (const file of currentWorkingTreeChangedFiles) {
+      expect(checklist).toContain(`- \`${file}\``);
+    }
+  });
+
+  it("keeps Current Group A staged around native Drive cancellation guardrails only", () => {
+    const checklist = readPreCommitGroups();
+
+    expect(checklist).toContain("### Current Group A - Android Drive Import Cancellation And Storage Guardrails");
+    expect(checklist).toContain("large Drive import cancellation");
+    expect(checklist).toContain("insufficient cache-space handling");
+    expect(checklist).toContain("screen-awake import safety");
+    expect(checklist).toContain("stale-timeout avoidance");
+
+    for (const file of currentGroupAStageFiles) {
+      expect(checklist).toContain(`- \`${file}\``);
+    }
+
+    expect(checklist).toContain(
+      "npm run test -- src/tests/importLoadingOverlay.test.ts src/tests/nativeDriveFile.test.ts src/tests/nativeDriveFilePluginSource.test.ts src/tests/watchHistoryImportPanelError.test.ts"
+    );
+    expect(checklist).toContain("npm run android:debug");
+    expect(checklist).toContain("npm run android:sync");
+    expect(checklist).toContain("android/gradlew assembleRelease");
+    expect(checklist).toContain("Real-device debug and locally smoke-signed release cancellation cleanup UI smoke");
+    expect(checklist).toContain("Release logcat privacy smoke");
+
+    for (const boundaryNote of currentAuditBoundaryNotes) {
+      expect(checklist).toContain(boundaryNote);
+    }
+  });
+
+  it("keeps Current Group B staged around sanitized release evidence only", () => {
+    const checklist = readPreCommitGroups();
+
+    expect(checklist).toContain("### Current Group B - Release Smoke Evidence And Harness Assertions");
+    expect(checklist).toContain("sanitized debug and release large Drive smoke evidence");
+    expect(checklist).toContain("release-risk notes");
+    expect(checklist).toContain("checklist assertions");
+
+    for (const file of currentGroupBStageFiles) {
+      expect(checklist).toContain(`- \`${file}\``);
+    }
+
+    expect(checklist).toContain("npm run test -- src/tests/preReleaseChecklist.test.ts");
+    expect(checklist).toContain("npm run verify");
+    expect(checklist).toContain("Keep only sanitized evidence, counts, phases, and risk notes.");
+    expect(checklist).toContain(
+      "Do not commit concrete Drive filenames, email addresses, video titles, URLs, raw logs, screenshots, APKs, or signing output."
+    );
+    expect(checklist).toContain("1. Current Group A.");
+    expect(checklist).toContain("2. Current Group B.");
+    expect(checklist).toContain("fix: harden native Drive import cancellation");
   });
 
   it("keeps the current working tree grouped into reviewable commit candidates", () => {

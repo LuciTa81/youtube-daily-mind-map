@@ -12,6 +12,93 @@ Snapshot source: `git status --short` on 2026-06-03.
 - Do not add KakaoTalk, Naver, photos, health data, payments, ads, automatic AI calls, cross-device sync, broad Drive search, or server upload of raw personal records without ADR.
 - Keep Takeout ZIPs, watch-history records, video titles, URLs, notes, OAuth tokens, Drive tokens, and Drive file names out of logs.
 
+## Current Working Tree Audit - 2026-06-03
+
+Snapshot source: `git diff --name-only` after the debug and release large Drive cancellation cleanup UI smoke.
+
+ADR: not required. The current diff stays inside the existing YouTube-first, local-first, user-selected Drive import path. It does not add broad Drive search, server upload, AI calls, payments, ads, analytics, cross-device sync, or expansion beyond YouTube records.
+
+Current changed files:
+
+- `android/app/src/main/java/com/lucita81/youtubedailymindmap/NativeDriveFilePlugin.java`
+- `docs/checklists/pre-release-change-summary.md`
+- `src/components/import/ImportLoadingOverlay.tsx`
+- `src/components/import/WatchHistoryImportPanel.tsx`
+- `src/lib/native/nativeDriveFile.ts`
+- `src/tests/importLoadingOverlay.test.ts`
+- `src/tests/nativeDriveFile.test.ts`
+- `src/tests/nativeDriveFilePluginSource.test.ts`
+- `src/tests/preReleaseChecklist.test.ts`
+- `src/tests/watchHistoryImportPanelError.test.ts`
+
+Recommended commit grouping:
+
+### Current Group A - Android Drive Import Cancellation And Storage Guardrails
+
+Purpose: keep native and UI behavior for large Drive import cancellation, insufficient cache-space handling, screen-awake import safety, and stale-timeout avoidance reviewable as one behavior change.
+
+Stage together:
+
+- `android/app/src/main/java/com/lucita81/youtubedailymindmap/NativeDriveFilePlugin.java`
+- `src/components/import/ImportLoadingOverlay.tsx`
+- `src/components/import/WatchHistoryImportPanel.tsx`
+- `src/lib/native/nativeDriveFile.ts`
+- `src/tests/importLoadingOverlay.test.ts`
+- `src/tests/nativeDriveFile.test.ts`
+- `src/tests/nativeDriveFilePluginSource.test.ts`
+- `src/tests/watchHistoryImportPanelError.test.ts`
+
+Verification evidence:
+
+- `npm run test -- src/tests/importLoadingOverlay.test.ts src/tests/nativeDriveFile.test.ts src/tests/nativeDriveFilePluginSource.test.ts src/tests/watchHistoryImportPanelError.test.ts`
+- `npm run android:debug`
+- `npm run android:sync`
+- `android/gradlew assembleRelease`
+- Real-device debug and locally smoke-signed release cancellation cleanup UI smoke on Samsung SM-F966N.
+- Release logcat privacy smoke: native and share tags produced no output, and sensitive-pattern counts were 0.
+
+Staging boundary:
+
+- Do not add broad Drive search.
+- Do not upload raw Takeout files or watch-history-derived records to a server.
+- Do not add AI calls, payments, ads, analytics, cross-device sync, or non-YouTube data sources.
+- Do not commit raw Takeout filenames, email addresses, video titles, URLs, raw logs, screenshots, APKs, or signing output.
+
+### Current Group B - Release Smoke Evidence And Harness Assertions
+
+Purpose: keep the sanitized debug and release large Drive smoke evidence, release-risk notes, and checklist assertions reviewable as harness evidence.
+
+Stage together:
+
+- `docs/checklists/pre-release-change-summary.md`
+- `src/tests/preReleaseChecklist.test.ts`
+
+Verification evidence:
+
+- `npm run test -- src/tests/preReleaseChecklist.test.ts`
+- `npm run verify`
+
+Staging boundary:
+
+- Keep only sanitized evidence, counts, phases, and risk notes.
+- Do not commit concrete Drive filenames, email addresses, video titles, URLs, raw logs, screenshots, APKs, or signing output.
+
+Recommended commit order:
+
+1. Current Group A.
+2. Current Group B.
+
+If the user wants one commit only, `fix: harden native Drive import cancellation` is acceptable with Group B included as evidence. Two commits remain more reviewable.
+
+Do not commit:
+
+- `tsconfig.tsbuildinfo`
+- `.next/`
+- `out/`
+- `android/app/build/`
+- Local screenshots, videos, APKs, signing output, or smoke-only artifacts
+- Raw Takeout ZIPs or extracted Takeout folders
+
 ## Commit Groups
 
 ### Group 1 - Agent Harness, Docs, And CI

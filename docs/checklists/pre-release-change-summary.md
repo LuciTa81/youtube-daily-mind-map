@@ -694,12 +694,132 @@ Remaining emulator-specific risks:
 - Emulator shutdown required leftover Windows process cleanup after ADB detached, so emulator shutdown stability should continue to be watched.
 - A real standard non-foldable Android phone still needs smoke before broad sharing.
 
+## Android Real-device Large Drive Takeout Smoke Result - 2026-06-03 (working tree)
+
+Device: Samsung SM-F966N foldable, Android 16, API 36.
+APK: local debug APK from `android/app/build/outputs/apk/debug/app-debug.apk`, installed with `adb install -r`.
+Build commit: current working tree on `main`; includes native import cancellation, keep-screen-on, and cache-space precheck changes that were not committed during this smoke.
+
+- [x] `npm run verify` passed before this smoke in the same working tree.
+- [x] `npm run android:debug` passed before this smoke in the same working tree.
+- [x] Device `/data` had about 158GB available, so the cache-space precheck had enough room for the approved large Drive archive.
+- [x] App launched on the real device and `.MainActivity` became the focused activity.
+- [x] Android DocumentsUI opened directly to Drive > My Drive > Takeout.
+- [x] The user-approved large Drive Takeout ZIP, shown as about 1.78GB in the picker and about 1.66GB in app progress metadata, was selectable from Drive.
+- [x] After picker return, the app immediately showed the large-import loading UI instead of a blank or black screen.
+- [x] The UI showed the Drive-provider opening phase at 8% with elapsed time and a visible `가져오기 취소` button.
+- [x] The opening phase lasted for several minutes, then progressed into record checking without app freeze or screen-off.
+- [x] The progress UI reached the final record-checking phase and showed increasing checked-record counts up to the high tens of thousands.
+- [x] The import completed and showed the completion screen with a check mark and `홈화면으로 돌아가기`.
+- [x] Returning home kept the app usable and surfaced a visible import result card.
+- [x] The large import reported about 40,100 parsed records, 0 newly added records, and about 40,100 duplicates skipped, preserving the existing saved record count around 40,103.
+- [x] Filtered native logcat for `NativeDriveFile` produced 9 debug lines and contained no detected URL, YouTube URL, Gmail address, watch-history path, or concrete Takeout filename pattern.
+
+Remaining large-import smoke risks:
+
+- Cancellation was visible throughout the run, but this pass did not press cancel because the large import reached completion.
+- The cache-space precheck success path was exercised with ample storage; an insufficient-storage real-device case still needs a forced or simulated low-space test.
+- This was a debug APK on a Samsung foldable, not a release or Play Store-signed APK.
+- A standard non-foldable Android phone still needs the same large-import smoke before broad sharing.
+
+## Android Real-device Large Drive Takeout Cancellation Smoke Result - 2026-06-03 (working tree)
+
+Device: Samsung SM-F966N foldable, Android 16, API 36.
+APK: local debug APK from `android/app/build/outputs/apk/debug/app-debug.apk`, previously installed with `adb install -r`.
+Build commit: current working tree on `main`; includes native import cancellation, keep-screen-on, and cache-space precheck changes that were not committed during this smoke.
+
+- [x] The same working-tree debug APK used for the preceding large-import completion smoke was reused.
+- [x] App launched on the real device and `.MainActivity` became the focused activity.
+- [x] Android DocumentsUI opened directly to Drive > My Drive > Takeout.
+- [x] The user-approved large Drive Takeout ZIP, shown as about 1.78GB in the picker and about 1.66GB in app progress metadata, was selectable from Drive.
+- [x] After picker return, the app immediately showed the large-import loading UI instead of a blank or black screen.
+- [x] The loading UI showed the Drive-provider opening phase at 8%, elapsed time, file-size metadata, explanatory copy, and a visible cancel button.
+- [x] The cancel button was tapped during the large Drive-provider opening/import state.
+- [x] The UI immediately surfaced `가져오기를 취소했습니다.` while the Drive-provider handoff continued briefly.
+- [x] The app stayed responsive and did not black-screen while the provider handoff finished.
+- [x] After the provider handoff finished, the app returned to the import/settings screen with a visible `마지막 Drive 가져오기 결과` card showing `가져오기를 취소했습니다.`
+- [x] Saved records stayed at about 40,103, confirming the cancelled large import did not add records.
+- [x] Filtered native logcat for `NativeDriveFile` produced 6 debug lines and contained no detected URL, YouTube URL, Gmail address, watch-history path, or concrete Takeout filename pattern.
+
+Remaining large-import cancellation smoke risks:
+
+- This smoke cancelled during the Drive-provider opening/import handoff; cancellation during later parsing, merging, or final record-checking phases still needs separate coverage.
+- The cancelled Drive-provider handoff still took roughly a minute to unwind on this large Drive file, so cancellation is visible but not instant at the native-provider boundary.
+- This was a debug APK on a Samsung foldable, not a release or Play Store-signed APK.
+- A standard non-foldable Android phone still needs the same large-import cancellation smoke before broad sharing.
+
+## Android Debug Large Drive Cancellation Cleanup UI Smoke Result - 2026-06-03 (working tree)
+
+Device: Samsung SM-F966N foldable, Android 16, API 36.
+APK: local debug APK from `android/app/build/outputs/apk/debug/app-debug.apk`, rebuilt with `npm run android:debug` and installed with `adb install -r`.
+Build commit: `fcfee6c49f8774c67ec44bbc316decdae60b06d6`; working tree includes native import cancellation, keep-screen-on, cache-space precheck, and the cancellation cleanup UI changes.
+
+- [x] `npm run android:debug` passed, including Next production build, Capacitor Android sync, and `assembleDebug`.
+- [x] Debug APK installed on the real device with `adb install -r`.
+- [x] App launched on the real device and `.MainActivity` became the focused activity.
+- [x] Android DocumentsUI opened directly to Drive > My Drive > Takeout.
+- [x] The user-approved large Drive Takeout ZIP, shown as about 1.78GB in the picker and about 1.66GB in app progress metadata, was selectable from Drive.
+- [x] After picker return, the app showed the large-import loading UI at the Drive-provider opening phase instead of a blank or black screen.
+- [x] The cancel button was tapped during the large Drive-provider opening/import state.
+- [x] The updated cleanup UI appeared with `가져오기를 취소하는 중입니다.`, `Drive가 파일 넘기기를 정리하면 결과 화면으로 돌아갑니다.`, `취소 요청됨 · 정리 중입니다.`, and `취소 정리 상태`.
+- [x] The cleanup UI also showed `대용량 Drive 파일은 취소 후에도 정리에 시간이 필요할 수 있습니다. 앱을 닫지 않으면 정리 후 자동으로 가져오기 화면으로 돌아갑니다.`
+- [x] After cancellation, the repeated cancel button was no longer shown.
+- [x] The app stayed responsive and did not black-screen while the Drive-provider handoff continued for about three minutes.
+- [x] The cleanup progress remained visible during the wait, including `Drive 정리 중` detail text and increasing elapsed time.
+- [x] After the provider handoff finished, the app returned to the import/settings screen with a visible `마지막 Drive 가져오기 결과` card showing `가져오기를 취소했습니다.`
+- [x] Saved records stayed at about 40,103, confirming the cancelled large import did not add records.
+- [x] Filtered native/share logcat for `NativeDriveFile`, `NativeShareIntent`, `NativeShareIntentPlugin`, and `ShareIntent` produced 6 lines and contained no detected URL, YouTube URL, Gmail address, watch-history path, or concrete Takeout filename pattern.
+
+Remaining debug cleanup UI smoke risks:
+
+- This smoke confirmed the cleanup UI during the Drive-provider opening/import handoff; cancellation during later parsing, merging, or final record-checking phases still needs separate coverage.
+- The Drive-provider handoff still took about three minutes to unwind on this large Drive file, so the UI is clearer but cancellation is not instant at the provider boundary.
+- This was a debug APK on a Samsung foldable, not a release or Play Store-signed APK.
+- A standard non-foldable Android phone still needs the same cancellation cleanup UI smoke before broad sharing.
+
+## Android Release Large Drive Takeout Cancellation Smoke Result - 2026-06-03 (working tree)
+
+Device: Samsung SM-F966N foldable, Android 16, API 36.
+APK: local release APK from `android/app/build/outputs/apk/release/app-release-smoke-signed.apk`, zipaligned and signed locally for smoke with the Android debug keystore.
+Build commit: current working tree on `main`; includes native import cancellation, keep-screen-on, and cache-space precheck changes that were not committed during this smoke.
+
+- [x] Latest web bundle was synced into Android with `npm run android:sync`.
+- [x] `android/gradlew assembleRelease` completed.
+- [x] The release APK was zipaligned and signed locally for smoke.
+- [x] `apksigner verify --verbose` passed with APK Signature Scheme v2/v3.
+- [x] `aapt dump badging` found package `com.lucita81.youtubedailymindmap`, label `YouTube Daily Mind Map`, `sdkVersion:'24'`, and `targetSdkVersion:'36'`, with no debuggable marker.
+- [x] Signed release APK installed over the previous local build with `adb install -r`.
+- [x] Installed package reported `versionCode=1`, `versionName=1.0`, `minSdk=24`, and `targetSdk=36`, with no `DEBUGGABLE` flag.
+- [x] App launched on the real device and `.MainActivity` became the focused activity.
+- [x] Existing local records loaded, with saved records staying at about 40,103 before the smoke.
+- [x] Android DocumentsUI opened directly to Drive > My Drive > Takeout.
+- [x] The user-approved large Drive Takeout ZIP, shown as about 1.78GB in the picker and about 1.66GB in app progress metadata, was selectable from Drive.
+- [x] After picker return, the release app immediately showed the large-import loading UI at the Drive-provider opening phase instead of a blank or black screen.
+- [x] The loading UI showed the Drive-provider opening phase at 8%, elapsed time, file-size metadata, explanatory copy, and a visible cancel button.
+- [x] The cancel button was tapped during the large Drive-provider opening/import state.
+- [x] The release cleanup UI appeared with `가져오기를 취소하는 중입니다.`, `Drive가 파일 넘기기를 정리하면 결과 화면으로 돌아갑니다.`, `취소 요청됨 · 정리 중입니다.`, and `취소 정리 상태`.
+- [x] The release cleanup UI also showed `대용량 Drive 파일은 취소 후에도 정리에 시간이 필요할 수 있습니다. 앱을 닫지 않으면 정리 후 자동으로 가져오기 화면으로 돌아갑니다.`
+- [x] After cancellation, the repeated cancel button was no longer shown in the release APK.
+- [x] The release app stayed responsive and did not black-screen while the provider handoff continued for about two minutes.
+- [x] The release cleanup progress remained visible during the wait, including `Drive 정리 중` detail text and increasing elapsed time.
+- [x] After the provider handoff finished, the release app returned to the import/settings screen with a visible `마지막 Drive 가져오기 결과` card showing `가져오기를 취소했습니다.`
+- [x] Saved records stayed at about 40,103, confirming the cancelled release large import did not add records.
+- [x] Filtered release logcat for `NativeDriveFile`, `NativeShareIntent`, `NativeShareIntentPlugin`, and `ShareIntent` produced no output.
+- [x] The filtered release logcat contained no detected URL, YouTube URL, Gmail address, watch-history path, or concrete Takeout filename pattern.
+
+Remaining release large-import cancellation smoke risks:
+
+- This smoke confirmed the release cleanup UI during the Drive-provider opening/import handoff; cancellation during later parsing, merging, or final record-checking phases still needs separate release coverage.
+- The cancelled Drive-provider handoff still took about two minutes to unwind on this large Drive file, so the UI is clearer but cancellation is not instant at the native-provider boundary.
+- This was a locally smoke-signed release APK, not a Play Store-signed release or Play Store candidate.
+- A standard non-foldable Android phone still needs the same release large-import cancellation smoke before broad sharing.
+
 ## Current Remaining Risks
 
 - Drive file selection may behave differently across Android vendors and file providers; direct `file://` and MediaStore `content://` upload attempts did not produce a selectable Drive file, while the Google Drive app's own upload flow did.
-- Android Drive duplicate re-import passed with the small synthetic watch-history fixture, but large real duplicate archives still need performance/storage verification.
-- The 1.62 GiB real Takeout structure scan found a localized Korean watch-history candidate, but Android full Drive copy/parsing/loading UI remains unverified because that real ZIP was not user-selected from Drive in the smoke run.
-- Release APK native import logcat silence, invalid ZIP rejection visibility, valid fixture completion, duplicate-summary visibility, and YouTube share behavior passed on the Samsung SM-F966N; standard phone and additional vendor/device coverage still need review before public release.
+- Android Drive duplicate re-import passed with the small synthetic watch-history fixture, a user-approved large Drive archive completed as a duplicate-heavy import on the Samsung foldable, and the same large Drive archive produced visible debug and release cancellation cleanup UI results without adding records; large-import coverage still needs a standard non-foldable device.
+- The 1.62 GiB local real Takeout structure scan found a localized Korean watch-history candidate; the later user-approved large Drive archive exercised Android full Drive copy, parsing, loading UI, and completion on the Samsung foldable.
+- Release APK native import logcat silence, invalid ZIP rejection visibility, valid fixture completion, duplicate-summary visibility, YouTube share behavior, debug/release cancellation cleanup UI, and large Drive cancellation visibility passed on the Samsung SM-F966N; standard phone and additional vendor/device coverage still need review before public release.
 - GitHub Actions debug APK artifact verification passed for commits `68c8ef3`, `20b6b3c`, and `9447fe7`.
 - GitHub Actions debug APK clean-installed and launched on an Android 16 emulator for commits `440856a`, `cbe4b9a`, `a2e2d01`, `0d327d1`, `b2b5bf8`, `7ec33e2`, `1768952`, `205656e`, `8a086cb`, `bf8880a`, `68c8ef3`, `20b6b3c`, and `9447fe7`, but Drive import, YouTube share, duplicate import, deletion, and layout flows were not repeated there.
 - Debug and locally smoke-signed release APK WebView thumbnail smoke passed on the Samsung SM-F966N with no synthetic sample thumbnail requests or 404 logs, but Play Store-signed release and real standard phone coverage still need repeat passes before broad sharing.
