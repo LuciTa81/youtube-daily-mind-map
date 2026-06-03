@@ -560,16 +560,16 @@ export function AppShell() {
   const dateRange = useMemo(
     () =>
       selectedDateKey
-        ? getDateRangeForSelection(selectedDateKey, dateSettings, rangeMode)
+        ? getDateRangeForSelection(selectedDateKey, dateSettings, rangeMode, quickDateAnchor)
         : undefined,
-    [dateSettings, rangeMode, selectedDateKey]
+    [dateSettings, quickDateAnchor, rangeMode, selectedDateKey]
   );
   const weeklyDateRange = useMemo(
     () =>
       selectedDateKey
-        ? getDateRangeForSelection(selectedDateKey, dateSettings, "week")
+        ? getDateRangeForSelection(selectedDateKey, dateSettings, "week", quickDateAnchor)
         : undefined,
-    [dateSettings, selectedDateKey]
+    [dateSettings, quickDateAnchor, selectedDateKey]
   );
 
   const rawDateItems = useMemo(

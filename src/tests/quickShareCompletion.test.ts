@@ -59,6 +59,19 @@ describe("quick share completion", () => {
     expect(appShell).toContain("completeNativeQuickShare(getQuickShareCompletionMessage(result.added))");
   });
 
+  it("keeps quick-share home summaries aligned with the latest saved date range", () => {
+    const appShell = readSource(appShellPath);
+
+    expect(appShell).toContain(
+      "getDateRangeForSelection(selectedDateKey, dateSettings, rangeMode, quickDateAnchor)"
+    );
+    expect(appShell).toContain("[dateSettings, quickDateAnchor, rangeMode, selectedDateKey]");
+    expect(appShell).toContain(
+      'getDateRangeForSelection(selectedDateKey, dateSettings, "week", quickDateAnchor)'
+    );
+    expect(appShell).toContain("[dateSettings, quickDateAnchor, selectedDateKey]");
+  });
+
   it("wraps native quick-share completion behind the typed native bridge", () => {
     const wrapper = readSource(nativeShareWrapperPath);
     const plugin = readSource(nativeSharePluginPath);
