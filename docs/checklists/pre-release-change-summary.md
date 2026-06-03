@@ -814,10 +814,35 @@ Remaining release large-import cancellation smoke risks:
 - This was a locally smoke-signed release APK, not a Play Store-signed release or Play Store candidate.
 - A standard non-foldable Android phone still needs the same release large-import cancellation smoke before broad sharing.
 
+## Android CI Smoke Debug Update-install Smoke Result - 2026-06-03 (dce23a2)
+
+Device: Samsung SM-F966N foldable, Android 16.
+APK: local smoke debug baseline APK from `android/app/build/outputs/apk/debug/app-debug.apk`, then GitHub Actions artifact `youtube-daily-mind-map-debug-apk` from `Build Android APK` run `26864022077`, extracted to `dist-apk/ci-smoke-dce23a2/app-debug.apk`.
+Build commit: `dce23a2 fix: add smoke debug signing lane`.
+
+- [x] `npm run verify` passed before recording this smoke result.
+- [x] `Quality Gates` completed successfully for commit `dce23a2`.
+- [x] `Build Android APK` completed successfully for commit `dce23a2`.
+- [x] GitHub Actions restored the smoke debug keystore from secrets and removed `android/app/smoke-debug.keystore` after the workflow.
+- [x] The local smoke debug APK and CI debug APK were both verified with `apksigner`.
+- [x] The local smoke debug APK, CI debug APK, and local smoke debug keystore had matching signing certificate fingerprints.
+- [x] The previously installed app was explicitly removed to establish a smoke-signed baseline. This destructive setup step may remove existing local app data.
+- [x] The local smoke debug APK installed successfully as the baseline with `adb install`.
+- [x] The CI debug APK installed over the baseline with `adb install -r`.
+- [x] The app launched after the CI update install via the Android launcher intent.
+- [x] No raw Takeout file, watch-history title, URL, note, token, Drive file name, or logcat payload was recorded in this evidence entry.
+
+Remaining update-install smoke risks:
+
+- The smoke confirmed update-install compatibility after establishing a smoke-signed baseline, but it did not seed a real record before update and re-check local record preservation after update.
+- This was a GitHub Actions debug artifact on one Samsung foldable device, not a Play Store-signed release or Play Store candidate.
+- Standard non-foldable Android phone coverage is still pending before broad sharing.
+
 ## Current Remaining Risks
 
 - Drive file selection may behave differently across Android vendors and file providers; direct `file://` and MediaStore `content://` upload attempts did not produce a selectable Drive file, while the Google Drive app's own upload flow did.
 - Android Drive duplicate re-import passed with the small synthetic watch-history fixture, a user-approved large Drive archive completed as a duplicate-heavy import on the Samsung foldable, and the same large Drive archive produced visible debug and release cancellation cleanup UI results without adding records; large-import coverage still needs a standard non-foldable device.
+- CI debug APK update-install passed after a smoke-signed baseline install on the Samsung foldable; update-install coverage still needs a standard non-foldable device.
 - The 1.62 GiB local real Takeout structure scan found a localized Korean watch-history candidate; the later user-approved large Drive archive exercised Android full Drive copy, parsing, loading UI, and completion on the Samsung foldable.
 - Release APK native import logcat silence, invalid ZIP rejection visibility, valid fixture completion, duplicate-summary visibility, YouTube share behavior, debug/release cancellation cleanup UI, and large Drive cancellation visibility passed on the Samsung SM-F966N; standard phone and additional vendor/device coverage still need review before public release.
 - GitHub Actions debug APK artifact verification passed for commits `68c8ef3`, `20b6b3c`, and `9447fe7`.
