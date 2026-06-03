@@ -1,5 +1,29 @@
 apply plugin: 'com.android.application'
 
+def presentEnv = { value ->
+    return value != null && value.trim().length() > 0
+}
+
+def smokeDebugKeystorePath = System.getenv("SMOKE_DEBUG_KEYSTORE_FILE")
+def smokeDebugKeystorePassword = System.getenv("SMOKE_DEBUG_KEYSTORE_PASSWORD")
+def smokeDebugKeyAlias = System.getenv("SMOKE_DEBUG_KEY_ALIAS")
+def smokeDebugKeyPassword = System.getenv("SMOKE_DEBUG_KEY_PASSWORD")
+def smokeDebugKeystoreFile = presentEnv(smokeDebugKeystorePath) ? file(smokeDebugKeystorePath) : null
+def hasSmokeDebugKeystoreFile = smokeDebugKeystoreFile != null && smokeDebugKeystoreFile.exists()
+def hasAnySmokeDebugCredential = [
+    smokeDebugKeystorePassword,
+    smokeDebugKeyAlias,
+    smokeDebugKeyPassword
+].any { presentEnv(it) }
+def hasSmokeDebugSigning = hasSmokeDebugKeystoreFile &&
+    presentEnv(smokeDebugKeystorePassword) &&
+    presentEnv(smokeDebugKeyAlias) &&
+    presentEnv(smokeDebugKeyPassword)
+
+if ((hasSmokeDebugKeystoreFile || hasAnySmokeDebugCredential) && !hasSmokeDebugSigning) {
+    throw new GradleException("Smoke debug signing is partially configured. Set SMOKE_DEBUG_KEYSTORE_FILE, SMOKE_DEBUG_KEYSTORE_PASSWORD, SMOKE_DEBUG_KEY_ALIAS, and SMOKE_DEBUG_KEY_PASSWORD together, and keep the keystore outside the repository.")
+}
+
 android {
     namespace = "com.lucita81.youtubedailymindmap"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -16,7 +40,22 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        smokeDebug {
+            if (hasSmokeDebugSigning) {
+                storeFile smokeDebugKeystoreFile
+                storePassword smokeDebugKeystorePassword
+                keyAlias smokeDebugKeyAlias
+                keyPassword smokeDebugKeyPassword
+            }
+        }
+    }
     buildTypes {
+        debug {
+            if (hasSmokeDebugSigning) {
+                signingConfig signingConfigs.smokeDebug
+            }
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'

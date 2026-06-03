@@ -28,6 +28,18 @@ Use this before sharing an APK, publishing a Play Store build, or pushing produc
 - [ ] `android/gradlew assembleDebug`, if Android release or native code changed
 - [ ] `android/gradlew assembleRelease`, before sharing an APK or Play Store candidate
 
+## Android Signing And Update Install
+
+- [ ] The APK signing lane is known: CI debug artifact, local smoke debug artifact, locally smoke-signed release APK, or Play Store candidate.
+- [ ] CI debug artifacts are treated as clean-install artifacts unless they are signed with the same dedicated smoke debug certificate as the local smoke build.
+- [ ] Smoke debug signing material is stored outside the repository and, for CI, in GitHub Actions secrets. Do not commit keystores, passwords, signing output, APKs, or `.jks`/`.keystore` files.
+- [ ] When using the smoke debug signing lane locally, `SMOKE_DEBUG_KEYSTORE_FILE`, `SMOKE_DEBUG_KEYSTORE_PASSWORD`, `SMOKE_DEBUG_KEY_ALIAS`, and `SMOKE_DEBUG_KEY_PASSWORD` are set.
+- [ ] When using the smoke debug signing lane in CI, GitHub Actions secrets include `SMOKE_DEBUG_KEYSTORE_BASE64`, `SMOKE_DEBUG_KEYSTORE_PASSWORD`, `SMOKE_DEBUG_KEY_ALIAS`, and `SMOKE_DEBUG_KEY_PASSWORD`; the workflow removes `android/app/smoke-debug.keystore` after the build.
+- [ ] If the smoke debug signing secrets are not configured, GitHub Actions debug artifacts are clean-install only.
+- [ ] Play Store candidates use the release or upload signing path, not the smoke debug signing certificate.
+- [ ] If update behavior matters, `adb install -r` succeeds over an existing install signed by the same smoke or release certificate.
+- [ ] If `INSTALL_FAILED_UPDATE_INCOMPATIBLE` occurs, record it as a signing mismatch and do not uninstall or clear local data without explicit user approval.
+
 ## Manual Smoke
 
 - [ ] App launches on a real Android device.

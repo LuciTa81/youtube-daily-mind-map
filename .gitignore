@@ -5,6 +5,8 @@ coverage
 .env*
 !.env.example
 *.log
+*.jks
+*.keystore
 mindmap-screenshot.png
 fold-layout-screenshot.png
 android/.gradle
