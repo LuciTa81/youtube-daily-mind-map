@@ -44,4 +44,15 @@ describe("GitHub Actions runtime policy", () => {
     expect(workflow).not.toContain("FORCE_JAVASCRIPT_ACTIONS_TO_NODE24");
     expect(workflow).not.toContain("ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION");
   });
+
+  it("runs the phone-less import surface smoke after the static web build", () => {
+    const workflow = readWorkflow("quality.yml");
+
+    expect(workflow).toContain('- "scripts/**"');
+    expect(workflow).toContain("npm run build");
+    expect(workflow).toContain("npx playwright install --with-deps chromium");
+    expect(workflow).toContain("node scripts/serve-static-out.mjs &");
+    expect(workflow).toContain("curl -fsS http://127.0.0.1:3001");
+    expect(workflow).toContain("npm run smoke:import-surface");
+  });
 });

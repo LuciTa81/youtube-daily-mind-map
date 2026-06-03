@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 const packageJsonPath = join(process.cwd(), "package.json");
 const gitignorePath = join(process.cwd(), ".gitignore");
 const smokeScriptPath = join(process.cwd(), "scripts", "smoke-import-surface.mjs");
+const staticServerScriptPath = join(process.cwd(), "scripts", "serve-static-out.mjs");
 const productReviewPath = join(process.cwd(), "docs", "checklists", "product-ux-review.md");
 
 function read(path: string): string {
@@ -46,5 +47,17 @@ describe("import surface smoke script", () => {
     expect(gitignore).toContain("test-results");
     expect(review).toContain("npm run smoke:import-surface");
     expect(review).toContain("`.codex/import-surface-smoke/`");
+  });
+
+  it("serves only static export files for CI smoke evidence", () => {
+    const source = read(staticServerScriptPath);
+
+    expect(source).toContain('const DEFAULT_ROOT = "out"');
+    expect(source).toContain("resolveSafePath");
+    expect(source).toContain("!requestedPath.startsWith");
+    expect(source).toContain('join(rootDir, "index.html")');
+    expect(source).not.toContain("watch-history");
+    expect(source).not.toContain("OAuth");
+    expect(source).not.toContain("accessToken");
   });
 });
