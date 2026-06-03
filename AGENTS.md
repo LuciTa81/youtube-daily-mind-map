@@ -39,6 +39,15 @@ This repository is a product candidate, not a scratch prototype. Agents must pre
 - New import paths must follow the importer contract described in `docs/architecture.md`.
 - New AI behavior must go through an insight-provider abstraction. Do not call an AI API directly from UI components.
 
+## Design Rules
+
+- UI and CSS changes must follow `docs/checklists/design-qa.md`.
+- Prefer screen evidence before visual changes: mobile screenshot, browser inspection, DOM text, Android screenshot, or an explicit limitation in the final summary.
+- If screen evidence is unavailable, do not make speculative visual-only UI/CSS edits based only on source-code guesswork. Stop and report the limitation.
+- Check mobile viewports between 360px and 430px wide when changing layout, spacing, typography, or touch targets.
+- Keep touch targets at least 44px where practical, preserve Korean copy wrapping, and avoid hiding primary actions behind dense cards.
+- Do not add one-off colors, radii, shadows, or spacing when a shared UI pattern or token can carry the change.
+
 ## Testing Rules
 
 Before finishing a feature, run the smallest meaningful verification:
