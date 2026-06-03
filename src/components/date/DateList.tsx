@@ -56,7 +56,7 @@ export function DateList({
         <div className="grid grid-cols-2 gap-1 rounded-lg border border-slate-200 bg-slate-100 p-1">
           <button
             type="button"
-            className={`rounded-md px-3 py-2 text-xs font-semibold transition ${
+            className={`touch-chip rounded-md px-3 py-2 text-xs font-semibold transition ${
               rangeMode === "day"
                 ? "bg-white text-slate-900 shadow-sm"
                 : "text-slate-500 hover:text-slate-800"
@@ -67,7 +67,7 @@ export function DateList({
           </button>
           <button
             type="button"
-            className={`rounded-md px-3 py-2 text-xs font-semibold transition ${
+            className={`touch-chip rounded-md px-3 py-2 text-xs font-semibold transition ${
               rangeMode === "week"
                 ? "bg-white text-slate-900 shadow-sm"
                 : "text-slate-500 hover:text-slate-800"

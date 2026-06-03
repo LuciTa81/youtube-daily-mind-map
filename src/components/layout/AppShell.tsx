@@ -1118,7 +1118,7 @@ export function AppShell() {
             </div>
             <button
               type="button"
-              className="shrink-0 rounded-full bg-white/15 px-3 py-2 text-xs font-bold text-white backdrop-blur transition hover:bg-white/25"
+              className="touch-chip shrink-0 rounded-full bg-white/15 px-3 py-2 text-xs font-bold text-white backdrop-blur transition hover:bg-white/25"
               onClick={() => handleCanvasModeChange("settings")}
             >
               설정

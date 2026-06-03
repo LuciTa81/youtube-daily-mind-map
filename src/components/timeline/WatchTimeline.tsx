@@ -226,7 +226,7 @@ export function WatchTimeline({
                     <div className="absolute h-10 w-px bg-slate-300" />
                     <button
                       type="button"
-                      className={`relative z-10 flex h-10 w-10 items-center justify-center rounded-full border text-xs font-bold shadow-sm transition ${
+                      className={`touch-number relative z-10 flex h-11 w-11 items-center justify-center rounded-full border text-xs font-bold shadow-sm transition ${
                         selected
                           ? "border-slate-900 bg-slate-900 text-white"
                           : "border-slate-300 bg-white text-slate-700 hover:border-slate-500"
@@ -278,15 +278,15 @@ export function WatchTimeline({
                   </div>
                 </div>
               </div>
-              <div className="relative space-y-4 pl-7">
-                <div className="absolute bottom-0 left-[13px] top-0 w-px bg-slate-300" />
+              <div className="relative space-y-4 pl-12">
+                <div className="absolute bottom-0 left-[21px] top-0 w-px bg-slate-300" />
                 {group.items.map((item) => {
                   const globalIndex = itemOrderMap.get(item.id) ?? 0;
                   return (
                     <div key={item.id} className="relative">
                       <button
                         type="button"
-                        className={`absolute -left-7 top-4 z-10 flex h-7 w-7 items-center justify-center rounded-full border text-[11px] font-bold ${
+                        className={`touch-number absolute -left-12 top-3 z-10 flex h-11 w-11 items-center justify-center rounded-full border text-[11px] font-bold ${
                           item.id === selectedItemId
                             ? "border-slate-900 bg-slate-900 text-white"
                             : "border-slate-300 bg-white text-slate-700"

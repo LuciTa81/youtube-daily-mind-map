@@ -291,7 +291,7 @@ export function WatchHistoryImportPanel({
         {savedItemCount > 0 ? (
           <button
             type="button"
-            className="w-full rounded-md border border-rose-200 bg-white px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
+            className="touch-chip w-full rounded-md border border-rose-200 bg-white px-3 py-2 text-xs font-semibold text-rose-700 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50"
             disabled={!isStorageReady}
             onClick={() => {
               void onClearSaved();
@@ -346,7 +346,7 @@ export function WatchHistoryImportPanel({
           href={GOOGLE_TAKEOUT_YOUTUBE_DRIVE_URL}
           target="_blank"
           rel="noreferrer"
-          className="flex w-full items-center justify-center rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+          className="touch-chip flex w-full items-center justify-center rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
         >
           Drive로 Takeout 만들기
         </a>
@@ -406,14 +406,14 @@ export function WatchHistoryImportPanel({
         <div className="grid grid-cols-2 gap-2">
           <button
             type="button"
-            className="rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+            className="touch-chip rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
             onClick={onUseSample}
           >
             샘플 보기
           </button>
           <button
             type="button"
-            className="rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+            className="touch-chip rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
             disabled={savedItemCount === 0 || !isUsingSample}
             onClick={onUseSaved}
           >

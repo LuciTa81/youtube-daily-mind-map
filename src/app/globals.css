@@ -44,3 +44,34 @@ select {
 .app-bottom-nav {
   padding-bottom: calc(0.5rem + env(safe-area-inset-bottom, 0px) + var(--native-safe-area-bottom, 0px));
 }
+
+@layer components {
+  .touch-target {
+    min-height: 2.75rem;
+    min-width: 2.75rem;
+  }
+
+  .touch-chip {
+    display: inline-flex;
+    min-height: 2.75rem;
+    min-width: 2.75rem;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .touch-link {
+    display: inline-flex;
+    min-height: 2.75rem;
+    min-width: 2.75rem;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .touch-number {
+    display: inline-flex;
+    min-height: 2.75rem;
+    min-width: 2.75rem;
+    align-items: center;
+    justify-content: center;
+  }
+}
