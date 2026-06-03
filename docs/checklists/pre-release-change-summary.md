@@ -130,14 +130,14 @@ This matrix maps the existing smoke results to `docs/checklists/android-smoke-te
 | --- | --- | --- | --- |
 | Preconditions | Pass | Debug build, release build, APK install, real device, emulator clean install, non-private fixtures, and exact build commits were recorded in the 2026-06-02 and 2026-06-03 smoke sections. | Repeat for the final signed release or Play Store candidate. |
 | Privacy guardrails | Pass | Release APK was not debuggable, and filtered native import/share logcat produced no output during invalid ZIP, valid ZIP, duplicate import, and YouTube share smoke. | Repeat for the final signed release or Play Store candidate. |
-| Device matrix | Partial | Samsung SM-F966N foldable device covered foldable and Drive-provider behavior; GitHub Actions debug APK clean-installed and launched on an Android 16 x86_64 emulator. | Real standard non-foldable Android phone still needs smoke before broad sharing. |
+| Device matrix | Partial | Samsung SM-F966N foldable device covered foldable and Drive-provider behavior; GitHub Actions debug APK clean-installed and launched on an Android 16 x86_64 emulator; a standard 1080x1920 Android emulator covered home/settings/timeline layout and touch targets. | Real standard non-foldable Android phone still needs smoke before broad sharing. |
 | Invalid or missing watch-history ZIP | Pass | Known 56.83 kB Drive ZIP returned a visible error in debug and refreshed release smoke, with saved records unchanged. | Keep this case in every release smoke because it previously regressed. |
 | Valid small fixture ZIP | Pass | Drive-hosted `takeout-codex-normal-20260602.zip` completed and reported import counts in debug and release smoke. | None for small fixtures. |
 | Duplicate fixture re-import | Pass | Re-import reported duplicate counts and no additional records for the same fixture. | Large real duplicate archive still needs performance/storage verification. |
 | Large archive smoke | Partial | 1.62 GiB user Takeout archive structure scan found a localized Korean watch-history candidate without reading contents. | Full Android Drive copy/parsing/loading UI was not executed because the real archive was not user-selected from Drive in that smoke run. |
 | YouTube share intent | Pass | Debug and release smoke saved the public `Me at the zoo` video through the YouTube app share flow. | Android resolver discoverability should be checked on more devices. |
 | Local data and deletion | Pass | Clear-data flow passed after seeding one shared test record; records returned to sample data. | Storage migration tests are still separate future work. |
-| Layout smoke | Partial | Foldable home/settings/timeline/report surfaces rendered and settings destructive action had room above bottom nav. | Standard phone layout and long Korean copy pass still need review. |
+| Layout smoke | Partial | Foldable home/settings/timeline/report surfaces rendered and settings destructive action had room above bottom nav; standard 1080x1920 emulator home/settings/timeline smoke showed no visible clickable target below 44px. | Real standard phone and long Korean copy still need review before broad sharing. |
 
 ## Android WebView Thumbnail Smoke Result - 2026-06-03
 
@@ -838,6 +838,28 @@ Remaining update-install smoke risks:
 - This was a GitHub Actions debug artifact on one Samsung foldable device, not a Play Store-signed release or Play Store candidate.
 - Standard non-foldable Android phone coverage is still pending before broad sharing.
 
+## Android Standard Emulator Layout Smoke Result - 2026-06-03 (e557fd4)
+
+Device: Android Emulator `codex_clean_api36`, model `sdk_gphone64_x86_64`, Android 16, physical size `1080x1920`, density 420.
+APK: local debug APK from `android/app/build/outputs/apk/debug/app-debug.apk`.
+Build commit: `e557fd4 Polish mobile touch targets`.
+
+- [x] Existing emulator install was explicitly removed after user approval because the previous smoke hit `INSTALL_FAILED_UPDATE_INCOMPATIBLE`.
+- [x] Current debug APK clean-installed on the standard emulator with `adb install`.
+- [x] App launched and `com.lucita81.youtubedailymindmap/.MainActivity` became the resumed activity.
+- [x] Home screen rendered with the hero summary, range card, import action, and bottom navigation visible.
+- [x] Import/settings screen rendered with the Takeout guidance and bottom navigation visible.
+- [x] Timeline screen rendered with time-block summary cards, the first video card, and bottom navigation visible.
+- [x] UIAutomator bounds for visible clickable controls found no target below 44px: home 0, settings 0, timeline 0.
+- [x] Smoke screenshots were captured at `C:\Users\IML4\AppData\Local\Temp\20260603-standard-emulator-smoke\home.png`, `settings.png`, and `timeline.png`.
+- [x] Emulator was shut down after smoke testing and `git status` remained clean.
+
+Remaining standard-emulator layout smoke risks:
+
+- This was a local debug APK on an Android emulator, not a Play Store-signed release or Play Store candidate.
+- This smoke covered home, import/settings, and timeline layout only; Drive import, YouTube share, duplicate import, deletion, report, and map flows were not repeated on the emulator.
+- A real standard non-foldable Android phone still needs smoke before broad sharing.
+
 ## Current Remaining Risks
 
 - Drive file selection may behave differently across Android vendors and file providers; direct `file://` and MediaStore `content://` upload attempts did not produce a selectable Drive file, while the Google Drive app's own upload flow did.
@@ -847,9 +869,10 @@ Remaining update-install smoke risks:
 - Release APK native import logcat silence, invalid ZIP rejection visibility, valid fixture completion, duplicate-summary visibility, YouTube share behavior, debug/release cancellation cleanup UI, and large Drive cancellation visibility passed on the Samsung SM-F966N; standard phone and additional vendor/device coverage still need review before public release.
 - GitHub Actions debug APK artifact verification passed for commits `68c8ef3`, `20b6b3c`, and `9447fe7`.
 - GitHub Actions debug APK clean-installed and launched on an Android 16 emulator for commits `440856a`, `cbe4b9a`, `a2e2d01`, `0d327d1`, `b2b5bf8`, `7ec33e2`, `1768952`, `205656e`, `8a086cb`, `bf8880a`, `68c8ef3`, `20b6b3c`, and `9447fe7`, but Drive import, YouTube share, duplicate import, deletion, and layout flows were not repeated there.
+- Standard 1080x1920 Android emulator layout smoke passed for home, import/settings, and timeline with no visible clickable target below 44px, but this was local debug APK emulator coverage only.
 - Debug and locally smoke-signed release APK WebView thumbnail smoke passed on the Samsung SM-F966N with no synthetic sample thumbnail requests or 404 logs, but Play Store-signed release and real standard phone coverage still need repeat passes before broad sharing.
 - Storage fields for video memory are currently lightweight `WatchItem` fields, not a versioned migration.
-- UI copy and layout passed a foldable smoke path, but standard phone layout and long Korean copy still need review before public sharing.
+- UI copy and layout passed foldable and standard emulator smoke paths, but a real standard phone and long Korean copy still need review before public sharing.
 - The working tree may include multiple feature groups; release notes should separate them before commit or deploy.
 
 ## Go / No-go Notes

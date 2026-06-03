@@ -61,6 +61,7 @@ describe("pre-release change summary checklist", () => {
     expect(checklist).toContain("## Android Real-device Large Drive Takeout Cancellation Smoke Result - 2026-06-03 (working tree)");
     expect(checklist).toContain("## Android Debug Large Drive Cancellation Cleanup UI Smoke Result - 2026-06-03 (working tree)");
     expect(checklist).toContain("## Android Release Large Drive Takeout Cancellation Smoke Result - 2026-06-03 (working tree)");
+    expect(checklist).toContain("## Android Standard Emulator Layout Smoke Result - 2026-06-03 (e557fd4)");
     expect(checklist).toContain("## Current Remaining Risks");
     expect(checklist).toContain("## Go / No-go Notes");
   });
@@ -401,6 +402,17 @@ describe("pre-release change summary checklist", () => {
     expect(checklist).toContain("visible debug and release cancellation cleanup UI results without adding records");
     expect(checklist).toContain("large Drive cancellation visibility passed on the Samsung SM-F966N");
     expect(checklist).toContain("large-import coverage still needs a standard non-foldable device");
+    expect(checklist).toContain("Android Standard Emulator Layout Smoke Result - 2026-06-03 (e557fd4)");
+    expect(checklist).toContain("model `sdk_gphone64_x86_64`, Android 16, physical size `1080x1920`, density 420");
+    expect(checklist).toContain("Build commit: `e557fd4 Polish mobile touch targets`");
+    expect(checklist).toContain("Home screen rendered with the hero summary, range card, import action, and bottom navigation visible");
+    expect(checklist).toContain("Import/settings screen rendered with the Takeout guidance and bottom navigation visible");
+    expect(checklist).toContain("Timeline screen rendered with time-block summary cards, the first video card, and bottom navigation visible");
+    expect(checklist).toContain("UIAutomator bounds for visible clickable controls found no target below 44px: home 0, settings 0, timeline 0");
+    expect(checklist).toContain("standard 1080x1920 Android emulator covered home/settings/timeline layout and touch targets");
+    expect(checklist).toContain("standard 1080x1920 emulator home/settings/timeline smoke showed no visible clickable target below 44px");
+    expect(checklist).toContain("Standard 1080x1920 Android emulator layout smoke passed for home, import/settings, and timeline with no visible clickable target below 44px");
+    expect(checklist).toContain("This smoke covered home, import/settings, and timeline layout only");
     expect(checklist).toContain("localized Korean watch-history candidate");
     expect(checklist).toContain("exercised Android full Drive copy, parsing, loading UI, and completion on the Samsung foldable");
     expect(checklist).toContain("Release APK native import logcat silence, invalid ZIP rejection visibility");
@@ -408,7 +420,8 @@ describe("pre-release change summary checklist", () => {
     expect(checklist).toContain("standard phone and additional vendor/device coverage still need review");
     expect(checklist).toContain("Debug and locally smoke-signed release APK WebView thumbnail smoke passed on the Samsung SM-F966N");
     expect(checklist).toContain("Play Store-signed release and real standard phone coverage still need repeat passes");
-    expect(checklist).toContain("standard phone layout and long Korean copy still need review");
+    expect(checklist).toContain("UI copy and layout passed foldable and standard emulator smoke paths");
+    expect(checklist).toContain("a real standard phone and long Korean copy still need review before public sharing");
   });
 });
 
