@@ -3,9 +3,14 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 
 const homeDashboardPath = join(process.cwd(), "src", "components", "layout", "HomeDashboard.tsx");
+const watchTimelinePath = join(process.cwd(), "src", "components", "timeline", "WatchTimeline.tsx");
 
 function readHomeDashboard(): string {
   return readFileSync(homeDashboardPath, "utf8");
+}
+
+function readWatchTimeline(): string {
+  return readFileSync(watchTimelinePath, "utf8");
 }
 
 describe("shared memory home UX", () => {
@@ -21,6 +26,20 @@ describe("shared memory home UX", () => {
     expect(source).toContain("sharedMemoryItems.map((item)");
     expect(source).toContain(".filter((item) => !sharedMemoryItemIds.has(item.id))");
     expect(source).toContain(".filter((item) => !highlightedMemoryItemIds.has(item.id))");
+    expect(source).toContain("const memorySummary = getVideoMemorySummary(item)");
+    expect(source).toContain("{memorySummary ? (");
+  });
+
+  it("keeps saved/shared video memory visible on Timeline cards", () => {
+    const source = readWatchTimeline();
+
+    expect(source).toContain("import { getVideoMemorySummary }");
+    expect(source).toContain("const memorySummary = getVideoMemorySummary(item)");
+    expect(source).toContain("{memorySummary ? (");
+    expect(source).toContain("line-clamp-1 rounded-full bg-sky-50");
+    expect(source).toContain("{memorySummary}");
+    expect(source).not.toContain("?ъ슜 ?쒓컙");
+    expect(source).not.toContain("?쒖껌 ?쒓컙");
   });
 
   it("does not introduce unsupported viewing-duration copy", () => {
