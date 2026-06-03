@@ -213,39 +213,17 @@ const groupSixWholeFiles = [
 ];
 
 const currentWorkingTreeChangedFiles = [
-  "android/app/src/main/java/com/lucita81/youtubedailymindmap/NativeDriveFilePlugin.java",
-  "docs/checklists/pre-release-change-summary.md",
-  "src/components/import/ImportLoadingOverlay.tsx",
-  "src/components/import/WatchHistoryImportPanel.tsx",
-  "src/lib/native/nativeDriveFile.ts",
-  "src/tests/importLoadingOverlay.test.ts",
-  "src/tests/nativeDriveFile.test.ts",
-  "src/tests/nativeDriveFilePluginSource.test.ts",
-  "src/tests/preReleaseChecklist.test.ts",
-  "src/tests/watchHistoryImportPanelError.test.ts",
+  "docs/adr/0005-shared-video-and-ai-insight-policy.md",
+  "src/tests/sharedVideoAiInsightPolicy.test.ts",
+  "docs/checklists/pre-commit-change-groups.md",
+  "src/tests/preCommitChangeGroups.test.ts",
 ];
 
-const currentGroupAStageFiles = [
-  "android/app/src/main/java/com/lucita81/youtubedailymindmap/NativeDriveFilePlugin.java",
-  "src/components/import/ImportLoadingOverlay.tsx",
-  "src/components/import/WatchHistoryImportPanel.tsx",
-  "src/lib/native/nativeDriveFile.ts",
-  "src/tests/importLoadingOverlay.test.ts",
-  "src/tests/nativeDriveFile.test.ts",
-  "src/tests/nativeDriveFilePluginSource.test.ts",
-  "src/tests/watchHistoryImportPanelError.test.ts",
-];
-
-const currentGroupBStageFiles = [
-  "docs/checklists/pre-release-change-summary.md",
-  "src/tests/preReleaseChecklist.test.ts",
-];
-
-const currentAuditBoundaryNotes = [
-  "Do not add broad Drive search.",
-  "Do not upload raw Takeout files or watch-history-derived records to a server.",
-  "Do not add AI calls, payments, ads, analytics, cross-device sync, or non-YouTube data sources.",
-  "Do not commit raw Takeout filenames, email addresses, video titles, URLs, raw logs, screenshots, APKs, or signing output.",
+const currentGroupDStageFiles = [
+  "docs/adr/0005-shared-video-and-ai-insight-policy.md",
+  "src/tests/sharedVideoAiInsightPolicy.test.ts",
+  "docs/checklists/pre-commit-change-groups.md",
+  "src/tests/preCommitChangeGroups.test.ts",
 ];
 
 function readPreCommitGroups(): string {
@@ -271,65 +249,41 @@ describe("pre-commit change groups checklist", () => {
 
     expect(checklist).toContain("## Current Working Tree Audit - 2026-06-03");
     expect(checklist).toContain(
-      "Snapshot source: `git diff --name-only` after the debug and release large Drive cancellation cleanup UI smoke."
+      "Snapshot source: `git status --short` and `git diff --name-only` after Group A, Group B, and Group C were committed."
     );
-    expect(checklist).toContain("ADR: not required.");
-    expect(checklist).toContain("user-selected Drive import path");
+    expect(checklist).toContain("ADR: required and added for shared-video save plus optional AI insight policy.");
+    expect(checklist).toContain(
+      "YouTube-first AI policy documentation and current commit-grouping assertions"
+    );
     expect(checklist).toContain("It does not add broad Drive search");
+    expect(checklist).toContain("runtime AI calls");
 
     for (const file of currentWorkingTreeChangedFiles) {
       expect(checklist).toContain(`- \`${file}\``);
     }
   });
 
-  it("keeps Current Group A staged around native Drive cancellation guardrails only", () => {
+  it("keeps Current Group D staged around shared-video AI policy only", () => {
     const checklist = readPreCommitGroups();
 
-    expect(checklist).toContain("### Current Group A - Android Drive Import Cancellation And Storage Guardrails");
-    expect(checklist).toContain("large Drive import cancellation");
-    expect(checklist).toContain("insufficient cache-space handling");
-    expect(checklist).toContain("screen-awake import safety");
-    expect(checklist).toContain("stale-timeout avoidance");
+    expect(checklist).toContain("### Current Group D - Shared Video AI Insight Policy ADR");
+    expect(checklist).toContain("shared YouTube saves and optional AI insight");
+    expect(checklist).toContain("cost, privacy, and quota policy");
 
-    for (const file of currentGroupAStageFiles) {
+    for (const file of currentGroupDStageFiles) {
       expect(checklist).toContain(`- \`${file}\``);
     }
 
     expect(checklist).toContain(
-      "npm run test -- src/tests/importLoadingOverlay.test.ts src/tests/nativeDriveFile.test.ts src/tests/nativeDriveFilePluginSource.test.ts src/tests/watchHistoryImportPanelError.test.ts"
+      "npm run test -- src/tests/sharedVideoAiInsightPolicy.test.ts src/tests/preCommitChangeGroups.test.ts"
     );
-    expect(checklist).toContain("npm run android:debug");
-    expect(checklist).toContain("npm run android:sync");
-    expect(checklist).toContain("android/gradlew assembleRelease");
-    expect(checklist).toContain("Real-device debug and locally smoke-signed release cancellation cleanup UI smoke");
-    expect(checklist).toContain("Release logcat privacy smoke");
-
-    for (const boundaryNote of currentAuditBoundaryNotes) {
-      expect(checklist).toContain(boundaryNote);
-    }
-  });
-
-  it("keeps Current Group B staged around sanitized release evidence only", () => {
-    const checklist = readPreCommitGroups();
-
-    expect(checklist).toContain("### Current Group B - Release Smoke Evidence And Harness Assertions");
-    expect(checklist).toContain("sanitized debug and release large Drive smoke evidence");
-    expect(checklist).toContain("release-risk notes");
-    expect(checklist).toContain("checklist assertions");
-
-    for (const file of currentGroupBStageFiles) {
-      expect(checklist).toContain(`- \`${file}\``);
-    }
-
-    expect(checklist).toContain("npm run test -- src/tests/preReleaseChecklist.test.ts");
     expect(checklist).toContain("npm run verify");
-    expect(checklist).toContain("Keep only sanitized evidence, counts, phases, and risk notes.");
-    expect(checklist).toContain(
-      "Do not commit concrete Drive filenames, email addresses, video titles, URLs, raw logs, screenshots, APKs, or signing output."
-    );
-    expect(checklist).toContain("1. Current Group A.");
-    expect(checklist).toContain("2. Current Group B.");
-    expect(checklist).toContain("fix: harden native Drive import cancellation");
+    expect(checklist).toContain("Do not implement AI calls, quota storage, billing, or transcript fetching in this group.");
+    expect(checklist).toContain("Do not change share-save runtime behavior in this group.");
+    expect(checklist).toContain("Do not stage broad Drive access, server upload, non-YouTube data sources, or analytics changes.");
+    expect(checklist).toContain("Keep title-only or metadata-only insight distinct from full video-content summaries.");
+    expect(checklist).toContain("1. Current Group D.");
+    expect(checklist).toContain("docs: record shared video AI insight policy");
   });
 
   it("keeps the current working tree grouped into reviewable commit candidates", () => {
