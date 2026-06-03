@@ -1121,6 +1121,8 @@ export function AppShell() {
               <WatchTimeline
                 items={filteredItems}
                 dateKey={selectedRangeLabel}
+                rangeMode={rangeMode}
+                rangeLabel={activeRangeDescription}
                 dateSettings={dateSettings}
                 selectedItemId={(selectedTimelineNode?.meta?.item as ClassifiedWatchItem | undefined)?.id}
                 onItemSelect={handleTimelineItemSelect}

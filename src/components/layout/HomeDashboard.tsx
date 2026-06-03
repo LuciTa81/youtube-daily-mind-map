@@ -114,6 +114,26 @@ function VideoRow({
   );
 }
 
+function getReviewRangeGuide(rangeMode: DateRangeMode): {
+  title: string;
+  description: string;
+  timelineLabel: string;
+} {
+  if (rangeMode === "week") {
+    return {
+      title: "최근 7일 회고",
+      description: "선택한 날짜까지 최근 7일의 기록 흐름과 반복된 관심사를 함께 봅니다.",
+      timelineLabel: "7일 타임라인 보기"
+    };
+  }
+
+  return {
+    title: "하루 회고",
+    description: "선택한 날짜 하루의 기록 개수, 집중 시간대, 기억할 영상을 빠르게 정리합니다.",
+    timelineLabel: "하루 타임라인 보기"
+  };
+}
+
 export function HomeDashboard({
   dateLabel,
   rangeLabel,
@@ -140,6 +160,7 @@ export function HomeDashboard({
   const memorableItems = review.memorableItems
     .filter((item) => !markedMemoryItemIds.has(item.id))
     .slice(0, 4);
+  const reviewRangeGuide = getReviewRangeGuide(rangeMode);
 
   return (
     <div className="space-y-4">
@@ -202,6 +223,19 @@ export function HomeDashboard({
             onClick={() => onRangeModeChange("week")}
           >
             최근 7일치
+          </button>
+        </div>
+
+        <div className="mt-3 rounded-lg border border-sky-100 bg-sky-50 px-3 py-2.5">
+          <div className="text-[11px] font-bold text-sky-700">회고 범위</div>
+          <div className="mt-1 text-sm font-bold text-slate-950">{reviewRangeGuide.title}</div>
+          <p className="mt-1 text-xs leading-snug text-slate-600">{reviewRangeGuide.description}</p>
+          <button
+            type="button"
+            className="mt-2 rounded-full bg-white px-3 py-1 text-xs font-bold text-sky-700 shadow-sm"
+            onClick={onOpenTimeline}
+          >
+            {reviewRangeGuide.timelineLabel}
           </button>
         </div>
       </section>

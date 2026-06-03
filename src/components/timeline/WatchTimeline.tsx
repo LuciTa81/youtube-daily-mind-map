@@ -4,11 +4,13 @@ import { formatInTimeZone } from "date-fns-tz";
 import { getTimeBlockForItem, TIME_BLOCKS, type TimeBlock } from "@/lib/date/timeBlocks";
 import { getVideoMemorySummary } from "@/lib/share/videoMemory";
 import { getVideoMetadata } from "@/lib/youtube/videoMetadata";
-import type { ClassifiedWatchItem, DateSettings } from "@/types/watch";
+import type { ClassifiedWatchItem, DateRangeMode, DateSettings } from "@/types/watch";
 
 type WatchTimelineProps = {
   items: ClassifiedWatchItem[];
   dateKey: string;
+  rangeMode?: DateRangeMode;
+  rangeLabel?: string;
   dateSettings: DateSettings;
   selectedItemId?: string;
   onItemSelect: (item: ClassifiedWatchItem) => void;
@@ -55,9 +57,17 @@ function groupItemsByTimeBlock(
   }).filter((group) => group.items.length > 0);
 }
 
+function getTimelineRangeCopy(rangeMode: DateRangeMode): string {
+  if (rangeMode === "week") {
+    return "선택한 날짜까지 최근 7일의 기록을 시간순으로 이어봅니다.";
+  }
+
+  return "선택한 날짜 하루의 기록을 시간순으로 이어봅니다.";
+}
+
 function TimelineSummary({ groups }: { groups: TimelineGroup[] }) {
   return (
-    <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+    <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
       {groups.map((group) => (
         <div
           key={group.block.id}
@@ -142,6 +152,8 @@ function TimelineCard({
 export function WatchTimeline({
   items,
   dateKey,
+  rangeMode = "day",
+  rangeLabel,
   dateSettings,
   selectedItemId,
   onItemSelect
@@ -152,13 +164,16 @@ export function WatchTimeline({
   const timelineGroups = groupItemsByTimeBlock(sortedItems, dateSettings);
   const itemOrderMap = new Map(sortedItems.map((item, index) => [item.id, index + 1]));
   const minWidth = Math.max(920, sortedItems.length * 252);
+  const timelineRangeCopy = getTimelineRangeCopy(rangeMode);
+  const rangeBadgeLabel = rangeMode === "week" ? "최근 7일치" : "하루치";
 
   if (sortedItems.length === 0) {
     return (
       <div className="flex h-full min-h-[420px] items-center justify-center rounded-lg border border-slate-200 bg-white p-6 text-center">
         <div>
           <div className="text-base font-semibold text-slate-900">타임라인에 표시할 기록이 없습니다.</div>
-          <div className="mt-2 text-sm text-slate-500">날짜나 필터 조건을 바꿔보세요.</div>
+          <div className="mt-2 text-sm text-slate-500">{rangeLabel ?? timelineRangeCopy}</div>
+          <div className="mt-1 text-xs text-slate-400">날짜나 필터 조건을 바꿔보세요.</div>
         </div>
       </div>
     );
@@ -166,10 +181,16 @@ export function WatchTimeline({
 
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-lg border border-slate-200 bg-white">
-      <div className="shrink-0 border-b border-slate-200 px-4 py-3">
-        <div>
-          <div className="text-sm font-semibold text-slate-900">{dateKey} 시청 타임라인</div>
-          <div className="mt-1 text-xs text-slate-500">시청 기록 {sortedItems.length}개를 시간순으로 표시합니다.</div>
+      <div className="shrink-0 border-b border-slate-200 px-4 py-2.5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="text-sm font-semibold text-slate-900">{dateKey} 시청 타임라인</div>
+            <div className="mt-1 text-xs text-slate-500">{rangeLabel ?? timelineRangeCopy}</div>
+            <div className="mt-1 text-xs text-slate-500">시청 기록 {sortedItems.length}개를 시간순으로 표시합니다.</div>
+          </div>
+          <span className="shrink-0 rounded-full bg-sky-50 px-2.5 py-1 text-[11px] font-bold text-sky-700">
+            {rangeBadgeLabel}
+          </span>
         </div>
         <TimelineSummary groups={timelineGroups} />
       </div>
