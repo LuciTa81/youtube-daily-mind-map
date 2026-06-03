@@ -6,10 +6,18 @@ export interface WatchHistoryRepository {
   clear(): Promise<void>;
 }
 
-type StoredWatchHistory = {
+export const WATCH_HISTORY_STORAGE_SCHEMA_VERSION = 1;
+
+export type StoredWatchHistory = {
   id: "watch-history";
+  schemaVersion: typeof WATCH_HISTORY_STORAGE_SCHEMA_VERSION;
   items: WatchItem[];
   updatedAt: string;
+};
+
+export type WatchHistoryStorageMigration = {
+  record?: StoredWatchHistory;
+  needsSave: boolean;
 };
 
 const DB_NAME = "youtube-daily-mind-map";
@@ -17,6 +25,39 @@ const DB_VERSION = 2;
 const STORE_NAME = "watch-history";
 const REVIEW_NOTES_STORE_NAME = "review-notes";
 const STORE_KEY: StoredWatchHistory["id"] = "watch-history";
+
+function isObjectRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object";
+}
+
+export function migrateStoredWatchHistoryRecord(
+  value: unknown,
+  now = () => new Date().toISOString()
+): WatchHistoryStorageMigration {
+  if (!isObjectRecord(value)) {
+    return { needsSave: false };
+  }
+
+  const items = Array.isArray(value.items) ? (value.items as WatchItem[]) : [];
+  const hasCurrentSchema = value.schemaVersion === WATCH_HISTORY_STORAGE_SCHEMA_VERSION;
+  const hasStoreKey = value.id === STORE_KEY;
+  const updatedAt = typeof value.updatedAt === "string" ? value.updatedAt : undefined;
+  const hasUpdatedAt = Boolean(updatedAt?.trim());
+
+  if (hasCurrentSchema && hasStoreKey && hasUpdatedAt && Array.isArray(value.items)) {
+    return { record: value as StoredWatchHistory, needsSave: false };
+  }
+
+  return {
+    record: {
+      id: STORE_KEY,
+      schemaVersion: WATCH_HISTORY_STORAGE_SCHEMA_VERSION,
+      items,
+      updatedAt: hasUpdatedAt && updatedAt ? updatedAt : now()
+    },
+    needsSave: true
+  };
+}
 
 function getIndexedDb(): IDBFactory {
   if (typeof indexedDB === "undefined") {
@@ -61,8 +102,8 @@ export class IndexedDbWatchHistoryRepository implements WatchHistoryRepository {
       const request = store.get(STORE_KEY);
 
       request.onsuccess = () => {
-        const record = request.result as StoredWatchHistory | undefined;
-        resolve(Array.isArray(record?.items) ? record.items : []);
+        const migration = migrateStoredWatchHistoryRecord(request.result);
+        resolve(migration.record?.items ?? []);
       };
       request.onerror = () => reject(request.error ?? new Error("저장된 기록을 읽지 못했습니다."));
     });
@@ -72,6 +113,7 @@ export class IndexedDbWatchHistoryRepository implements WatchHistoryRepository {
     const db = await this.open();
     const record: StoredWatchHistory = {
       id: STORE_KEY,
+      schemaVersion: WATCH_HISTORY_STORAGE_SCHEMA_VERSION,
       items,
       updatedAt: new Date().toISOString()
     };

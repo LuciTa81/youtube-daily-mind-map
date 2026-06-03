@@ -136,7 +136,7 @@ This matrix maps the existing smoke results to `docs/checklists/android-smoke-te
 | Duplicate fixture re-import | Pass | Re-import reported duplicate counts and no additional records for the same fixture. | Large real duplicate archive still needs performance/storage verification. |
 | Large archive smoke | Partial | 1.62 GiB user Takeout archive structure scan found a localized Korean watch-history candidate without reading contents. | Full Android Drive copy/parsing/loading UI was not executed because the real archive was not user-selected from Drive in that smoke run. |
 | YouTube share intent | Pass | Debug and release smoke saved the public `Me at the zoo` video through the YouTube app share flow. | Android resolver discoverability should be checked on more devices. |
-| Local data and deletion | Pass | Clear-data flow passed after seeding one shared test record; records returned to sample data. | Storage migration tests are still separate future work. |
+| Local data and deletion | Pass | Clear-data flow passed after seeding one shared test record; records returned to sample data. | Watch-history storage migration now has unit-level guardrails and a documented smoke path; an actual legacy-device migration smoke is still pending. |
 | Layout smoke | Partial | Foldable home/settings/timeline/report surfaces rendered and settings destructive action had room above bottom nav; standard 1080x1920 emulator home/settings/timeline smoke showed no visible clickable target below 44px. | Real standard phone and long Korean copy still need review before broad sharing. |
 
 ## Android WebView Thumbnail Smoke Result - 2026-06-03
@@ -871,7 +871,7 @@ Remaining standard-emulator layout smoke risks:
 - GitHub Actions debug APK clean-installed and launched on an Android 16 emulator for commits `440856a`, `cbe4b9a`, `a2e2d01`, `0d327d1`, `b2b5bf8`, `7ec33e2`, `1768952`, `205656e`, `8a086cb`, `bf8880a`, `68c8ef3`, `20b6b3c`, and `9447fe7`, but Drive import, YouTube share, duplicate import, deletion, and layout flows were not repeated there.
 - Standard 1080x1920 Android emulator layout smoke passed for home, import/settings, and timeline with no visible clickable target below 44px, but this was local debug APK emulator coverage only.
 - Debug and locally smoke-signed release APK WebView thumbnail smoke passed on the Samsung SM-F966N with no synthetic sample thumbnail requests or 404 logs, but Play Store-signed release and real standard phone coverage still need repeat passes before broad sharing.
-- Storage fields for video memory are currently lightweight `WatchItem` fields, not a versioned migration.
+- Watch-history storage now has a record-level schema version and legacy-record migration guard, but an actual legacy-device migration smoke still needs to run before broad sharing.
 - UI copy and layout passed foldable and standard emulator smoke paths, but a real standard phone and long Korean copy still need review before public sharing.
 - The working tree may include multiple feature groups; release notes should separate them before commit or deploy.
 

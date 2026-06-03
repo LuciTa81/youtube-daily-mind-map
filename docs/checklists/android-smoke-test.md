@@ -98,6 +98,20 @@ Run the full checklist on at least one primary Android device before sharing an 
 - [ ] Confirm records are cleared or replaced by sample data as designed.
 - [ ] Confirm daily and weekly screens render a meaningful empty or sample state.
 
+## Storage Migration Smoke
+
+Use this when `WatchItem`, saved-memory fields, repository schema, or IndexedDB persistence changes.
+
+- [ ] Start from a build that can access the app's existing `youtube-daily-mind-map` IndexedDB database.
+- [ ] Inject a legacy `watch-history` object-store record that has `id`, `items`, and `updatedAt`, but no `schemaVersion`.
+- [ ] Include at least one manual/shared record with `memoryTag`, `memoryNote`, and `memoryUpdatedAt`.
+- [ ] Launch or reload the app without clearing app data.
+- [ ] Confirm the app loads the legacy record instead of falling back to sample-only data.
+- [ ] Confirm Home, Timeline, and the video detail or memory prompt still show the migrated shared-memory fields.
+- [ ] Trigger one normal save path, such as editing a memory note or importing a small duplicate fixture.
+- [ ] Re-open IndexedDB and confirm the `watch-history` record now contains the current schema version.
+- [ ] Confirm no watch-history titles, URLs, notes, local paths, or Drive file names were printed to logs while inspecting the migration.
+
 ## Layout Smoke
 
 - [ ] Home dashboard is readable on the real device.
@@ -126,6 +140,7 @@ Build commit:
 - [ ] Large archive progress did not freeze or black-screen the app.
 - [ ] YouTube share intent saved a video into today's records.
 - [ ] Local deletion/clear-data flow passed.
+- [ ] Legacy watch-history storage migration preserved shared-memory fields and rewrote the current schema version, if storage schema changed.
 - [ ] Release logcat privacy smoke passed, if using a release APK.
 - [ ] Update install passed with `adb install -r`, if update behavior matters.
 - [ ] If update install failed with `INSTALL_FAILED_UPDATE_INCOMPATIBLE`, it was recorded as a signing mismatch and no uninstall or clear-data step was run without explicit approval.
