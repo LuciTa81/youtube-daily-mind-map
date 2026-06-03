@@ -213,15 +213,57 @@ const groupSixWholeFiles = [
 ];
 
 const currentWorkingTreeChangedFiles = [
-  "docs/adr/0005-shared-video-and-ai-insight-policy.md",
-  "src/tests/sharedVideoAiInsightPolicy.test.ts",
+  "android/app/src/main/java/com/lucita81/youtubedailymindmap/NativeShareIntentPlugin.java",
+  "android/app/src/main/res/values/styles.xml",
+  "android/app/src/main/res/anim/quick_share_noop.xml",
+  "docs/adr/0006-quick-share-save-mode.md",
+  "docs/risks.md",
+  "docs/use-cases.md",
+  "src/components/layout/AppShell.tsx",
+  "src/components/layout/HomeDashboard.tsx",
+  "src/components/layout/LeftPanel.tsx",
+  "src/lib/native/nativeShareIntent.ts",
+  "src/lib/review/buildDailyReview.ts",
+  "src/lib/review/memorableItems.ts",
+  "src/lib/share/quickShareSave.ts",
+  "src/lib/storage/userSettingsRepository.ts",
+  "src/tests/androidQuickShareTransitionTheme.test.ts",
+  "src/tests/buildDailyReview.test.ts",
+  "src/tests/quickShareCompletion.test.ts",
+  "src/tests/quickShareSavePolicy.test.ts",
+  "src/tests/quickShareSettingsUx.test.ts",
+  "src/tests/sharedMemoryHomeUx.test.ts",
+  "src/tests/userSettingsRepository.test.ts",
   "docs/checklists/pre-commit-change-groups.md",
   "src/tests/preCommitChangeGroups.test.ts",
 ];
 
-const currentGroupDStageFiles = [
-  "docs/adr/0005-shared-video-and-ai-insight-policy.md",
-  "src/tests/sharedVideoAiInsightPolicy.test.ts",
+const currentGroupEStageFiles = [
+  "docs/adr/0006-quick-share-save-mode.md",
+  "docs/risks.md",
+  "docs/use-cases.md",
+  "android/app/src/main/java/com/lucita81/youtubedailymindmap/NativeShareIntentPlugin.java",
+  "android/app/src/main/res/values/styles.xml",
+  "android/app/src/main/res/anim/quick_share_noop.xml",
+  "src/lib/native/nativeShareIntent.ts",
+  "src/lib/share/quickShareSave.ts",
+  "src/lib/storage/userSettingsRepository.ts",
+  "src/tests/androidQuickShareTransitionTheme.test.ts",
+  "src/tests/quickShareCompletion.test.ts",
+  "src/tests/quickShareSavePolicy.test.ts",
+  "src/tests/quickShareSettingsUx.test.ts",
+  "src/tests/userSettingsRepository.test.ts",
+];
+
+const currentGroupFStageFiles = [
+  "src/components/layout/HomeDashboard.tsx",
+  "src/lib/review/buildDailyReview.ts",
+  "src/lib/review/memorableItems.ts",
+  "src/tests/buildDailyReview.test.ts",
+  "src/tests/sharedMemoryHomeUx.test.ts",
+];
+
+const currentGroupGStageFiles = [
   "docs/checklists/pre-commit-change-groups.md",
   "src/tests/preCommitChangeGroups.test.ts",
 ];
@@ -249,41 +291,93 @@ describe("pre-commit change groups checklist", () => {
 
     expect(checklist).toContain("## Current Working Tree Audit - 2026-06-03");
     expect(checklist).toContain(
-      "Snapshot source: `git status --short` and `git diff --name-only` after Group A, Group B, and Group C were committed."
+      "Snapshot source: `git status --short`, `git diff --name-only`, and `git ls-files --others --exclude-standard`"
     );
-    expect(checklist).toContain("ADR: required and added for shared-video save plus optional AI insight policy.");
+    expect(checklist).toContain("ADR: required and added for optional quick share save mode.");
     expect(checklist).toContain(
-      "YouTube-first AI policy documentation and current commit-grouping assertions"
+      "YouTube-first shared-video save, local settings, Android native completion, quick-share transition polish"
     );
     expect(checklist).toContain("It does not add broad Drive search");
     expect(checklist).toContain("runtime AI calls");
+    expect(checklist).toContain("overlay permission");
 
     for (const file of currentWorkingTreeChangedFiles) {
       expect(checklist).toContain(`- \`${file}\``);
     }
   });
 
-  it("keeps Current Group D staged around shared-video AI policy only", () => {
+  it("keeps Current Group E staged around the quick share save loop only", () => {
     const checklist = readPreCommitGroups();
 
-    expect(checklist).toContain("### Current Group D - Shared Video AI Insight Policy ADR");
-    expect(checklist).toContain("shared YouTube saves and optional AI insight");
-    expect(checklist).toContain("cost, privacy, and quota policy");
+    expect(checklist).toContain("### Current Group E - Quick Share Save Loop");
+    expect(checklist).toContain("opt-in quick-save setting");
+    expect(checklist).toContain("native Toast/return behavior");
+    expect(checklist).toContain("launch-transition mitigation");
 
-    for (const file of currentGroupDStageFiles) {
+    for (const file of currentGroupEStageFiles) {
       expect(checklist).toContain(`- \`${file}\``);
     }
 
     expect(checklist).toContain(
-      "npm run test -- src/tests/sharedVideoAiInsightPolicy.test.ts src/tests/preCommitChangeGroups.test.ts"
+      "npm run test -- src/tests/quickShareCompletion.test.ts src/tests/quickShareSavePolicy.test.ts src/tests/quickShareSettingsUx.test.ts src/tests/userSettingsRepository.test.ts src/tests/androidQuickShareTransitionTheme.test.ts src/tests/preCommitChangeGroups.test.ts"
     );
     expect(checklist).toContain("npm run verify");
-    expect(checklist).toContain("Do not implement AI calls, quota storage, billing, or transcript fetching in this group.");
-    expect(checklist).toContain("Do not change share-save runtime behavior in this group.");
-    expect(checklist).toContain("Do not stage broad Drive access, server upload, non-YouTube data sources, or analytics changes.");
-    expect(checklist).toContain("Keep title-only or metadata-only insight distinct from full video-content summaries.");
-    expect(checklist).toContain("1. Current Group D.");
-    expect(checklist).toContain("docs: record shared video AI insight policy");
+    expect(checklist).toContain("npx cap sync android");
+    expect(checklist).toContain("android/gradlew assembleDebug");
+    expect(checklist).toContain("Real-device smoke: clean or update install");
+    expect(checklist).toContain("Do not stage shared-memory Home review display work in Current Group E.");
+    expect(checklist).toContain("overlay permission");
+    expect(checklist).toContain("Do not claim watch duration.");
+    expect(checklist).toContain("feat(android): add opt-in quick share save mode");
+  });
+
+  it("keeps Current Group E mixed AppShell and LeftPanel boundaries explicit", () => {
+    const checklist = readPreCommitGroups();
+
+    expect(checklist).toContain("Mixed files that require partial/hunk staging for Current Group E:");
+    expect(checklist).toContain("Include: user-settings load/save state for `quickShareSaveEnabled`.");
+    expect(checklist).toContain("Include: pending native share consumption after user settings are ready.");
+    expect(checklist).toContain("Include: `shouldCompleteQuickShare(...)`, `getQuickShareCompletionMessage(...)`, and `completeNativeQuickShare(...)` usage.");
+    expect(checklist).toContain("Include: skipping the memory prompt only after the shared video persisted successfully.");
+    expect(checklist).toContain("Exclude: Home review card layout, marked-memory review sections, and daily-review/report display changes.");
+    expect(checklist).toContain("Include: the opt-in quick share save setting and its explanatory copy.");
+  });
+
+  it("keeps Current Group F staged around shared-memory review surface only", () => {
+    const checklist = readPreCommitGroups();
+
+    expect(checklist).toContain("### Current Group F - Shared Memory Review Surface");
+    expect(checklist).toContain("daily-review value surface");
+    expect(checklist).toContain("directly saved/shared videos visible in Home review");
+
+    for (const file of currentGroupFStageFiles) {
+      expect(checklist).toContain(`- \`${file}\``);
+    }
+
+    expect(checklist).toContain("Mixed files that require partial/hunk staging for Current Group F:");
+    expect(checklist).toContain("Include: passing saved/shared-memory-derived review data into Home surfaces if that hunk is present.");
+    expect(checklist).toContain("Exclude: quick-share native completion, local settings, and Android bridge hunks");
+    expect(checklist).toContain("Do not stage Android native files in Current Group F.");
+    expect(checklist).toContain("Do not stage quick-share setting/storage/native-completion files in Current Group F.");
+    expect(checklist).toContain("npm run test -- src/tests/buildDailyReview.test.ts src/tests/sharedMemoryHomeUx.test.ts src/tests/preCommitChangeGroups.test.ts");
+    expect(checklist).toContain("feat: surface shared memories in daily review");
+  });
+
+  it("keeps Current Group G as a planning-only checklist refresh", () => {
+    const checklist = readPreCommitGroups();
+
+    expect(checklist).toContain("### Current Group G - Commit Grouping Checklist Refresh");
+    expect(checklist).toContain("planning document and its guardrail tests");
+
+    for (const file of currentGroupGStageFiles) {
+      expect(checklist).toContain(`- \`${file}\``);
+    }
+
+    expect(checklist).toContain("npm run test -- src/tests/preCommitChangeGroups.test.ts");
+    expect(checklist).toContain("Do not stage product runtime code in Current Group G.");
+    expect(checklist).toContain("1. Current Group G - Commit Grouping Checklist Refresh.");
+    expect(checklist).toContain("2. Current Group E - Quick Share Save Loop.");
+    expect(checklist).toContain("3. Current Group F - Shared Memory Review Surface.");
   });
 
   it("keeps the current working tree grouped into reviewable commit candidates", () => {

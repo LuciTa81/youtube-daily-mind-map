@@ -14,47 +14,152 @@ Snapshot source: `git status --short` on 2026-06-03.
 
 ## Current Working Tree Audit - 2026-06-03
 
-Snapshot source: `git status --short` and `git diff --name-only` after Group A, Group B, and Group C were committed.
+Snapshot source: `git status --short`, `git diff --name-only`, and `git ls-files --others --exclude-standard` after the quick-share save mode and Android transition smoke work.
 
-ADR: required and added for shared-video save plus optional AI insight policy. The current diff stays inside YouTube-first AI policy documentation and current commit-grouping assertions. It does not add broad Drive search, server upload, runtime AI calls, payments, ads, analytics, cross-device sync, or expansion beyond YouTube records.
+ADR: required and added for optional quick share save mode. The current diff stays inside YouTube-first shared-video save, local settings, Android native completion, quick-share transition polish, and shared-memory review surface work. It does not add broad Drive search, server upload, runtime AI calls, payments, ads, analytics, cross-device sync, overlay permission, or expansion beyond YouTube records.
 
 Current changed files:
 
-- `docs/adr/0005-shared-video-and-ai-insight-policy.md`
-- `src/tests/sharedVideoAiInsightPolicy.test.ts`
+- `android/app/src/main/java/com/lucita81/youtubedailymindmap/NativeShareIntentPlugin.java`
+- `android/app/src/main/res/values/styles.xml`
+- `android/app/src/main/res/anim/quick_share_noop.xml`
+- `docs/adr/0006-quick-share-save-mode.md`
+- `docs/risks.md`
+- `docs/use-cases.md`
+- `src/components/layout/AppShell.tsx`
+- `src/components/layout/HomeDashboard.tsx`
+- `src/components/layout/LeftPanel.tsx`
+- `src/lib/native/nativeShareIntent.ts`
+- `src/lib/review/buildDailyReview.ts`
+- `src/lib/review/memorableItems.ts`
+- `src/lib/share/quickShareSave.ts`
+- `src/lib/storage/userSettingsRepository.ts`
+- `src/tests/androidQuickShareTransitionTheme.test.ts`
+- `src/tests/buildDailyReview.test.ts`
+- `src/tests/quickShareCompletion.test.ts`
+- `src/tests/quickShareSavePolicy.test.ts`
+- `src/tests/quickShareSettingsUx.test.ts`
+- `src/tests/sharedMemoryHomeUx.test.ts`
+- `src/tests/userSettingsRepository.test.ts`
 - `docs/checklists/pre-commit-change-groups.md`
 - `src/tests/preCommitChangeGroups.test.ts`
 
 Recommended commit grouping:
 
-### Current Group D - Shared Video AI Insight Policy ADR
+### Current Group E - Quick Share Save Loop
 
-Purpose: keep the product decision for shared YouTube saves and optional AI insight separate from runtime implementation, so cost, privacy, and quota policy are settled before adding remote AI behavior.
+Purpose: keep the Android share-save loop reviewable as one product slice: opt-in quick-save setting, local persistence, native Toast/return behavior, and launch-transition mitigation.
 
 Stage together:
 
-- `docs/adr/0005-shared-video-and-ai-insight-policy.md`
-- `src/tests/sharedVideoAiInsightPolicy.test.ts`
+- `docs/adr/0006-quick-share-save-mode.md`
+- `docs/risks.md`
+- `docs/use-cases.md`
+- `android/app/src/main/java/com/lucita81/youtubedailymindmap/NativeShareIntentPlugin.java`
+- `android/app/src/main/res/values/styles.xml`
+- `android/app/src/main/res/anim/quick_share_noop.xml`
+- `src/lib/native/nativeShareIntent.ts`
+- `src/lib/share/quickShareSave.ts`
+- `src/lib/storage/userSettingsRepository.ts`
+- `src/tests/androidQuickShareTransitionTheme.test.ts`
+- `src/tests/quickShareCompletion.test.ts`
+- `src/tests/quickShareSavePolicy.test.ts`
+- `src/tests/quickShareSettingsUx.test.ts`
+- `src/tests/userSettingsRepository.test.ts`
+
+Mixed files that require partial/hunk staging for Current Group E:
+
+- `src/components/layout/AppShell.tsx`
+  - Include: user-settings load/save state for `quickShareSaveEnabled`.
+  - Include: pending native share consumption after user settings are ready.
+  - Include: `shouldCompleteQuickShare(...)`, `getQuickShareCompletionMessage(...)`, and `completeNativeQuickShare(...)` usage.
+  - Include: skipping the memory prompt only after the shared video persisted successfully.
+  - Exclude: Home review card layout, marked-memory review sections, and daily-review/report display changes.
+- `src/components/layout/LeftPanel.tsx`
+  - Include: the opt-in quick share save setting and its explanatory copy.
+  - Exclude: unrelated import, report, or mobile layout hunks if they appear later.
+
+Verification evidence:
+
+- `npm run test -- src/tests/quickShareCompletion.test.ts src/tests/quickShareSavePolicy.test.ts src/tests/quickShareSettingsUx.test.ts src/tests/userSettingsRepository.test.ts src/tests/androidQuickShareTransitionTheme.test.ts src/tests/preCommitChangeGroups.test.ts`
+- `npm run verify`
+- `npx cap sync android`
+- `android/gradlew assembleDebug`
+- Real-device smoke: clean or update install, quick-share setting enabled, YouTube share save, Toast confirmation, return to YouTube, duplicate same-day share skipped.
+
+Staging boundary:
+
+- Do not stage shared-memory Home review display work in Current Group E.
+- Do not stage AI calls, transcript fetching, billing, quota storage, analytics, broad Drive access, server upload, overlay permission, or non-YouTube data sources.
+- Do not claim watch duration.
+- Keep the flow local-first; do not log shared URLs, titles, notes, OAuth tokens, Drive tokens, or Takeout paths.
+
+Suggested commit message:
+
+```text
+feat(android): add opt-in quick share save mode
+```
+
+### Current Group F - Shared Memory Review Surface
+
+Purpose: keep the daily-review value surface separate from the Android quick-share mechanism. This group makes directly saved/shared videos visible in Home review and report logic without changing native share handling.
+
+Stage together:
+
+- `src/components/layout/HomeDashboard.tsx`
+- `src/lib/review/buildDailyReview.ts`
+- `src/lib/review/memorableItems.ts`
+- `src/tests/buildDailyReview.test.ts`
+- `src/tests/sharedMemoryHomeUx.test.ts`
+
+Mixed files that require partial/hunk staging for Current Group F:
+
+- `src/components/layout/AppShell.tsx`
+  - Include: passing saved/shared-memory-derived review data into Home surfaces if that hunk is present.
+  - Exclude: quick-share native completion, local settings, and Android bridge hunks, because those belong to Current Group E.
+
+Verification evidence:
+
+- `npm run test -- src/tests/buildDailyReview.test.ts src/tests/sharedMemoryHomeUx.test.ts src/tests/preCommitChangeGroups.test.ts`
+- `npm run verify`
+
+Staging boundary:
+
+- Do not stage Android native files in Current Group F.
+- Do not stage quick-share setting/storage/native-completion files in Current Group F.
+- Do not add AI summaries, automatic AI calls, payments, cross-device sync, broad Drive access, or server upload.
+- Keep review language on record count and saved records, not watch time.
+
+Suggested commit message:
+
+```text
+feat: surface shared memories in daily review
+```
+
+### Current Group G - Commit Grouping Checklist Refresh
+
+Purpose: keep the planning document and its guardrail tests aligned with the actual working tree before staging product changes.
+
+Stage together:
+
 - `docs/checklists/pre-commit-change-groups.md`
 - `src/tests/preCommitChangeGroups.test.ts`
 
 Verification evidence:
 
-- `npm run test -- src/tests/sharedVideoAiInsightPolicy.test.ts src/tests/preCommitChangeGroups.test.ts`
+- `npm run test -- src/tests/preCommitChangeGroups.test.ts`
 - `npm run verify`
 
 Staging boundary:
 
-- Do not implement AI calls, quota storage, billing, or transcript fetching in this group.
-- Do not change share-save runtime behavior in this group.
-- Do not stage broad Drive access, server upload, non-YouTube data sources, or analytics changes.
-- Keep title-only or metadata-only insight distinct from full video-content summaries.
+- Do not stage product runtime code in Current Group G.
+- This can be committed before or after Current Group E/F, but it should stay separate from product behavior unless intentionally included as a planning-only update in the same PR.
 
 Recommended commit order:
 
-1. Current Group D.
-
-Use `docs: record shared video AI insight policy` if the staged diff still matches Current Group D.
+1. Current Group G - Commit Grouping Checklist Refresh.
+2. Current Group E - Quick Share Save Loop.
+3. Current Group F - Shared Memory Review Surface.
 
 Do not commit:
 
