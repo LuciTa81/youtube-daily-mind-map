@@ -56,6 +56,8 @@ describe("pre-release change summary checklist", () => {
     expect(checklist).toContain("## GitHub Actions APK Emulator Clean Install Smoke Result - 2026-06-03 (68c8ef3)");
     expect(checklist).toContain("## GitHub Actions APK Artifact Verification Result - 2026-06-03 (20b6b3c)");
     expect(checklist).toContain("## GitHub Actions APK Emulator Clean Install Smoke Result - 2026-06-03 (20b6b3c)");
+    expect(checklist).toContain("## GitHub Actions APK Artifact Verification Result - 2026-06-03 (9447fe7)");
+    expect(checklist).toContain("## GitHub Actions APK Emulator Clean Install Smoke Result - 2026-06-03 (9447fe7)");
     expect(checklist).toContain("## Current Remaining Risks");
     expect(checklist).toContain("## Go / No-go Notes");
   });
@@ -314,6 +316,24 @@ describe("pre-release change summary checklist", () => {
     expect(checklist).toContain("codex-20b6b3c-emulator-clean-install-launch-after-wait.png");
     expect(checklist).toContain("size 279,172 bytes");
     expect(checklist).toContain("codex-20b6b3c-emulator-window.xml");
+    expect(checklist).toContain("Build commit: `9447fe7a7a0a7dc5e8e9302b2d3ece867b7a1bc3`");
+    expect(checklist).toContain("Build Android APK` run `26858454960`");
+    expect(checklist).toContain("artifact id `7373923997`");
+    expect(checklist).toContain("Artifact ZIP downloaded from GitHub Actions; size 4,249,053 bytes");
+    expect(checklist).toContain("0df765e3bb7f4a19a218d3fcb5b3cc5f90130d5eb59cf993aed9f9f3d166dcb5");
+    expect(checklist).toContain("app-debug.apk`, size 4,635,778 bytes");
+    expect(checklist).toContain("e6a57dd46d057b98c33798ec1d1248ffc7673273fbe1084f0a56d3af88eed539");
+    expect(checklist).toContain("`Build Android APK` completed successfully for commit `9447fe7`");
+    expect(checklist).toContain("This verification confirms artifact download, extraction, APK signature, and package metadata only; install, launch, Drive import, YouTube share, duplicate import, deletion, and layout flows were not repeated for commit `9447fe7`");
+    expect(checklist).toContain("APK clean installed on the emulator with `adb install`; install output was `Performing Streamed Install | Success`");
+    expect(checklist).toContain("Launch output reported `Status: ok`, `LaunchState: COLD`, `TotalTime: 9159`, and `WaitTime: 9167`");
+    expect(checklist).toContain("App process was alive after launch with pid `2043`");
+    expect(checklist).toContain("codex-9447fe7-emulator-clean-install-launch-after-wait.png");
+    expect(checklist).toContain("size 276,580 bytes");
+    expect(checklist).toContain("valid PNG signature");
+    expect(checklist).toContain("Home screen rendered with the header, summary cards, import button, date-range card, and bottom navigation visible in the emulator screenshot");
+    expect(checklist).toContain("codex-9447fe7-emulator-window.xml");
+    expect(checklist).toContain("Emulator detached from ADB after shutdown, and leftover Windows emulator/qemu processes from the smoke run were cleaned up");
   });
 
   it("keeps privacy and product-boundary reminders visible", () => {
@@ -331,7 +351,9 @@ describe("pre-release change summary checklist", () => {
     expect(checklist).toContain("Valid small fixture ZIP");
     expect(checklist).toContain("completed and reported import counts in debug and release smoke");
     expect(checklist).toContain("GitHub Actions debug APK clean-installed and launched on an Android 16 x86_64 emulator");
-    expect(checklist).toContain("GitHub Actions debug APK clean-installed and launched on an Android 16 emulator for commits `440856a`, `cbe4b9a`, `a2e2d01`, `0d327d1`, `b2b5bf8`, `7ec33e2`, `1768952`, `205656e`, `8a086cb`, `bf8880a`, `68c8ef3`, and `20b6b3c`");
+    expect(checklist).toContain("GitHub Actions debug APK clean-installed and launched on an Android 16 emulator for commits `440856a`, `cbe4b9a`, `a2e2d01`, `0d327d1`, `b2b5bf8`, `7ec33e2`, `1768952`, `205656e`, `8a086cb`, `bf8880a`, `68c8ef3`, `20b6b3c`, and `9447fe7`");
+    expect(checklist).toContain("GitHub Actions debug APK artifact verification passed for commits `68c8ef3`, `20b6b3c`, and `9447fe7`");
+    expect(checklist).toContain("Emulator shutdown required leftover Windows process cleanup after ADB detached");
     expect(checklist).toContain("Drive import, YouTube share, duplicate import, deletion, and layout flows were not repeated there");
     expect(checklist).toContain("install and launch were repeated in the follow-up emulator smoke");
     expect(checklist).toContain("emulator boot stability should continue to be watched");

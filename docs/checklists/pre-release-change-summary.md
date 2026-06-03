@@ -641,13 +641,67 @@ Remaining emulator-specific risks:
 - The first emulator start attempt crashed before ADB attach; the headless retry completed successfully, but emulator boot stability should continue to be watched.
 - A real standard non-foldable Android phone still needs smoke before broad sharing.
 
+## GitHub Actions APK Artifact Verification Result - 2026-06-03 (9447fe7)
+
+APK: GitHub Actions artifact `youtube-daily-mind-map-debug-apk` from `Build Android APK` run `26858454960`, artifact id `7373923997`, extracted as `app-debug.apk`, size 4,635,778 bytes.
+Build commit: `9447fe7a7a0a7dc5e8e9302b2d3ece867b7a1bc3`.
+
+- [x] `Build Android APK` completed successfully for commit `9447fe7`.
+- [x] Artifact ZIP downloaded from GitHub Actions; size 4,249,053 bytes.
+- [x] Artifact ZIP SHA256 matched the GitHub artifact digest `0df765e3bb7f4a19a218d3fcb5b3cc5f90130d5eb59cf993aed9f9f3d166dcb5`.
+- [x] `app-debug.apk` was extracted from the artifact.
+- [x] APK SHA256 was `e6a57dd46d057b98c33798ec1d1248ffc7673273fbe1084f0a56d3af88eed539`.
+- [x] `apksigner verify` passed after setting `JAVA_HOME` to the Android Studio JBR.
+- [x] APK Signature Scheme v2 verified true.
+- [x] APK signer was `C=US, O=Android, CN=Android Debug`.
+- [x] `aapt dump badging` found package `com.lucita81.youtubedailymindmap`.
+- [x] `aapt dump badging` found application label `YouTube Daily Mind Map`.
+- [x] `aapt dump badging` found `versionCode='1'`, `versionName='1.0'`, `sdkVersion:'24'`, and `targetSdkVersion:'36'`.
+- [x] `aapt dump badging` found launchable activity `com.lucita81.youtubedailymindmap.MainActivity`.
+- [x] `aapt dump badging` confirmed this artifact is debuggable.
+
+Remaining artifact-specific risks:
+
+- This was a GitHub Actions debug artifact, not a release or Play Store signed artifact.
+- This verification confirms artifact download, extraction, APK signature, and package metadata only; install, launch, Drive import, YouTube share, duplicate import, deletion, and layout flows were not repeated for commit `9447fe7`.
+
+## GitHub Actions APK Emulator Clean Install Smoke Result - 2026-06-03 (9447fe7)
+
+Device: Android Emulator `codex_clean_api36`, model `sdk_gphone64_x86_64`, Android 16, API 36.
+APK: GitHub Actions artifact `youtube-daily-mind-map-debug-apk` from `Build Android APK` run `26858454960`, artifact id `7373923997`, extracted as `app-debug.apk`, size 4,635,778 bytes.
+Build commit: `9447fe7a7a0a7dc5e8e9302b2d3ece867b7a1bc3`.
+
+- [x] Clean AVD `codex_clean_api36` was launched with `-wipe-data`, `-no-window`, and `-gpu swiftshader_indirect`.
+- [x] Emulator boot completed on model `sdk_gphone64_x86_64`, Android 16, API 36, with physical size `1080x1920`.
+- [x] APK clean installed on the emulator with `adb install`; install output was `Performing Streamed Install | Success`.
+- [x] Installed package code path was under `/data/app/.../com.lucita81.youtubedailymindmap.../base.apk`.
+- [x] Installed APK reported `versionCode=1`, `minSdk=24`, and `targetSdk=36`.
+- [x] Installed package flags included `DEBUGGABLE`, as expected for the GitHub Actions debug artifact.
+- [x] App cold-launched and `.MainActivity` became the resumed activity.
+- [x] Launch output reported `Status: ok`, `LaunchState: COLD`, `TotalTime: 9159`, and `WaitTime: 9167`.
+- [x] App process was alive after launch with pid `2043`.
+- [x] Home screen screenshot was captured at `C:\Users\IML4\AppData\Local\Temp\codex-9447fe7-emulator-clean-install-launch-after-wait.png`, size 276,580 bytes, with a valid PNG signature.
+- [x] Home screen rendered with the header, summary cards, import button, date-range card, and bottom navigation visible in the emulator screenshot.
+- [x] `uiautomator dump` created `C:\Users\IML4\AppData\Local\Temp\codex-9447fe7-emulator-window.xml`, size 2,785 bytes.
+- [x] App process was alive after launch and strict filtered logcat showed no `FATAL EXCEPTION`, `Process com.lucita81.youtubedailymindmap has died`, or `Force finishing activity com.lucita81.youtubedailymindmap` lines.
+- [x] Emulator detached from ADB after shutdown, and leftover Windows emulator/qemu processes from the smoke run were cleaned up.
+
+Remaining emulator-specific risks:
+
+- This was a GitHub Actions debug artifact, not a release or Play Store signed artifact.
+- This smoke confirms clean install and first-screen launch only; Drive import, YouTube share, duplicate import, deletion, and layout flows were not repeated on the emulator.
+- `uiautomator dump` produced a limited WebView hierarchy, so Home render evidence depends on the screenshot plus resumed-activity state.
+- Emulator shutdown required leftover Windows process cleanup after ADB detached, so emulator shutdown stability should continue to be watched.
+- A real standard non-foldable Android phone still needs smoke before broad sharing.
+
 ## Current Remaining Risks
 
 - Drive file selection may behave differently across Android vendors and file providers; direct `file://` and MediaStore `content://` upload attempts did not produce a selectable Drive file, while the Google Drive app's own upload flow did.
 - Android Drive duplicate re-import passed with the small synthetic watch-history fixture, but large real duplicate archives still need performance/storage verification.
 - The 1.62 GiB real Takeout structure scan found a localized Korean watch-history candidate, but Android full Drive copy/parsing/loading UI remains unverified because that real ZIP was not user-selected from Drive in the smoke run.
 - Release APK native import logcat silence, invalid ZIP rejection visibility, valid fixture completion, duplicate-summary visibility, and YouTube share behavior passed on the Samsung SM-F966N; standard phone and additional vendor/device coverage still need review before public release.
-- GitHub Actions debug APK clean-installed and launched on an Android 16 emulator for commits `440856a`, `cbe4b9a`, `a2e2d01`, `0d327d1`, `b2b5bf8`, `7ec33e2`, `1768952`, `205656e`, `8a086cb`, `bf8880a`, `68c8ef3`, and `20b6b3c`, but Drive import, YouTube share, duplicate import, deletion, and layout flows were not repeated there.
+- GitHub Actions debug APK artifact verification passed for commits `68c8ef3`, `20b6b3c`, and `9447fe7`.
+- GitHub Actions debug APK clean-installed and launched on an Android 16 emulator for commits `440856a`, `cbe4b9a`, `a2e2d01`, `0d327d1`, `b2b5bf8`, `7ec33e2`, `1768952`, `205656e`, `8a086cb`, `bf8880a`, `68c8ef3`, `20b6b3c`, and `9447fe7`, but Drive import, YouTube share, duplicate import, deletion, and layout flows were not repeated there.
 - Debug and locally smoke-signed release APK WebView thumbnail smoke passed on the Samsung SM-F966N with no synthetic sample thumbnail requests or 404 logs, but Play Store-signed release and real standard phone coverage still need repeat passes before broad sharing.
 - Storage fields for video memory are currently lightweight `WatchItem` fields, not a versioned migration.
 - UI copy and layout passed a foldable smoke path, but standard phone layout and long Korean copy still need review before public sharing.
