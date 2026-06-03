@@ -1166,16 +1166,16 @@ export function AppShell() {
               설정
             </button>
           </div>
-          <div className="mt-5 grid grid-cols-3 gap-2">
-            <div className="rounded-lg bg-white/15 p-3 backdrop-blur">
+          <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3">
+            <div className="min-w-0 rounded-lg bg-white/15 p-3 backdrop-blur">
               <div className="text-[11px] font-bold text-sky-100">선택 범위</div>
               <div className="mt-1 truncate text-sm font-black">{activeRangeLabel}</div>
             </div>
-            <div className="rounded-lg bg-white/15 p-3 backdrop-blur">
+            <div className="min-w-0 rounded-lg bg-white/15 p-3 backdrop-blur">
               <div className="text-[11px] font-bold text-sky-100">기록 수</div>
               <div className="mt-1 text-sm font-black">{activeSummary.totalCount}개</div>
             </div>
-            <div className="rounded-lg bg-white/15 p-3 backdrop-blur">
+            <div className="col-span-2 min-w-0 rounded-lg bg-white/15 p-3 backdrop-blur sm:col-span-1">
               <div className="text-[11px] font-bold text-sky-100">Top 주제</div>
               <div className="mt-1 truncate text-sm font-black">{activeSummary.topCategory?.name ?? "없음"}</div>
             </div>
