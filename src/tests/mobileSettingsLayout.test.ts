@@ -24,14 +24,27 @@ describe("mobile settings layout", () => {
     expect(appShell).toContain('canvasMode === "settings" ? settingsBottomPaddingClass : defaultBottomPaddingClass');
   });
 
-  it("keeps the saved-record delete action above the share guide card", () => {
+  it("keeps the primary Drive ZIP action above secondary guidance", () => {
     const importPanel = readImportPanel();
-    const deleteActionIndex = importPanel.indexOf("저장 기록 삭제");
+    const driveZipActionIndex = importPanel.indexOf("Google Drive ZIP 선택");
+    const takeoutLinkIndex = importPanel.indexOf("Drive로 Takeout 만들기");
+    const helpToggleIndex = importPanel.indexOf("도움말 보기");
+    const recommendedFlowIndex = importPanel.indexOf("권장 흐름");
     const shareGuideIndex = importPanel.indexOf("YouTube 공유로 바로 저장");
 
     expect(importPanel.match(/savedItemCount > 0/g)).toHaveLength(1);
-    expect(deleteActionIndex).toBeGreaterThan(0);
+    expect(importPanel).toContain("<details");
+    expect(importPanel).toContain("helpDetailsRef");
+    expect(importPanel).toContain("onToggle={handleHelpDetailsToggle}");
+    expect(importPanel).toContain('scrollIntoView({ block: "center", behavior: "smooth" })');
+    expect(driveZipActionIndex).toBeGreaterThan(0);
+    expect(takeoutLinkIndex).toBeGreaterThan(0);
+    expect(helpToggleIndex).toBeGreaterThan(0);
+    expect(recommendedFlowIndex).toBeGreaterThan(0);
     expect(shareGuideIndex).toBeGreaterThan(0);
-    expect(deleteActionIndex).toBeLessThan(shareGuideIndex);
+    expect(driveZipActionIndex).toBeLessThan(takeoutLinkIndex);
+    expect(takeoutLinkIndex).toBeLessThan(helpToggleIndex);
+    expect(helpToggleIndex).toBeLessThan(recommendedFlowIndex);
+    expect(helpToggleIndex).toBeLessThan(shareGuideIndex);
   });
 });

@@ -78,6 +78,7 @@ export function WatchHistoryImportPanel({
   onClearSaved
 }: WatchHistoryImportPanelProps) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const helpDetailsRef = useRef<HTMLDetailsElement>(null);
   const isNativeDrivePicker = isNativeDriveFilePickerAvailable();
   const [errorMessage, setErrorMessage] = useState("");
   const [statusMessage, setStatusMessage] = useState("");
@@ -99,6 +100,17 @@ export function WatchHistoryImportPanel({
   function handleGoHomeAfterImport() {
     closeImportOverlay();
     window.dispatchEvent(new Event(GO_HOME_EVENT_NAME));
+  }
+
+  function handleHelpDetailsToggle() {
+    const helpDetails = helpDetailsRef.current;
+    if (!helpDetails?.open) {
+      return;
+    }
+
+    window.requestAnimationFrame(() => {
+      helpDetails.scrollIntoView({ block: "center", behavior: "smooth" });
+    });
   }
 
   async function handleNativeDrivePick() {
@@ -289,27 +301,6 @@ export function WatchHistoryImportPanel({
           </button>
         ) : null}
 
-        <div className="space-y-2 rounded-md border border-sky-100 bg-sky-50 px-3 py-3 text-xs leading-relaxed text-slate-700">
-          <div className="text-sm font-bold text-slate-900">YouTube 공유로 바로 저장</div>
-          <ol className="list-decimal space-y-1 pl-4">
-            <li>YouTube 앱에서 기억하고 싶은 영상의 공유를 누릅니다.</li>
-            <li>공유 시트 첫 화면에 앱이 안 보이면 더보기를 누릅니다.</li>
-            <li>YouTube Daily Mind Map을 선택하면 오늘 기록에 저장됩니다.</li>
-          </ol>
-          <p className="text-slate-500">
-            처음에는 더보기 안에 있을 수 있습니다. 한 번 선택하면 기기 공유 목록에서 더 빨리 찾을 수 있습니다.
-          </p>
-        </div>
-
-        <a
-          href={GOOGLE_TAKEOUT_YOUTUBE_DRIVE_URL}
-          target="_blank"
-          rel="noreferrer"
-          className="flex w-full items-center justify-center rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
-        >
-          Drive로 Takeout 만들기
-        </a>
-
         {!isNativeDrivePicker ? (
           <input
             ref={inputRef}
@@ -350,6 +341,51 @@ export function WatchHistoryImportPanel({
               : "웹에서는 ZIP, watch-history.json, watch-history.html을 선택할 수 있습니다."}
           </p>
         </div>
+
+        <a
+          href={GOOGLE_TAKEOUT_YOUTUBE_DRIVE_URL}
+          target="_blank"
+          rel="noreferrer"
+          className="flex w-full items-center justify-center rounded-md border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+        >
+          Drive로 Takeout 만들기
+        </a>
+
+        <details
+          ref={helpDetailsRef}
+          className="rounded-md border border-sky-100 bg-sky-50 px-3 py-3 text-xs leading-relaxed text-slate-700"
+          onToggle={handleHelpDetailsToggle}
+        >
+          <summary className="cursor-pointer text-sm font-bold text-slate-900">
+            도움말 보기
+            <span className="mt-1 block text-xs font-medium text-slate-500">
+              Takeout 만들기와 YouTube 공유 저장 방법
+            </span>
+          </summary>
+          <div className="mt-3 space-y-3">
+            <div className="space-y-1 rounded-md bg-white/70 px-3 py-2">
+              <div className="font-semibold text-slate-800">권장 흐름</div>
+              <div>1. Drive로 Takeout 만들기</div>
+              <div>2. Google 화면에서 내보내기 생성</div>
+              <div>3. 완료된 Takeout ZIP을 Google Drive에서 선택</div>
+              <div>4. 새 기록만 저장하고 중복은 건너뛰기</div>
+            </div>
+            <div className="space-y-2 rounded-md bg-white/70 px-3 py-2">
+              <div className="font-semibold text-slate-800">YouTube 공유로 바로 저장</div>
+              <ol className="list-decimal space-y-1 pl-4">
+                <li>YouTube 앱에서 기억하고 싶은 영상의 공유를 누릅니다.</li>
+                <li>공유 시트 첫 화면에 앱이 안 보이면 더보기를 누릅니다.</li>
+                <li>YouTube Daily Mind Map을 선택하면 오늘 기록에 저장됩니다.</li>
+              </ol>
+              <p className="text-slate-500">
+                처음에는 더보기 안에 있을 수 있습니다. 한 번 선택하면 기기 공유 목록에서 더 빨리 찾을 수 있습니다.
+              </p>
+            </div>
+            <p className="text-slate-500">
+              파일은 서버로 업로드하지 않고 현재 기기에서만 읽습니다. 가져온 기록은 IndexedDB에 저장됩니다.
+            </p>
+          </div>
+        </details>
 
         {nativeImportOutcome ? (
           <div
@@ -395,18 +431,6 @@ export function WatchHistoryImportPanel({
         {visibleImportSummary ? <ImportSummaryCard summary={visibleImportSummary} /> : null}
 
         {!isNativeDrivePicker ? <DriveTakeoutImportPanel onImported={onImported} /> : null}
-
-        <div className="space-y-1 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-xs leading-relaxed text-slate-600">
-          <div className="font-semibold text-slate-700">권장 흐름</div>
-          <div>1. Drive로 Takeout 만들기</div>
-          <div>2. Google 화면에서 내보내기 생성</div>
-          <div>3. 완료된 Takeout ZIP을 Google Drive에서 선택</div>
-          <div>4. 새 기록만 저장하고 중복은 건너뛰기</div>
-        </div>
-
-        <p className="text-xs leading-relaxed text-slate-500">
-          파일은 서버로 업로드하지 않고 현재 기기에서만 읽습니다. 가져온 기록은 IndexedDB에 저장됩니다.
-        </p>
 
         {errorMessage ? (
           <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-xs leading-relaxed text-rose-700">

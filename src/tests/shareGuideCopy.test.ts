@@ -18,6 +18,9 @@ describe("YouTube share guide copy", () => {
   it("keeps the chooser guidance visible in the import/settings panel", () => {
     const source = readImportPanel();
 
+    expect(source).toContain("도움말 보기");
+    expect(source).toContain("Takeout 만들기와 YouTube 공유 저장 방법");
+    expect(source).toContain("권장 흐름");
     expect(source).toContain("YouTube 공유로 바로 저장");
     expect(source).toContain("공유 시트 첫 화면에 앱이 안 보이면 더보기를 누릅니다.");
     expect(source).toContain("YouTube Daily Mind Map을 선택하면 오늘 기록에 저장됩니다.");
