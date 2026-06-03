@@ -337,8 +337,8 @@ export function WatchHistoryImportPanel({
           </button>
           <p className="text-xs leading-relaxed text-slate-500">
             {isNativeDrivePicker
-              ? "Android 파일 선택기에서 Google Drive를 열고 Takeout ZIP을 고르세요. 다음 선택 때는 마지막 Drive 위치를 먼저 엽니다."
-              : "웹에서는 ZIP, watch-history.json, watch-history.html을 선택할 수 있습니다."}
+              ? "Android 파일 선택기에서 Google Drive의 Takeout ZIP을 고르세요. 앱은 선택한 ZIP 하나만 현재 기기에서 읽고 서버로 업로드하지 않습니다."
+              : "웹에서는 ZIP, watch-history.json, watch-history.html을 선택할 수 있습니다. 파일은 서버로 업로드하지 않습니다."}
           </p>
         </div>
 

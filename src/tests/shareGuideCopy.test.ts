@@ -15,6 +15,24 @@ function readImportPanel(): string {
 }
 
 describe("YouTube share guide copy", () => {
+  it("keeps local-first Drive import reassurance next to the primary action", () => {
+    const source = readImportPanel();
+    const driveZipActionIndex = source.indexOf("Google Drive ZIP 선택");
+    const localFirstCopyIndex = source.indexOf(
+      "앱은 선택한 ZIP 하나만 현재 기기에서 읽고 서버로 업로드하지 않습니다."
+    );
+    const takeoutLinkIndex = source.indexOf("Drive로 Takeout 만들기");
+
+    expect(driveZipActionIndex).toBeGreaterThan(0);
+    expect(localFirstCopyIndex).toBeGreaterThan(0);
+    expect(takeoutLinkIndex).toBeGreaterThan(0);
+    expect(driveZipActionIndex).toBeLessThan(localFirstCopyIndex);
+    expect(localFirstCopyIndex).toBeLessThan(takeoutLinkIndex);
+    expect(source).toContain("파일은 서버로 업로드하지 않습니다.");
+    expect(source).not.toContain("사용시간");
+    expect(source).not.toContain("시청 시간");
+  });
+
   it("keeps the chooser guidance visible in the import/settings panel", () => {
     const source = readImportPanel();
 
