@@ -35,7 +35,7 @@ describe("product UX review checklist", () => {
     expect(review).toContain("Home share-memory discoverability");
     expect(review).toContain("Timeline saved-memory scanning");
     expect(review).toContain("Do not claim viewing duration.");
-    expect(review).toContain("Run a browser-based 390px evidence pass for the Import surface");
+    expect(review).toContain("Run `npm run smoke:import-surface`");
     expect(review).not.toContain("watch time");
     expect(review).not.toContain("usage time");
   });

@@ -11,6 +11,7 @@
     "lint": "node ./node_modules/eslint/bin/eslint.js . --max-warnings=0",
     "test": "node ./node_modules/vitest/vitest.mjs run",
     "test:watch": "node ./node_modules/vitest/vitest.mjs",
+    "smoke:import-surface": "node scripts/smoke-import-surface.mjs",
     "smoke:large-takeout": "node scripts/smoke-large-takeout.mjs",
     "verify": "node ./node_modules/typescript/bin/tsc --noEmit && node ./node_modules/eslint/bin/eslint.js . --max-warnings=0 && node ./node_modules/vitest/vitest.mjs run && node ./node_modules/next/dist/bin/next build"
   },
@@ -31,6 +32,7 @@
     "react-dom": "^19.0.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.60.0",
     "@types/dagre": "^0.7.52",
     "@types/node": "^22.10.7",
     "@types/react": "^19.0.7",

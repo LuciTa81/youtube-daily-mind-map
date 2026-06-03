@@ -116,4 +116,4 @@ Risks to validate before visual changes:
 
 ## Next Recommended Task
 
-Run a browser-based 390px evidence pass for the Import surface, then improve only the first-action hierarchy if the screenshot or DOM evidence shows that the primary Takeout action is unclear or pushed too far down.
+Run `npm run smoke:import-surface` against a running local app to capture a browser-based 390px evidence pass for the Import surface. The script writes screenshots and non-sensitive geometry to `.codex/import-surface-smoke/`. Improve only the first-action hierarchy if that screenshot evidence shows that the primary Takeout action is unclear or pushed too far down.
