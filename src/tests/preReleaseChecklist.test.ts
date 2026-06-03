@@ -51,6 +51,7 @@ describe("pre-release change summary checklist", () => {
     expect(checklist).toContain("## GitHub Actions APK Emulator Clean Install Smoke Result - 2026-06-03 (1768952)");
     expect(checklist).toContain("## GitHub Actions APK Emulator Clean Install Smoke Result - 2026-06-03 (205656e)");
     expect(checklist).toContain("## GitHub Actions APK Emulator Clean Install Smoke Result - 2026-06-03 (8a086cb)");
+    expect(checklist).toContain("## GitHub Actions APK Emulator Clean Install Smoke Result - 2026-06-03 (bf8880a)");
     expect(checklist).toContain("## Current Remaining Risks");
     expect(checklist).toContain("## Go / No-go Notes");
   });
@@ -264,6 +265,17 @@ describe("pre-release change summary checklist", () => {
     expect(checklist).toContain("codex-8a086cb-emulator-window.xml");
     expect(checklist).toContain("size 2,785 bytes");
     expect(checklist).toContain("`uiautomator dump` produced a limited WebView hierarchy");
+    expect(checklist).toContain("Build commit: `bf8880a42bae8290005b0e31073647007a158f99`");
+    expect(checklist).toContain("Build Android APK` run `26856656716`");
+    expect(checklist).toContain("artifact id `7373230313`");
+    expect(checklist).toContain("Artifact ZIP downloaded from GitHub Actions; size 4,249,046 bytes");
+    expect(checklist).toContain("42af32afd547ede2a982fd6573d40687b2d256f70fffb920e3b90c51f70e98c9");
+    expect(checklist).toContain("app-debug.apk`, size 4,635,790 bytes");
+    expect(checklist).toContain("App cold-launched and `.MainActivity` became the resumed activity");
+    expect(checklist).toContain("App process was alive after launch with pid `2801`");
+    expect(checklist).toContain("codex-bf8880a-emulator-clean-install-launch-after-wait.png");
+    expect(checklist).toContain("size 280,281 bytes");
+    expect(checklist).toContain("codex-bf8880a-emulator-window.xml");
   });
 
   it("keeps privacy and product-boundary reminders visible", () => {
@@ -281,7 +293,7 @@ describe("pre-release change summary checklist", () => {
     expect(checklist).toContain("Valid small fixture ZIP");
     expect(checklist).toContain("completed and reported import counts in debug and release smoke");
     expect(checklist).toContain("GitHub Actions debug APK clean-installed and launched on an Android 16 x86_64 emulator");
-    expect(checklist).toContain("GitHub Actions debug APK clean-installed and launched on an Android 16 emulator for commits `440856a`, `cbe4b9a`, `a2e2d01`, `0d327d1`, `b2b5bf8`, `7ec33e2`, `1768952`, `205656e`, and `8a086cb`");
+    expect(checklist).toContain("GitHub Actions debug APK clean-installed and launched on an Android 16 emulator for commits `440856a`, `cbe4b9a`, `a2e2d01`, `0d327d1`, `b2b5bf8`, `7ec33e2`, `1768952`, `205656e`, `8a086cb`, and `bf8880a`");
     expect(checklist).toContain("Drive import, YouTube share, duplicate import, deletion, and layout flows were not repeated there");
     expect(checklist).toContain("Android Drive duplicate re-import passed with the small synthetic watch-history fixture");
     expect(checklist).toContain("large real duplicate archives still need performance/storage verification");
