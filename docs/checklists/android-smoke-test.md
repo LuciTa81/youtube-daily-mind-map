@@ -82,6 +82,7 @@ Run the full checklist on at least one primary Android device before sharing an 
 
 ## YouTube Share Intent Smoke
 
+- [ ] Confirm the share-routing expectation in `docs/checklists/android-share-intent-routing.md` if Android share routing, activity themes, or quick-share behavior changed.
 - [ ] Open a public YouTube video in the installed YouTube app.
 - [ ] Tap YouTube Share.
 - [ ] If needed, open the Android resolver's More list.
