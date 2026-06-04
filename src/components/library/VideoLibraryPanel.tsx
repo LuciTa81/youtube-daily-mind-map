@@ -88,7 +88,7 @@ function LibraryEmptyState({
     : "아직 저장한 YouTube 영상이 없습니다.";
   const description = hasAnyLibraryItem
     ? "다른 필터를 선택하거나 타임라인에서 영상을 저장해보세요."
-    : "YouTube 공유 버튼에서 이 앱을 선택하면 오늘의 기억으로 저장됩니다.";
+    : "YouTube 공유 버튼에서 이 앱을 선택하면 오늘의 기억으로 저장됩니다. 앱이 보이지 않으면 공유 시트의 더보기를 열어주세요.";
 
   return (
     <div className="rounded-lg border border-dashed border-slate-200 bg-white p-5 text-center">

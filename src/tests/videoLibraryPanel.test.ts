@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 
 const panelPath = join(process.cwd(), "src", "components", "library", "VideoLibraryPanel.tsx");
 const appShellPath = join(process.cwd(), "src", "components", "layout", "AppShell.tsx");
+const leftPanelPath = join(process.cwd(), "src", "components", "layout", "LeftPanel.tsx");
 
 function readPanel(): string {
   return readFileSync(panelPath, "utf8");
@@ -11,6 +12,10 @@ function readPanel(): string {
 
 function readAppShell(): string {
   return readFileSync(appShellPath, "utf8");
+}
+
+function readLeftPanel(): string {
+  return readFileSync(leftPanelPath, "utf8");
 }
 
 describe("video library panel wiring", () => {
@@ -31,6 +36,7 @@ describe("video library panel wiring", () => {
 
     expect(source).toContain("아직 저장한 YouTube 영상이 없습니다.");
     expect(source).toContain("YouTube 공유 버튼에서 이 앱을 선택하면 오늘의 기억으로 저장됩니다.");
+    expect(source).toContain("앱이 보이지 않으면 공유 시트의 더보기를 열어주세요.");
     expect(source).toContain("공유 저장 방법 보기");
     expect(source).toContain("onOpenSettings");
   });
@@ -46,9 +52,23 @@ describe("video library panel wiring", () => {
     expect(source).toContain('canvasMode === "library"');
     expect(source).toContain("<VideoLibraryPanel");
     expect(source).toContain("onItemSelect={handleLibraryItemSelect}");
+    expect(source).toContain('onOpenSettings={() => handleCanvasModeChange("settings")}');
     expect(source).toContain('onClick={() => handleCanvasModeChange("library")}');
     expect(source).toContain("저장함");
     expect(source).toContain('onOpenMindMap={() => handleCanvasModeChange("mindmap")}');
+  });
+
+  it("connects the Library help CTA to the settings import guide surface", () => {
+    const appShellSource = readAppShell();
+    const leftPanelSource = readLeftPanel();
+
+    expect(appShellSource).toContain("가져오기와 설정");
+    expect(appShellSource).toContain('canvasMode === "settings"');
+    expect(appShellSource).toContain('layoutVariant="settings"');
+    expect(appShellSource).toContain("showIntro={false}");
+    expect(leftPanelSource).toContain("WatchHistoryImportPanel");
+    expect(leftPanelSource).toContain("기록 가져오기");
+    expect(leftPanelSource).toContain("YouTube 공유 저장");
   });
 
   it("does not introduce unsupported viewing-duration copy", () => {
