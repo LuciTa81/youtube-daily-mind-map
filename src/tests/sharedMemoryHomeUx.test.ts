@@ -55,11 +55,22 @@ describe("shared memory home UX", () => {
 
     expect(source).toContain("function ShareMemoryPrompt");
     expect(source).toContain("sharedMemoryItems.length === 0");
+    expect(source).toContain("flex min-h-24 w-full items-center justify-between");
     expect(source).toContain("YouTube 공유 저장");
     expect(source).toContain("Takeout을 기다리지 않고");
     expect(source).toContain("오늘의 기억에 따로 모입니다");
     expect(source).toContain("공유 방법 보기");
     expect(source).toContain("onOpenSettings");
+  });
+
+  it("places the share-save prompt before the date range controls on Home", () => {
+    const source = readHomeDashboard();
+    const promptIndex = source.indexOf("{sharedMemoryItems.length === 0 ? <ShareMemoryPrompt");
+    const rangeCardIndex = source.indexOf('<div className="text-xs font-semibold text-sky-600">선택 범위</div>');
+
+    expect(promptIndex).toBeGreaterThan(-1);
+    expect(rangeCardIndex).toBeGreaterThan(-1);
+    expect(promptIndex).toBeLessThan(rangeCardIndex);
   });
 
   it("does not introduce Korean unsupported viewing-duration copy", () => {
