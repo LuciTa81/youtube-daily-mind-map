@@ -6,6 +6,7 @@ coverage
 test-results
 .env*
 !.env.example
+.vercel
 *.log
 *.jks
 *.keystore
