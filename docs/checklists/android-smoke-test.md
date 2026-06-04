@@ -20,6 +20,8 @@ It does not replace unit tests, fixture tests, `npm run verify`, or Android buil
 - [ ] The build target is known: debug APK, locally signed release APK, or Play Store candidate.
 - [ ] The signing lane is known: CI debug artifact, local smoke debug artifact, locally smoke-signed release APK, or Play Store candidate.
 - [ ] If update-install behavior matters, the APK being installed is signed with the same certificate as the already installed app.
+- [ ] Play Store candidates follow `docs/adr/0008-play-store-upload-signing.md`; locally smoke-signed release APKs are not treated as Play Store candidates.
+- [ ] If Play App Signing is enabled, local upload-key-signed APK installs are not used to claim Play-delivered update compatibility.
 - [ ] CI debug artifacts are treated as clean-install artifacts unless they share the dedicated smoke debug signing certificate with the local smoke build.
 - [ ] For a local smoke debug build, `SMOKE_DEBUG_KEYSTORE_FILE`, `SMOKE_DEBUG_KEYSTORE_PASSWORD`, `SMOKE_DEBUG_KEY_ALIAS`, and `SMOKE_DEBUG_KEY_PASSWORD` point to the dedicated smoke debug signing certificate.
 - [ ] For a CI smoke debug build, GitHub Actions secrets provide `SMOKE_DEBUG_KEYSTORE_BASE64`, `SMOKE_DEBUG_KEYSTORE_PASSWORD`, `SMOKE_DEBUG_KEY_ALIAS`, and `SMOKE_DEBUG_KEY_PASSWORD`.
@@ -144,6 +146,7 @@ Build commit:
 - [ ] Release logcat privacy smoke passed, if using a release APK.
 - [ ] Update install passed with `adb install -r`, if update behavior matters.
 - [ ] If update install failed with `INSTALL_FAILED_UPDATE_INCOMPATIBLE`, it was recorded as a signing mismatch and no uninstall or clear-data step was run without explicit approval.
+- [ ] Play-installed update behavior was validated through Play internal testing or an artifact signed with the same final app signing certificate, if Play update behavior matters.
 
 Remaining device-specific risks:
 -

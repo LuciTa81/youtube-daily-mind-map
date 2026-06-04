@@ -9,6 +9,8 @@ test-results
 *.log
 *.jks
 *.keystore
+*.apk
+*.aab
 mindmap-screenshot.png
 fold-layout-screenshot.png
 android/.gradle

@@ -2,6 +2,8 @@
 
 Use this before sharing an APK, publishing a Play Store build, or pushing production web changes.
 
+For Android release preparation, also follow `docs/release-guide.md`.
+
 ## Product
 
 - [ ] The release has a clear user-facing purpose.
@@ -40,6 +42,17 @@ Use this before sharing an APK, publishing a Play Store build, or pushing produc
 - [ ] Play Store candidates use the release or upload signing path, not the smoke debug signing certificate.
 - [ ] If update behavior matters, `adb install -r` succeeds over an existing install signed by the same smoke or release certificate.
 - [ ] If `INSTALL_FAILED_UPDATE_INCOMPATIBLE` occurs, record it as a signing mismatch and do not uninstall or clear local data without explicit user approval.
+
+## Play Store Upload Signing
+
+- [ ] The Play Store candidate follows `docs/adr/0008-play-store-upload-signing.md`.
+- [ ] The Play Store candidate follows `docs/release-guide.md`.
+- [ ] The artifact type is known: Android App Bundle for Play upload, Play-generated internal testing artifact, or local release-variant smoke APK.
+- [ ] Until a Play upload/release signing lane exists, `app-release-unsigned.apk` and locally smoke-signed release APKs are treated as smoke artifacts only, not Play Store candidates.
+- [ ] Play upload signing material is stored outside the repository and not reused from the smoke debug signing lane.
+- [ ] If automated later, Play signing uses dedicated secrets such as `PLAY_UPLOAD_KEYSTORE_FILE`, `PLAY_UPLOAD_KEYSTORE_PASSWORD`, `PLAY_UPLOAD_KEY_ALIAS`, and `PLAY_UPLOAD_KEY_PASSWORD`.
+- [ ] The artifact signing certificate fingerprint, version code, version name, device, and verification path are recorded before external testing.
+- [ ] Local upload-key-signed APK update installs are not claimed to prove Play update compatibility when Play App Signing is enabled; use Play internal testing or an artifact signed with the same final app signing certificate.
 
 ## Manual Smoke
 
