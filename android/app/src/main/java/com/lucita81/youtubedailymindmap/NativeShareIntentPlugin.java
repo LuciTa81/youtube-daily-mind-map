@@ -26,7 +26,7 @@ public class NativeShareIntentPlugin extends Plugin {
     @PluginMethod
     public void drainPendingShares(PluginCall call) {
         JSObject result = new JSObject();
-        result.put("shares", NativeShareIntentQueue.drain(getContext()));
+        result.put("shares", toShareArray(NativeShareIntentQueue.drain(getContext())));
         call.resolve(result);
     }
 
@@ -77,7 +77,7 @@ public class NativeShareIntentPlugin extends Plugin {
         }
 
         if (instance != null) {
-            instance.emitPendingShare();
+            instance.notifyListeners("shareReceived", toShareEvent(share));
         }
     }
 
@@ -93,6 +93,17 @@ public class NativeShareIntentPlugin extends Plugin {
     private static JSObject toShareEvent(JSONObject share) {
         JSObject result = new JSObject();
         putShareFields(result, share);
+        return result;
+    }
+
+    private static JSArray toShareArray(JSONArray shares) {
+        JSArray result = new JSArray();
+        for (int index = 0; index < shares.length(); index += 1) {
+            JSONObject share = shares.optJSONObject(index);
+            if (share != null) {
+                result.put(toShareEvent(share));
+            }
+        }
         return result;
     }
 

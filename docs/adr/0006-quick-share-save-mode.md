@@ -2,7 +2,7 @@
 
 ## Status
 
-Proposed
+Accepted
 
 ## Context
 
@@ -49,10 +49,13 @@ The tradeoff is that the saved video may lack a tag or note at first. The Home a
 
 Native implementation will need Android real-device smoke because the behavior depends on Android task stack and share receiver behavior. If Android cannot reliably return to the previous app on a device, the fallback is to keep the app open with a clear saved confirmation.
 
+The accepted implementation keeps the final save path in the web application layer. Android receives the share, stores only a minimal pending-share payload, and the typed native bridge drains that payload into the existing shared-video save use case. This preserves the local-first storage boundary and keeps duplicate handling, deletion, and report integration in one domain path.
+
 ## Verification
 
 - Tests must keep this ADR aligned with UC-02 and the risk register.
-- Future implementation tests must prove quick share save persists the shared video without calling remote AI.
-- Future implementation tests must prove duplicate same-day shares do not create duplicate records.
-- Future Android smoke must confirm the app shows a lightweight confirmation and either returns to the previous app or shows a clear fallback saved state.
-- Future UI copy must say "record count" or "saved record", not watch time or usage time.
+- Implementation tests prove quick share save persists through the existing shared-video path without calling remote AI.
+- Implementation tests prove duplicate same-day shares do not create duplicate records.
+- Android real-device smoke has confirmed debug APK install, pending-share queue drain, app resume re-drain, native queue acknowledgement, and visible saved-record update after an Android `ACTION_SEND` share.
+- Release smoke must still repeat the full official YouTube share chooser flow before sharing an APK externally.
+- UI copy must say "record count" or "saved record", not watch time or usage time.

@@ -15,6 +15,7 @@ describe("quick share save policy", () => {
   it("keeps quick share save optional, local-first, and non-overlay", () => {
     const adr = readText(adrPath);
 
+    expect(adr).toContain("Accepted");
     expect(adr).toContain("optional quick share save mode");
     expect(adr).toContain("saves the shared video immediately");
     expect(adr).toContain("shows a short Android-native confirmation");
@@ -38,6 +39,9 @@ describe("quick share save policy", () => {
     expect(risks).toContain("saves locally");
     expect(risks).toContain("returns to the previous app");
     expect(adr).toContain("Android real-device smoke");
+    expect(adr).toContain("pending-share queue drain");
+    expect(adr).toContain("app resume re-drain");
+    expect(adr).toContain("full official YouTube share chooser flow");
   });
 
   it("keeps quick save separate from automatic AI summary policy", () => {

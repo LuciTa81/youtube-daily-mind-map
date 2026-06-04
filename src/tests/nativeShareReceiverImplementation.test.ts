@@ -40,6 +40,7 @@ const nativeSharePluginPath = join(
   "NativeShareIntentPlugin.java"
 );
 const nativeShareWrapperPath = join(process.cwd(), "src", "lib", "native", "nativeShareIntent.ts");
+const nativeAppLifecyclePath = join(process.cwd(), "src", "lib", "native", "nativeAppLifecycle.ts");
 const appShellPath = join(process.cwd(), "src", "components", "layout", "AppShell.tsx");
 
 function readText(path: string): string {
@@ -102,6 +103,9 @@ describe("native ShareReceiverActivity implementation", () => {
     expect(plugin).toContain("public void clearPendingShares(PluginCall call)");
     expect(plugin).toContain("public void setQuickShareSaveEnabled(PluginCall call)");
     expect(plugin).toContain("NativeShareIntentQueue.drain(getContext())");
+    expect(plugin).toContain("result.put(\"shares\", toShareArray(NativeShareIntentQueue.drain(getContext())))");
+    expect(plugin).toContain("private static JSArray toShareArray(JSONArray shares)");
+    expect(plugin).toContain("instance.notifyListeners(\"shareReceived\", toShareEvent(share))");
     expect(plugin).toContain("NativeShareIntentQueue.acknowledge(getContext(), ids)");
     expect(plugin).not.toContain("consumePendingShare");
 
@@ -114,9 +118,12 @@ describe("native ShareReceiverActivity implementation", () => {
 
   it("drains native shares through the existing shared-video save path and acks after handling", () => {
     const appShell = readText(appShellPath);
+    const nativeAppLifecycle = readText(nativeAppLifecyclePath);
 
     expect(appShell).toContain("setNativeQuickShareSaveEnabled(userSettings.quickShareSaveEnabled)");
     expect(appShell).toContain("drainPendingNativeShareIntents()");
+    expect(appShell).toContain("addNativeAppResumeListener");
+    expect(nativeAppLifecycle).toContain('App.addListener("resume", callback)');
     expect(appShell).toContain("saveSharedYouTubeVideo(options.baseItems, detail, dateSettings)");
     expect(appShell).toContain("ackPendingNativeShareIntents(handledPendingShareIds)");
     expect(appShell).toContain("clearNativePendingShareIntents().catch(() => undefined)");

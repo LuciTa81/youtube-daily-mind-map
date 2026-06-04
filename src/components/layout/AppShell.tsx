@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { formatInTimeZone } from "date-fns-tz";
 import { MindMapCanvas } from "@/components/mindmap/MindMapCanvas";
 import { WeeklyReportPanel } from "@/components/review/WeeklyReportPanel";
@@ -36,6 +36,7 @@ import {
   setNativeQuickShareSaveEnabled,
   type NativeShareIntentDetail
 } from "@/lib/native/nativeShareIntent";
+import { addNativeAppResumeListener } from "@/lib/native/nativeAppLifecycle";
 import { getQuickShareCompletionMessage, shouldCompleteQuickShare } from "@/lib/share/quickShareSave";
 import { saveSharedYouTubeVideo } from "@/lib/share/sharedYouTubeVideo";
 import { applyVideoMemoryDraft, type VideoMemoryDraft } from "@/lib/share/videoMemory";
@@ -357,6 +358,7 @@ function getLatestWatchedAt(items: WatchItem[]): Date | undefined {
 }
 
 export function AppShell() {
+  const nativeShareDrainInFlightRef = useRef(false);
   const [savedWatchItems, setSavedWatchItems] = useState<WatchItem[]>([]);
   const [dataViewMode, setDataViewMode] = useState<DataViewMode>("sample");
   const [activeSourceName, setActiveSourceName] = useState("샘플 데이터");
@@ -447,7 +449,7 @@ export function AppShell() {
   }, [isUserSettingsReady, userSettings.quickShareSaveEnabled]);
 
   useEffect(() => {
-    if (!isUserSettingsReady) {
+    if (!isUserSettingsReady || !isStorageReady) {
       return () => undefined;
     }
 
@@ -512,8 +514,15 @@ export function AppShell() {
       return { ackNativeQueue: persisted, items: result.items };
     };
 
-    void drainPendingNativeShareIntents()
-      .then(async (details) => {
+    const drainNativePendingShares = async () => {
+      if (nativeShareDrainInFlightRef.current) {
+        return;
+      }
+
+      nativeShareDrainInFlightRef.current = true;
+
+      try {
+        const details = await drainPendingNativeShareIntents();
         let nextItems = savedWatchItems;
         const handledPendingShareIds: string[] = [];
 
@@ -532,10 +541,14 @@ export function AppShell() {
         if (handledPendingShareIds.length > 0) {
           await ackPendingNativeShareIntents(handledPendingShareIds);
         }
-      })
-      .catch(() => undefined);
+      } finally {
+        nativeShareDrainInFlightRef.current = false;
+      }
+    };
 
-    return addNativeShareIntentListener((detail) => {
+    void drainNativePendingShares().catch(() => undefined);
+
+    const removeNativeShareListener = addNativeShareIntentListener((detail) => {
       void handleSharedYouTube(detail, {
         baseItems: savedWatchItems,
         completeQuickShare: true
@@ -547,7 +560,15 @@ export function AppShell() {
         })
         .catch(() => undefined);
     });
-  }, [dateSettings, isUserSettingsReady, savedWatchItems, userSettings.quickShareSaveEnabled]);
+    const removeNativeResumeListener = addNativeAppResumeListener(() => {
+      void drainNativePendingShares().catch(() => undefined);
+    });
+
+    return () => {
+      removeNativeShareListener();
+      removeNativeResumeListener();
+    };
+  }, [dateSettings, isStorageReady, isUserSettingsReady, savedWatchItems, userSettings.quickShareSaveEnabled]);
 
   useEffect(() => {
     let cancelled = false;

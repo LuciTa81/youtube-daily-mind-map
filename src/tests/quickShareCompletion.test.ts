@@ -5,6 +5,7 @@ import { getQuickShareCompletionMessage, shouldCompleteQuickShare } from "@/lib/
 
 const appShellPath = join(process.cwd(), "src", "components", "layout", "AppShell.tsx");
 const nativeShareWrapperPath = join(process.cwd(), "src", "lib", "native", "nativeShareIntent.ts");
+const nativeAppLifecyclePath = join(process.cwd(), "src", "lib", "native", "nativeAppLifecycle.ts");
 const nativeSharePluginPath = join(
   process.cwd(),
   "android",
@@ -37,15 +38,35 @@ describe("quick share completion", () => {
     expect(getQuickShareCompletionMessage(true)).not.toContain("사용 시간");
   });
 
-  it("waits for stored settings before consuming pending Android shares", () => {
+  it("waits for stored settings and saved records before consuming pending Android shares", () => {
     const appShell = readSource(appShellPath);
 
     expect(appShell).toContain("const [isUserSettingsReady, setIsUserSettingsReady] = useState(false)");
+    expect(appShell).toContain("const [isStorageReady, setIsStorageReady] = useState(false)");
     expect(appShell).toContain("setIsUserSettingsReady(true)");
-    expect(appShell).toContain("if (!isUserSettingsReady)");
+    expect(appShell).toContain("setIsStorageReady(true)");
+    expect(appShell).toContain("if (!isUserSettingsReady || !isStorageReady)");
+    expect(appShell).toContain(
+      "[dateSettings, isStorageReady, isUserSettingsReady, savedWatchItems, userSettings.quickShareSaveEnabled]"
+    );
     expect(appShell.indexOf("localUserSettingsRepository.load()")).toBeLessThan(
       appShell.indexOf("drainPendingNativeShareIntents()")
     );
+  });
+
+  it("re-drains the native pending queue when the Android app resumes", () => {
+    const appShell = readSource(appShellPath);
+    const nativeAppLifecycle = readSource(nativeAppLifecyclePath);
+
+    expect(nativeAppLifecycle).toContain("export function addNativeAppResumeListener");
+    expect(nativeAppLifecycle).toContain('App.addListener("resume", callback)');
+    expect(nativeAppLifecycle).toContain('App.addListener("appStateChange"');
+    expect(appShell).toContain("const nativeShareDrainInFlightRef = useRef(false)");
+    expect(appShell).toContain("const drainNativePendingShares = async () => {");
+    expect(appShell).toContain("if (nativeShareDrainInFlightRef.current)");
+    expect(appShell).toContain("void drainNativePendingShares().catch(() => undefined)");
+    expect(appShell).toContain("const removeNativeResumeListener = addNativeAppResumeListener");
+    expect(appShell).toContain("removeNativeResumeListener()");
   });
 
   it("skips the memory prompt only for successful quick-share completion", () => {
