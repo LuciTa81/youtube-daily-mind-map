@@ -374,11 +374,13 @@ export function WatchHistoryImportPanel({
               <div className="font-semibold text-slate-800">YouTube 공유로 바로 저장</div>
               <ol className="list-decimal space-y-1 pl-4">
                 <li>YouTube 앱에서 기억하고 싶은 영상의 공유를 누릅니다.</li>
-                <li>공유 시트 첫 화면에 앱이 안 보이면 더보기를 누릅니다.</li>
-                <li>YouTube Daily Mind Map을 선택하면 오늘 기록에 저장됩니다.</li>
+                <li>첫 공유 패널에 앱이 안 보이면 더보기를 누릅니다.</li>
+                <li>Android 공유 목록에서도 안 보이면 더보기로 전체 앱 목록을 엽니다.</li>
+                <li>YouTube Daily Mind Map을 선택하면 오늘 기록에 저장되고, 같은 날짜의 같은 영상은 중복으로 만들지 않습니다.</li>
+                <li>저장 후 바로 태그와 한 줄 메모를 남기거나, 나중에 홈과 타임라인에서 수정할 수 있습니다.</li>
               </ol>
               <p className="text-slate-500">
-                처음에는 더보기 안에 있을 수 있습니다. 한 번 선택하면 기기 공유 목록에서 더 빨리 찾을 수 있습니다.
+                처음에는 더보기 안에 있을 수 있습니다. 한 번 선택하면 기기 공유 목록에 더 빨리 나타날 수 있습니다.
               </p>
             </div>
             <p className="text-slate-500">

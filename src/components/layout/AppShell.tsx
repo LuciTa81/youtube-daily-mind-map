@@ -502,10 +502,10 @@ export function AppShell() {
       setCollapsedBranchIds(new Set());
       setImportNote(
         result.added
-          ? `공유한 영상을 오늘의 기록에 저장했습니다. 저장된 기록 ${result.items.length.toLocaleString("ko-KR")}개${
+          ? `오늘 기록에 저장했습니다. 태그와 메모를 남기면 하루 회고에 함께 보입니다. 저장된 기록 ${result.items.length.toLocaleString("ko-KR")}개${
               persisted ? "" : " · 저장소 오류로 이번 화면에만 반영"
             }`
-          : `이미 같은 날짜에 저장된 영상입니다. 저장된 기록 ${result.items.length.toLocaleString("ko-KR")}개`
+          : `이미 같은 날짜에 저장된 영상입니다. 기존 태그와 메모를 확인하세요. 저장된 기록 ${result.items.length.toLocaleString("ko-KR")}개`
       );
       if (shouldQuickComplete && options.completeQuickShare) {
         void completeNativeQuickShare(getQuickShareCompletionMessage(result.added)).catch(() => undefined);
@@ -1054,7 +1054,7 @@ export function AppShell() {
         );
       });
       setImportNote(
-        `영상 메모를 저장했습니다. 저장된 기록 ${nextItems.length.toLocaleString("ko-KR")}개${
+        `태그와 메모를 기기 안에 저장했습니다. 저장된 기록 ${nextItems.length.toLocaleString("ko-KR")}개${
           persisted ? "" : " · 저장소 오류로 이번 화면에만 반영"
         }`
       );
