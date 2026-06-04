@@ -3,9 +3,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { formatInTimeZone } from "date-fns-tz";
 import { MindMapCanvas } from "@/components/mindmap/MindMapCanvas";
+import { VideoDetailPage } from "@/components/library/VideoDetailPage";
+import { VideoLibraryPanel } from "@/components/library/VideoLibraryPanel";
 import { WeeklyReportPanel } from "@/components/review/WeeklyReportPanel";
 import { WatchTimeline } from "@/components/timeline/WatchTimeline";
 import { classifyItems } from "@/lib/classify/classify";
+import { removeVideoLibraryMemory } from "@/lib/library/videoLibrary";
 import {
   filterItemsByDateRange,
   getDateKeyForItem,
@@ -55,7 +58,7 @@ import { DetailPanel } from "./DetailPanel";
 import { HomeDashboard } from "./HomeDashboard";
 import { LeftPanel } from "./LeftPanel";
 
-type CanvasMode = "review" | "weekly" | "mindmap" | "timeline" | "settings";
+type CanvasMode = "review" | "library" | "video-detail" | "weekly" | "mindmap" | "timeline" | "settings";
 type DataViewMode = "sample" | "saved";
 type MobilePanel = "none" | "detail";
 
@@ -386,6 +389,7 @@ export function AppShell() {
   const [collapsedBranchIds, setCollapsedBranchIds] = useState<Set<string>>(() => new Set());
   const [selectedNodeId, setSelectedNodeId] = useState<string>();
   const [selectedTimelineNode, setSelectedTimelineNode] = useState<MindMapNode>();
+  const [selectedVideoDetailItemId, setSelectedVideoDetailItemId] = useState<string>();
   const [reviewNote, setReviewNote] = useState("");
   const [loadedReviewNoteKey, setLoadedReviewNoteKey] = useState("");
   const [sharedMemoryItemId, setSharedMemoryItemId] = useState<string>();
@@ -407,6 +411,7 @@ export function AppShell() {
       setCanvasMode("review");
       setMobilePanel("none");
       setSelectedTimelineNode(undefined);
+      setSelectedVideoDetailItemId(undefined);
     };
 
     window.addEventListener("youtubeMindMap:goHome", handleGoHome);
@@ -644,6 +649,11 @@ export function AppShell() {
   );
   const classifiedItems = useMemo(() => classifyItems(rawDateItems), [rawDateItems]);
   const weeklyClassifiedItems = useMemo(() => classifyItems(rawWeeklyItems), [rawWeeklyItems]);
+  const libraryItems = useMemo(() => classifyItems(savedWatchItems), [savedWatchItems]);
+  const selectedVideoDetailItem = useMemo(
+    () => libraryItems.find((item) => item.id === selectedVideoDetailItemId),
+    [libraryItems, selectedVideoDetailItemId]
+  );
   const categories = useMemo(
     () =>
       Array.from(new Set(classifiedItems.map((item) => item.category))).sort((a, b) =>
@@ -818,6 +828,7 @@ export function AppShell() {
   const handleRangeModeChange = useCallback((mode: DateRangeMode) => {
     setRangeMode(mode);
     setSelectedTimelineNode(undefined);
+    setSelectedVideoDetailItemId(undefined);
     setExpandedGroupIds(new Set());
     setCollapsedBranchIds(new Set());
   }, []);
@@ -826,6 +837,7 @@ export function AppShell() {
     setViewMode(mode);
     setCanvasMode("mindmap");
     setSelectedTimelineNode(undefined);
+    setSelectedVideoDetailItemId(undefined);
     setExpandedGroupIds(new Set());
     setCollapsedBranchIds(new Set());
   }, []);
@@ -834,6 +846,7 @@ export function AppShell() {
     (mode: CanvasMode) => {
       setCanvasMode(mode);
       setSelectedTimelineNode(undefined);
+      setSelectedVideoDetailItemId(undefined);
       setSelectedNodeId(baseRoot.id);
     },
     [baseRoot.id]
@@ -848,6 +861,7 @@ export function AppShell() {
   const handleDateSelect = useCallback((dateKey: string) => {
     setSelectedDateKey(dateKey);
     setSelectedTimelineNode(undefined);
+    setSelectedVideoDetailItemId(undefined);
     setExpandedGroupIds(new Set());
     setCollapsedBranchIds(new Set());
   }, []);
@@ -884,6 +898,7 @@ export function AppShell() {
         setExpandedGroupIds,
         setCollapsedBranchIds
       );
+      setSelectedVideoDetailItemId(undefined);
       return importSummary;
     },
     [savedWatchItems]
@@ -905,6 +920,7 @@ export function AppShell() {
       setExpandedGroupIds,
       setCollapsedBranchIds
     );
+    setSelectedVideoDetailItemId(undefined);
   }, []);
 
   const handleUseSaved = useCallback(() => {
@@ -926,6 +942,7 @@ export function AppShell() {
       setExpandedGroupIds,
       setCollapsedBranchIds
     );
+    setSelectedVideoDetailItemId(undefined);
   }, [savedWatchItems.length]);
 
   const handleClearSaved = useCallback(async () => {
@@ -952,10 +969,12 @@ export function AppShell() {
       setExpandedGroupIds,
       setCollapsedBranchIds
     );
+    setSelectedVideoDetailItemId(undefined);
   }, []);
 
   const handleNodeSelect = useCallback((node: MindMapNode) => {
     setSelectedTimelineNode(undefined);
+    setSelectedVideoDetailItemId(undefined);
     setSelectedNodeId(node.id);
     if (node.type === "collapsed-group") {
       setExpandedGroupIds((current) => {
@@ -975,11 +994,27 @@ export function AppShell() {
   const handleTimelineItemSelect = useCallback(
     (item: ClassifiedWatchItem) => {
       setSelectedTimelineNode(createTimelineVideoNode(item, dateSettings));
+      setSelectedVideoDetailItemId(undefined);
       setSelectedNodeId(undefined);
       setMobilePanel("detail");
     },
     [dateSettings]
   );
+
+  const handleLibraryItemSelect = useCallback((item: ClassifiedWatchItem) => {
+    setSelectedVideoDetailItemId(item.id);
+    setSelectedTimelineNode(undefined);
+    setSelectedNodeId(undefined);
+    setMobilePanel("none");
+    setCanvasMode("video-detail");
+  }, []);
+
+  const handleVideoDetailBack = useCallback(() => {
+    setSelectedVideoDetailItemId(undefined);
+    setSelectedTimelineNode(undefined);
+    setMobilePanel("none");
+    setCanvasMode("library");
+  }, []);
 
   const handleToggleBranch = useCallback((nodeId: string) => {
     setCollapsedBranchIds((current) => {
@@ -1062,6 +1097,48 @@ export function AppShell() {
     [dateSettings, savedWatchItems]
   );
 
+  const handleVideoMemoryRemove = useCallback(
+    async (itemId: string) => {
+      const result = removeVideoLibraryMemory(savedWatchItems, itemId);
+
+      if (result.status === "not-found" || result.status === "unsupported-source") {
+        setImportNote(
+          result.status === "not-found"
+            ? "이미 삭제되었거나 찾을 수 없는 저장함 영상입니다."
+            : "샘플 기록은 저장함에서 제거할 수 없습니다."
+        );
+        return result.status;
+      }
+
+      let persisted = true;
+      try {
+        await indexedDbWatchHistoryRepository.save(result.items);
+      } catch {
+        persisted = false;
+      }
+
+      setSavedWatchItems(result.items);
+      setSelectedTimelineNode(undefined);
+      setSelectedVideoDetailItemId(undefined);
+      setMobilePanel("none");
+      setCanvasMode("library");
+      setDataViewMode("saved");
+      setActiveSourceName("내 기록 저장소");
+      setImportNote(
+        result.status === "memory-cleared"
+          ? `저장함에서 제거했습니다. Takeout 시청 기록은 날짜별 기록과 리포트에 남습니다. 저장된 기록 ${result.items.length.toLocaleString(
+              "ko-KR"
+            )}개${persisted ? "" : " · 저장소 오류로 이번 화면에만 반영"}`
+          : `저장한 영상을 삭제했습니다. 저장된 기록 ${result.items.length.toLocaleString("ko-KR")}개${
+              persisted ? "" : " · 저장소 오류로 이번 화면에만 반영"
+            }`
+      );
+
+      return result.status;
+    },
+    [savedWatchItems]
+  );
+
   const handleSharedMemorySave = useCallback(async () => {
     if (!sharedMemoryItem) {
       setSharedMemoryItemId(undefined);
@@ -1140,6 +1217,10 @@ export function AppShell() {
   const screenTitle =
     canvasMode === "review"
       ? "오늘의 YouTube 기록"
+      : canvasMode === "library"
+      ? "저장함"
+      : canvasMode === "video-detail"
+      ? "영상 상세"
       : canvasMode === "timeline"
       ? "시청 타임라인"
       : canvasMode === "mindmap"
@@ -1150,6 +1231,10 @@ export function AppShell() {
   const screenDescription =
     canvasMode === "review"
       ? "하루의 관심사와 기억할 영상을 정리합니다."
+      : canvasMode === "library"
+      ? "공유하거나 표시해둔 YouTube 영상을 다시 찾아봅니다."
+      : canvasMode === "video-detail"
+      ? "저장한 영상과 내가 남긴 메모를 확인합니다."
       : canvasMode === "timeline"
       ? "언제 어떤 영상을 봤는지 시간순으로 봅니다."
       : canvasMode === "mindmap"
@@ -1225,6 +1310,21 @@ export function AppShell() {
               onOpenMindMap={() => handleCanvasModeChange("mindmap")}
               onOpenWeekly={() => handleCanvasModeChange("weekly")}
               onItemSelect={handleTimelineItemSelect}
+            />
+          ) : canvasMode === "library" ? (
+            <VideoLibraryPanel
+              items={libraryItems}
+              dateSettings={dateSettings}
+              onItemSelect={handleLibraryItemSelect}
+              onOpenSettings={() => handleCanvasModeChange("settings")}
+            />
+          ) : canvasMode === "video-detail" ? (
+            <VideoDetailPage
+              item={selectedVideoDetailItem}
+              dateSettings={dateSettings}
+              onBack={handleVideoDetailBack}
+              onVideoMemorySave={handleVideoMemorySave}
+              onVideoMemoryRemove={handleVideoMemoryRemove}
             />
           ) : canvasMode === "weekly" ? (
             <div className="min-h-[calc(100svh-236px)] md:min-h-[620px]">
@@ -1312,7 +1412,7 @@ export function AppShell() {
               showIntro={false}
               node={selectedNode}
               dateSettings={dateSettings}
-              onVideoMemorySave={dataViewMode === "saved" ? handleVideoMemorySave : undefined}
+              onVideoMemorySave={dataViewMode === "saved" || canvasMode === "library" ? handleVideoMemorySave : undefined}
             />
           </section>
         </div>
@@ -1347,10 +1447,10 @@ export function AppShell() {
         </button>
         <button
           type="button"
-          className={getAppNavButtonClass(canvasMode === "mindmap")}
-          onClick={() => handleCanvasModeChange("mindmap")}
+          className={getAppNavButtonClass(canvasMode === "library" || canvasMode === "video-detail")}
+          onClick={() => handleCanvasModeChange("library")}
         >
-          맵
+          저장함
         </button>
         <button
           type="button"
