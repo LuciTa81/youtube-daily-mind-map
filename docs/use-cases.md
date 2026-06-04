@@ -53,7 +53,7 @@ Failure cases:
 
 Verification:
 
-- Supports `youtube.com/watch`, `youtu.be`, and Shorts URLs.
+- Supports `youtube.com/watch`, `youtu.be`, Shorts, and Live URLs.
 - Duplicate shares do not create duplicate memory cards.
 - Optional quick share save mode may save immediately, show a lightweight confirmation, and return to the previous app instead of forcing the memory prompt.
 

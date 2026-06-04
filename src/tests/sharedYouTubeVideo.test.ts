@@ -28,6 +28,9 @@ describe("shared YouTube video import", () => {
     expect(extractSharedYouTubeUrl("https://www.youtube.com/shorts/short123?si=share")).toBe(
       "https://www.youtube.com/shorts/short123?si=share"
     );
+    expect(extractSharedYouTubeUrl("https://youtube.com/live/M7lc1UVf-VE?si=share")).toBe(
+      "https://youtube.com/live/M7lc1UVf-VE?si=share"
+    );
     expect(extractSharedYouTubeUrl("https://example.com/not-youtube")).toBeUndefined();
   });
 
@@ -74,6 +77,53 @@ describe("shared YouTube video import", () => {
       watchedAt: "2026-06-02T12:00:00.000Z",
       source: "manual"
     });
+  });
+
+  it("builds a WatchItem from the installed YouTube app live URL payload shape", () => {
+    const item = buildWatchItemFromSharedYouTubePayload({
+      subject: "YouTube",
+      text: "https://youtube.com/live/M7lc1UVf-VE?si=5x9lkGHdM5yOcu-R",
+      receivedAt: "2026-06-04T04:39:00.000Z"
+    });
+
+    expect(item).toMatchObject({
+      id: "shared-youtube-M7lc1UVf-VE-1780547940000",
+      title: "YouTube",
+      url: "https://youtube.com/live/M7lc1UVf-VE?si=5x9lkGHdM5yOcu-R",
+      watchedAt: "2026-06-04T04:39:00.000Z",
+      source: "manual"
+    });
+  });
+
+  it("deduplicates live and watch URLs for the same shared video on the same date", () => {
+    const first = saveSharedYouTubeVideo(
+      [],
+      {
+        text: "https://youtube.com/live/M7lc1UVf-VE?si=share",
+        receivedAt: "2026-06-04T04:39:00.000Z"
+      },
+      dateSettings
+    );
+    if (!first) {
+      throw new Error("Expected live URL share payload to build a watch item");
+    }
+
+    const second = saveSharedYouTubeVideo(
+      first.items,
+      {
+        text: "https://www.youtube.com/watch?v=M7lc1UVf-VE",
+        receivedAt: "2026-06-04T05:00:00.000Z"
+      },
+      dateSettings
+    );
+    if (!second) {
+      throw new Error("Expected watch URL share payload to build a watch item");
+    }
+
+    expect(first.added).toBe(true);
+    expect(second.added).toBe(false);
+    expect(second.items).toHaveLength(1);
+    expect(second.items[0]?.url).toBe("https://youtube.com/live/M7lc1UVf-VE?si=share");
   });
 
   it("deduplicates the same shared video on the same calendar date", () => {

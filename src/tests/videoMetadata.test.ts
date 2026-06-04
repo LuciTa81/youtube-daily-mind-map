@@ -9,6 +9,7 @@ describe("video metadata utilities", () => {
     expect(extractYouTubeVideoId("https://www.youtube.com/watch?v=abc123&t=10s")).toBe("abc123");
     expect(extractYouTubeVideoId("https://youtu.be/xyz789")).toBe("xyz789");
     expect(extractYouTubeVideoId("https://www.youtube.com/shorts/short123")).toBe("short123");
+    expect(extractYouTubeVideoId("https://youtube.com/live/M7lc1UVf-VE?si=share")).toBe("M7lc1UVf-VE");
   });
 
   it("builds a thumbnail URL from a YouTube URL", () => {
