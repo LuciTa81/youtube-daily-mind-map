@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 const panelPath = join(process.cwd(), "src", "components", "library", "VideoLibraryPanel.tsx");
 const appShellPath = join(process.cwd(), "src", "components", "layout", "AppShell.tsx");
 const leftPanelPath = join(process.cwd(), "src", "components", "layout", "LeftPanel.tsx");
+const importPanelPath = join(process.cwd(), "src", "components", "import", "WatchHistoryImportPanel.tsx");
 
 function readPanel(): string {
   return readFileSync(panelPath, "utf8");
@@ -16,6 +17,10 @@ function readAppShell(): string {
 
 function readLeftPanel(): string {
   return readFileSync(leftPanelPath, "utf8");
+}
+
+function readImportPanel(): string {
+  return readFileSync(importPanelPath, "utf8");
 }
 
 describe("video library panel wiring", () => {
@@ -52,7 +57,7 @@ describe("video library panel wiring", () => {
     expect(source).toContain('canvasMode === "library"');
     expect(source).toContain("<VideoLibraryPanel");
     expect(source).toContain("onItemSelect={handleLibraryItemSelect}");
-    expect(source).toContain('onOpenSettings={() => handleCanvasModeChange("settings")}');
+    expect(source).toContain("onOpenSettings={handleOpenImportHelpSettings}");
     expect(source).toContain('onClick={() => handleCanvasModeChange("library")}');
     expect(source).toContain("저장함");
     expect(source).toContain('onOpenMindMap={() => handleCanvasModeChange("mindmap")}');
@@ -61,14 +66,28 @@ describe("video library panel wiring", () => {
   it("connects the Library help CTA to the settings import guide surface", () => {
     const appShellSource = readAppShell();
     const leftPanelSource = readLeftPanel();
+    const importPanelSource = readImportPanel();
 
     expect(appShellSource).toContain("가져오기와 설정");
     expect(appShellSource).toContain('canvasMode === "settings"');
+    expect(appShellSource).toContain("const [openImportHelpByDefault, setOpenImportHelpByDefault] = useState(false)");
+    expect(appShellSource).toContain("const handleOpenImportHelpSettings = useCallback");
+    expect(appShellSource).toContain("setOpenImportHelpByDefault(true)");
+    expect(appShellSource).toContain("setOpenImportHelpByDefault(false)");
+    expect(appShellSource).toContain("onOpenSettings={handleOpenImportHelpSettings}");
+    expect(appShellSource).toContain("openImportHelpByDefault={openImportHelpByDefault}");
     expect(appShellSource).toContain('layoutVariant="settings"');
     expect(appShellSource).toContain("showIntro={false}");
+    expect(leftPanelSource).toContain("openImportHelpByDefault?: boolean");
+    expect(leftPanelSource).toContain("openImportHelpByDefault = false");
+    expect(leftPanelSource).toContain("openHelpByDefault={openImportHelpByDefault}");
     expect(leftPanelSource).toContain("WatchHistoryImportPanel");
     expect(leftPanelSource).toContain("기록 가져오기");
     expect(leftPanelSource).toContain("YouTube 공유 저장");
+    expect(importPanelSource).toContain("openHelpByDefault?: boolean");
+    expect(importPanelSource).toContain("openHelpByDefault = false");
+    expect(importPanelSource).toContain("open={openHelpByDefault}");
+    expect(importPanelSource).toContain("YouTube 공유로 바로 저장");
   });
 
   it("does not introduce unsupported viewing-duration copy", () => {

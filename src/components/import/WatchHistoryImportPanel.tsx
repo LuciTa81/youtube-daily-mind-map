@@ -26,6 +26,7 @@ type WatchHistoryImportPanelProps = {
   isUsingSample: boolean;
   isStorageReady: boolean;
   latestImportSummary?: WatchHistoryImportSummary;
+  openHelpByDefault?: boolean;
   onImported: (
     items: WatchItem[],
     sourceName: string,
@@ -72,6 +73,7 @@ export function WatchHistoryImportPanel({
   isUsingSample,
   isStorageReady,
   latestImportSummary,
+  openHelpByDefault = false,
   onImported,
   onUseSample,
   onUseSaved,
@@ -353,6 +355,7 @@ export function WatchHistoryImportPanel({
 
         <details
           ref={helpDetailsRef}
+          open={openHelpByDefault}
           className="rounded-md border border-sky-100 bg-sky-50 px-3 py-3 text-xs leading-relaxed text-slate-700"
           onToggle={handleHelpDetailsToggle}
         >

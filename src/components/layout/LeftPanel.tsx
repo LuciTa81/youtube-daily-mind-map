@@ -15,6 +15,7 @@ type LeftPanelProps = {
   contentClassName?: string;
   showIntro?: boolean;
   layoutVariant?: "sidebar" | "settings";
+  openImportHelpByDefault?: boolean;
   dates: QuickDateOption[];
   activeSourceName: string;
   totalItemCount: number;
@@ -110,6 +111,7 @@ export function LeftPanel({
   contentClassName = "space-y-6",
   showIntro = true,
   layoutVariant = "sidebar",
+  openImportHelpByDefault = false,
   dates,
   activeSourceName,
   totalItemCount,
@@ -156,6 +158,7 @@ export function LeftPanel({
       isUsingSample={isUsingSample}
       isStorageReady={isStorageReady}
       latestImportSummary={latestImportSummary}
+      openHelpByDefault={openImportHelpByDefault}
       onImported={onItemsImported}
       onUseSample={onUseSample}
       onUseSaved={onUseSaved}

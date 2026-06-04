@@ -397,6 +397,7 @@ export function AppShell() {
   const [sharedMemoryNote, setSharedMemoryNote] = useState("");
   const [userSettings, setUserSettings] = useState<UserSettings>(DEFAULT_USER_SETTINGS);
   const [isUserSettingsReady, setIsUserSettingsReady] = useState(false);
+  const [openImportHelpByDefault, setOpenImportHelpByDefault] = useState(false);
   const watchItems = dataViewMode === "saved" ? savedWatchItems : sampleWatchItems;
 
   useEffect(() => {
@@ -845,12 +846,21 @@ export function AppShell() {
   const handleCanvasModeChange = useCallback(
     (mode: CanvasMode) => {
       setCanvasMode(mode);
+      setOpenImportHelpByDefault(false);
       setSelectedTimelineNode(undefined);
       setSelectedVideoDetailItemId(undefined);
       setSelectedNodeId(baseRoot.id);
     },
     [baseRoot.id]
   );
+
+  const handleOpenImportHelpSettings = useCallback(() => {
+    setCanvasMode("settings");
+    setOpenImportHelpByDefault(true);
+    setSelectedTimelineNode(undefined);
+    setSelectedVideoDetailItemId(undefined);
+    setSelectedNodeId(baseRoot.id);
+  }, [baseRoot.id]);
 
   const handleGroupVideosByChange = useCallback((value: "channel" | "subcategory") => {
     setGroupVideosBy(value);
@@ -1316,7 +1326,7 @@ export function AppShell() {
               items={libraryItems}
               dateSettings={dateSettings}
               onItemSelect={handleLibraryItemSelect}
-              onOpenSettings={() => handleCanvasModeChange("settings")}
+              onOpenSettings={handleOpenImportHelpSettings}
             />
           ) : canvasMode === "video-detail" ? (
             <VideoDetailPage
@@ -1373,6 +1383,7 @@ export function AppShell() {
                 {...leftPanelProps}
                 className="w-full bg-transparent"
                 layoutVariant="settings"
+                openImportHelpByDefault={openImportHelpByDefault}
                 showIntro={false}
               />
             </section>
